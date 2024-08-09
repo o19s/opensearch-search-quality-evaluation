@@ -1,7 +1,7 @@
 services:
 
   judgment_maker:
-    build: ./judgement-maker
+    build: ./judgment-maker
     container_name: judgment_maker
 
   opensearch:
