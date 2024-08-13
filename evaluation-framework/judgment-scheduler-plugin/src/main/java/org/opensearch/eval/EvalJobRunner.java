@@ -40,21 +40,21 @@ import java.util.UUID;
  *
  * This sample job runner takes the "indexToWatch" from job parameter and logs that index's shards.
  */
-public class SampleJobRunner implements ScheduledJobRunner {
+public class EvalJobRunner implements ScheduledJobRunner {
 
-    private static final Logger log = LogManager.getLogger(ScheduledJobRunner.class);
+    private static final Logger log = LogManager.getLogger(EvalJobRunner.class);
 
-    private static SampleJobRunner INSTANCE;
+    private static EvalJobRunner INSTANCE;
 
-    public static SampleJobRunner getJobRunnerInstance() {
+    public static EvalJobRunner getJobRunnerInstance() {
         if (INSTANCE != null) {
             return INSTANCE;
         }
-        synchronized (SampleJobRunner.class) {
+        synchronized (EvalJobRunner.class) {
             if (INSTANCE != null) {
                 return INSTANCE;
             }
-            INSTANCE = new SampleJobRunner();
+            INSTANCE = new EvalJobRunner();
             return INSTANCE;
         }
     }
@@ -63,7 +63,7 @@ public class SampleJobRunner implements ScheduledJobRunner {
     private ThreadPool threadPool;
     private Client client;
 
-    private SampleJobRunner() {
+    private EvalJobRunner() {
         // Singleton class, use getJobRunner method instead of constructor
     }
 
@@ -81,7 +81,7 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
     @Override
     public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
-        if (!(jobParameter instanceof SampleJobParameter)) {
+        if (!(jobParameter instanceof EvalJobParameter)) {
             throw new IllegalStateException(
                 "Job parameter is not instance of SampleJobParameter, type: " + jobParameter.getClass().getCanonicalName()
             );
@@ -97,14 +97,14 @@ public class SampleJobRunner implements ScheduledJobRunner {
 
         final LockService lockService = context.getLockService();
 
-        Runnable runnable = () -> {
+        final Runnable runnable = () -> {
             if (jobParameter.getLockDurationSeconds() != null) {
                 lockService.acquireLock(jobParameter, context, ActionListener.wrap(lock -> {
                     if (lock == null) {
                         return;
                     }
 
-                    SampleJobParameter parameter = (SampleJobParameter) jobParameter;
+                    EvalJobParameter parameter = (EvalJobParameter) jobParameter;
                     StringBuilder msg = new StringBuilder();
                     msg.append("Watching index ").append(parameter.getIndexToWatch()).append("\n");
 
@@ -132,16 +132,17 @@ public class SampleJobRunner implements ScheduledJobRunner {
         };
 
         threadPool.generic().submit(runnable);
+
     }
 
-    private void runTaskForIntegrationTests(SampleJobParameter jobParameter) {
+    private void runTaskForIntegrationTests(EvalJobParameter jobParameter) {
         this.client.index(
             new IndexRequest(jobParameter.getIndexToWatch()).id(UUID.randomUUID().toString())
                 .source("{\"message\": \"message\"}", XContentType.JSON)
         );
     }
 
-    private void runTaskForLockIntegrationTests(SampleJobParameter jobParameter) throws InterruptedException {
+    private void runTaskForLockIntegrationTests(EvalJobParameter jobParameter) throws InterruptedException {
         if (jobParameter.getName().equals("sample-job-lock-test-it")) {
             Thread.sleep(180000);
         }

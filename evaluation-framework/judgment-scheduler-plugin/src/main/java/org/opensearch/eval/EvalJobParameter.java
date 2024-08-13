@@ -21,7 +21,8 @@ import java.time.Instant;
  * It adds an additional "indexToWatch" field to {@link ScheduledJobParameter}, which stores the index
  * the job runner will watch.
  */
-public class SampleJobParameter implements ScheduledJobParameter {
+public class EvalJobParameter implements ScheduledJobParameter {
+
     public static final String NAME_FIELD = "name";
     public static final String ENABLED_FILED = "enabled";
     public static final String LAST_UPDATE_TIME_FIELD = "last_update_time";
@@ -42,9 +43,11 @@ public class SampleJobParameter implements ScheduledJobParameter {
     private Long lockDurationSeconds;
     private Double jitter;
 
-    public SampleJobParameter() {}
+    public EvalJobParameter() {
 
-    public SampleJobParameter(String id, String name, String indexToWatch, Schedule schedule, Long lockDurationSeconds, Double jitter) {
+    }
+
+    public EvalJobParameter(String name, String indexToWatch, Schedule schedule, Long lockDurationSeconds, Double jitter) {
         this.jobName = name;
         this.indexToWatch = indexToWatch;
         this.schedule = schedule;
@@ -150,4 +153,5 @@ public class SampleJobParameter implements ScheduledJobParameter {
         builder.endObject();
         return builder;
     }
+
 }

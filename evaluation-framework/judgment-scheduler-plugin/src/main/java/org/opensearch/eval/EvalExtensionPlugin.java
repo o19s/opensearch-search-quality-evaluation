@@ -48,13 +48,13 @@ import java.util.function.Supplier;
  * Sample JobScheduler extension plugin.
  *
  * It use ".scheduler_sample_extension" index to manage its scheduled jobs, and exposes a REST API
- * endpoint using {@link SampleExtensionRestHandler}.
+ * endpoint using {@link EvalExtensionRestHandler}.
  *
  */
-public class SampleExtensionPlugin extends Plugin implements ActionPlugin, JobSchedulerExtension {
-    private static final Logger log = LogManager.getLogger(SampleExtensionPlugin.class);
+public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSchedulerExtension {
+    private static final Logger log = LogManager.getLogger(EvalExtensionPlugin.class);
 
-    static final String JOB_INDEX_NAME = ".scheduler_sample_extension";
+    public static final String JOB_INDEX_NAME = ".scheduler_sample_extension";
 
     @Override
     public Collection<Object> createComponents(
@@ -70,7 +70,7 @@ public class SampleExtensionPlugin extends Plugin implements ActionPlugin, JobSc
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        SampleJobRunner jobRunner = SampleJobRunner.getJobRunnerInstance();
+        EvalJobRunner jobRunner = EvalJobRunner.getJobRunnerInstance();
         jobRunner.setClusterService(clusterService);
         jobRunner.setThreadPool(threadPool);
         jobRunner.setClient(client);
@@ -90,41 +90,41 @@ public class SampleExtensionPlugin extends Plugin implements ActionPlugin, JobSc
 
     @Override
     public ScheduledJobRunner getJobRunner() {
-        return SampleJobRunner.getJobRunnerInstance();
+        return EvalJobRunner.getJobRunnerInstance();
     }
 
     @Override
     public ScheduledJobParser getJobParser() {
         return (parser, id, jobDocVersion) -> {
-            SampleJobParameter jobParameter = new SampleJobParameter();
+            EvalJobParameter jobParameter = new EvalJobParameter();
             XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
             while (!parser.nextToken().equals(XContentParser.Token.END_OBJECT)) {
                 String fieldName = parser.currentName();
                 parser.nextToken();
                 switch (fieldName) {
-                    case SampleJobParameter.NAME_FIELD:
+                    case EvalJobParameter.NAME_FIELD:
                         jobParameter.setJobName(parser.text());
                         break;
-                    case SampleJobParameter.ENABLED_FILED:
+                    case EvalJobParameter.ENABLED_FILED:
                         jobParameter.setEnabled(parser.booleanValue());
                         break;
-                    case SampleJobParameter.ENABLED_TIME_FILED:
+                    case EvalJobParameter.ENABLED_TIME_FILED:
                         jobParameter.setEnabledTime(parseInstantValue(parser));
                         break;
-                    case SampleJobParameter.LAST_UPDATE_TIME_FIELD:
+                    case EvalJobParameter.LAST_UPDATE_TIME_FIELD:
                         jobParameter.setLastUpdateTime(parseInstantValue(parser));
                         break;
-                    case SampleJobParameter.SCHEDULE_FIELD:
+                    case EvalJobParameter.SCHEDULE_FIELD:
                         jobParameter.setSchedule(ScheduleParser.parse(parser));
                         break;
-                    case SampleJobParameter.INDEX_NAME_FIELD:
+                    case EvalJobParameter.INDEX_NAME_FIELD:
                         jobParameter.setIndexToWatch(parser.text());
                         break;
-                    case SampleJobParameter.LOCK_DURATION_SECONDS:
+                    case EvalJobParameter.LOCK_DURATION_SECONDS:
                         jobParameter.setLockDurationSeconds(parser.longValue());
                         break;
-                    case SampleJobParameter.JITTER:
+                    case EvalJobParameter.JITTER:
                         jobParameter.setJitter(parser.doubleValue());
                         break;
                     default:
@@ -156,6 +156,7 @@ public class SampleExtensionPlugin extends Plugin implements ActionPlugin, JobSc
         IndexNameExpressionResolver indexNameExpressionResolver,
         Supplier<DiscoveryNodes> nodesInCluster
     ) {
-        return Collections.singletonList(new SampleExtensionRestHandler());
+        return Collections.singletonList(new EvalExtensionRestHandler());
     }
+
 }

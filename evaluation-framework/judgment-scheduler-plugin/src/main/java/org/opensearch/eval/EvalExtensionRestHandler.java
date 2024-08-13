@@ -45,7 +45,7 @@ import java.util.List;
  * Users can remove that job by calling
  * {@code DELETE /_plugins/scheduler_sample/watch?id=dashboards-job-id}
  */
-public class SampleExtensionRestHandler extends BaseRestHandler {
+public class EvalExtensionRestHandler extends BaseRestHandler {
     public static final String WATCH_INDEX_URI = "/_plugins/scheduler_sample/watch";
 
     @Override
@@ -55,36 +55,37 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return Collections.unmodifiableList(
-            Arrays.asList(new Route(RestRequest.Method.POST, WATCH_INDEX_URI), new Route(RestRequest.Method.DELETE, WATCH_INDEX_URI))
-        );
+        return List.of(new Route(RestRequest.Method.POST, WATCH_INDEX_URI), new Route(RestRequest.Method.DELETE, WATCH_INDEX_URI));
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
+
         if (request.method().equals(RestRequest.Method.POST)) {
+
             // compose SampleJobParameter object from request
-            String id = request.param("id");
-            String indexName = request.param("index");
-            String jobName = request.param("job_name");
-            String interval = request.param("interval");
-            String lockDurationSecondsString = request.param("lock_duration_seconds");
-            Long lockDurationSeconds = lockDurationSecondsString != null ? Long.parseLong(lockDurationSecondsString) : null;
-            String jitterString = request.param("jitter");
-            Double jitter = jitterString != null ? Double.parseDouble(jitterString) : null;
+            final String id = request.param("id");
+            final String indexName = request.param("index");
+            final String jobName = request.param("job_name");
+            final String interval = request.param("interval");
+            final String lockDurationSecondsString = request.param("lock_duration_seconds");
+            final Long lockDurationSeconds = lockDurationSecondsString != null ? Long.parseLong(lockDurationSecondsString) : null;
+            final String jitterString = request.param("jitter");
+            final Double jitter = jitterString != null ? Double.parseDouble(jitterString) : null;
 
             if (id == null || indexName == null) {
                 throw new IllegalArgumentException("Must specify id and index parameter");
             }
-            SampleJobParameter jobParameter = new SampleJobParameter(
-                id,
+
+            final EvalJobParameter jobParameter = new EvalJobParameter(
                 jobName,
                 indexName,
                 new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.MINUTES),
                 lockDurationSeconds,
                 jitter
             );
-            IndexRequest indexRequest = new IndexRequest().index(SampleExtensionPlugin.JOB_INDEX_NAME)
+
+            final IndexRequest indexRequest = new IndexRequest().index(EvalExtensionPlugin.JOB_INDEX_NAME)
                 .id(id)
                 .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null))
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -113,8 +114,8 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
             };
         } else if (request.method().equals(RestRequest.Method.DELETE)) {
             // delete job parameter doc from index
-            String id = request.param("id");
-            DeleteRequest deleteRequest = new DeleteRequest().index(SampleExtensionPlugin.JOB_INDEX_NAME).id(id);
+            final String id = request.param("id");
+            final DeleteRequest deleteRequest = new DeleteRequest().index(EvalExtensionPlugin.JOB_INDEX_NAME).id(id);
 
             return restChannel -> {
                 client.delete(deleteRequest, new ActionListener<DeleteResponse>() {
@@ -135,4 +136,5 @@ public class SampleExtensionRestHandler extends BaseRestHandler {
             };
         }
     }
+
 }
