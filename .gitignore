@@ -1,4 +1,7 @@
 venv/
 build/
 .ipynb_checkpoints/
-
+__pycache__/
+*.zip
+*.csv
+.idea/
