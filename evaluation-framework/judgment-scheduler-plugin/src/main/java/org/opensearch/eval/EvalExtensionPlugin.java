@@ -58,19 +58,19 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
 
     @Override
     public Collection<Object> createComponents(
-        Client client,
-        ClusterService clusterService,
-        ThreadPool threadPool,
-        ResourceWatcherService resourceWatcherService,
-        ScriptService scriptService,
-        NamedXContentRegistry xContentRegistry,
-        Environment environment,
-        NodeEnvironment nodeEnvironment,
-        NamedWriteableRegistry namedWriteableRegistry,
-        IndexNameExpressionResolver indexNameExpressionResolver,
-        Supplier<RepositoriesService> repositoriesServiceSupplier
+            final Client client,
+            final ClusterService clusterService,
+            final ThreadPool threadPool,
+            final ResourceWatcherService resourceWatcherService,
+            final ScriptService scriptService,
+            final NamedXContentRegistry xContentRegistry,
+            final Environment environment,
+            final NodeEnvironment nodeEnvironment,
+            final NamedWriteableRegistry namedWriteableRegistry,
+            final IndexNameExpressionResolver indexNameExpressionResolver,
+            final Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-        EvalJobRunner jobRunner = EvalJobRunner.getJobRunnerInstance();
+        final EvalJobRunner jobRunner = EvalJobRunner.getJobRunnerInstance();
         jobRunner.setClusterService(clusterService);
         jobRunner.setThreadPool(threadPool);
         jobRunner.setClient(client);
@@ -95,6 +95,7 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
 
     @Override
     public ScheduledJobParser getJobParser() {
+
         return (parser, id, jobDocVersion) -> {
             EvalJobParameter jobParameter = new EvalJobParameter();
             XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
@@ -133,28 +134,33 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
             }
             return jobParameter;
         };
+
     }
 
     private Instant parseInstantValue(XContentParser parser) throws IOException {
+
         if (XContentParser.Token.VALUE_NULL.equals(parser.currentToken())) {
             return null;
         }
+
         if (parser.currentToken().isValue()) {
             return Instant.ofEpochMilli(parser.longValue());
         }
+
         XContentParserUtils.throwUnknownToken(parser.currentToken(), parser.getTokenLocation());
         return null;
+
     }
 
     @Override
     public List<RestHandler> getRestHandlers(
-        Settings settings,
-        RestController restController,
-        ClusterSettings clusterSettings,
-        IndexScopedSettings indexScopedSettings,
-        SettingsFilter settingsFilter,
-        IndexNameExpressionResolver indexNameExpressionResolver,
-        Supplier<DiscoveryNodes> nodesInCluster
+        final Settings settings,
+        final RestController restController,
+        final ClusterSettings clusterSettings,
+        final IndexScopedSettings indexScopedSettings,
+        final SettingsFilter settingsFilter,
+        final IndexNameExpressionResolver indexNameExpressionResolver,
+        final Supplier<DiscoveryNodes> nodesInCluster
     ) {
         return Collections.singletonList(new EvalExtensionRestHandler());
     }

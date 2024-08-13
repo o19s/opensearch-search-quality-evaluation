@@ -81,6 +81,7 @@ public class EvalJobRunner implements ScheduledJobRunner {
 
     @Override
     public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
+
         if (!(jobParameter instanceof EvalJobParameter)) {
             throw new IllegalStateException(
                 "Job parameter is not instance of SampleJobParameter, type: " + jobParameter.getClass().getCanonicalName()
@@ -98,18 +99,22 @@ public class EvalJobRunner implements ScheduledJobRunner {
         final LockService lockService = context.getLockService();
 
         final Runnable runnable = () -> {
+
             if (jobParameter.getLockDurationSeconds() != null) {
+
                 lockService.acquireLock(jobParameter, context, ActionListener.wrap(lock -> {
                     if (lock == null) {
                         return;
                     }
 
-                    EvalJobParameter parameter = (EvalJobParameter) jobParameter;
-                    StringBuilder msg = new StringBuilder();
+                    final EvalJobParameter parameter = (EvalJobParameter) jobParameter;
+
+                    final StringBuilder msg = new StringBuilder();
                     msg.append("Watching index ").append(parameter.getIndexToWatch()).append("\n");
 
-                    List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(parameter.getIndexToWatch());
-                    for (ShardRouting shardRouting : shardRoutingList) {
+                    final List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(parameter.getIndexToWatch());
+
+                    for (final ShardRouting shardRouting : shardRoutingList) {
                         msg.append(shardRouting.shardId().getId())
                             .append("\t")
                             .append(shardRouting.currentNodeId())
@@ -117,6 +122,7 @@ public class EvalJobRunner implements ScheduledJobRunner {
                             .append(shardRouting.active() ? "active" : "inactive")
                             .append("\n");
                     }
+
                     log.info(msg.toString());
                     runTaskForIntegrationTests(parameter);
                     runTaskForLockIntegrationTests(parameter);
@@ -127,8 +133,10 @@ public class EvalJobRunner implements ScheduledJobRunner {
                             throw new IllegalStateException("Failed to release lock.");
                         })
                     );
+
                 }, exception -> { throw new IllegalStateException("Failed to acquire lock."); }));
             }
+
         };
 
         threadPool.generic().submit(runnable);

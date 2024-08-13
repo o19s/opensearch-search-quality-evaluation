@@ -46,11 +46,12 @@ import java.util.List;
  * {@code DELETE /_plugins/scheduler_sample/watch?id=dashboards-job-id}
  */
 public class EvalExtensionRestHandler extends BaseRestHandler {
-    public static final String WATCH_INDEX_URI = "/_plugins/scheduler_sample/watch";
+
+    public static final String WATCH_INDEX_URI = "/_plugins/scheduler_eval/watch";
 
     @Override
     public String getName() {
-        return "Sample JobScheduler extension handler";
+        return "Implicit Judgments Eval Job Scheduler";
     }
 
     @Override
@@ -91,6 +92,7 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
             return restChannel -> {
+
                 // index the job parameter
                 client.index(indexRequest, new ActionListener<IndexResponse>() {
                     @Override
@@ -112,7 +114,9 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
                     }
                 });
             };
+
         } else if (request.method().equals(RestRequest.Method.DELETE)) {
+
             // delete job parameter doc from index
             final String id = request.param("id");
             final DeleteRequest deleteRequest = new DeleteRequest().index(EvalExtensionPlugin.JOB_INDEX_NAME).id(id);
@@ -135,6 +139,7 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
                 restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, request.method() + " is not allowed."));
             };
         }
+
     }
 
 }

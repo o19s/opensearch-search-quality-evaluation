@@ -133,6 +133,7 @@ public class EvalJobParameter implements ScheduledJobParameter {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+
         builder.startObject();
         builder.field(NAME_FIELD, this.jobName)
             .field(ENABLED_FILED, this.isEnabled)
@@ -151,7 +152,9 @@ public class EvalJobParameter implements ScheduledJobParameter {
             builder.field(JITTER, this.jitter);
         }
         builder.endObject();
+
         return builder;
+
     }
 
 }
