@@ -135,22 +135,29 @@ public class EvalJobParameter implements ScheduledJobParameter {
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
 
         builder.startObject();
-        builder.field(NAME_FIELD, this.jobName)
-            .field(ENABLED_FILED, this.isEnabled)
-            .field(SCHEDULE_FIELD, this.schedule)
-            .field(INDEX_NAME_FIELD, this.indexToWatch);
+
+        builder
+                .field(NAME_FIELD, this.jobName)
+                .field(ENABLED_FILED, this.isEnabled)
+                .field(SCHEDULE_FIELD, this.schedule)
+                .field(INDEX_NAME_FIELD, this.indexToWatch);
+
         if (this.enabledTime != null) {
             builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());
         }
+
         if (this.lastUpdateTime != null) {
             builder.timeField(LAST_UPDATE_TIME_FIELD, LAST_UPDATE_TIME_FIELD_READABLE, this.lastUpdateTime.toEpochMilli());
         }
+
         if (this.lockDurationSeconds != null) {
             builder.field(LOCK_DURATION_SECONDS, this.lockDurationSeconds);
         }
+
         if (this.jitter != null) {
             builder.field(JITTER, this.jitter);
         }
+
         builder.endObject();
 
         return builder;

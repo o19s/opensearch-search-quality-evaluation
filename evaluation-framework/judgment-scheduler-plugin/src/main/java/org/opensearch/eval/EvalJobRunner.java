@@ -42,21 +42,23 @@ import java.util.UUID;
  */
 public class EvalJobRunner implements ScheduledJobRunner {
 
-    private static final Logger log = LogManager.getLogger(EvalJobRunner.class);
+    private static final Logger LOGGER = LogManager.getLogger(EvalJobRunner.class);
 
     private static EvalJobRunner INSTANCE;
 
     public static EvalJobRunner getJobRunnerInstance() {
+
         if (INSTANCE != null) {
             return INSTANCE;
         }
+
         synchronized (EvalJobRunner.class) {
-            if (INSTANCE != null) {
-                return INSTANCE;
+            if (INSTANCE == null) {
+                INSTANCE = new EvalJobRunner();
             }
-            INSTANCE = new EvalJobRunner();
             return INSTANCE;
         }
+
     }
 
     private ClusterService clusterService;
@@ -123,13 +125,13 @@ public class EvalJobRunner implements ScheduledJobRunner {
                             .append("\n");
                     }
 
-                    log.info(msg.toString());
+                    LOGGER.info(msg.toString());
                     runTaskForIntegrationTests(parameter);
                     runTaskForLockIntegrationTests(parameter);
 
                     lockService.release(
                         lock,
-                        ActionListener.wrap(released -> { log.info("Released lock for job {}", jobParameter.getName()); }, exception -> {
+                        ActionListener.wrap(released -> { LOGGER.info("Released lock for job {}", jobParameter.getName()); }, exception -> {
                             throw new IllegalStateException("Failed to release lock.");
                         })
                     );

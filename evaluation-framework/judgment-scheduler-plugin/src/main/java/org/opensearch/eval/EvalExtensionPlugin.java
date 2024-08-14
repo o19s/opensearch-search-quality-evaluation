@@ -52,7 +52,8 @@ import java.util.function.Supplier;
  *
  */
 public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSchedulerExtension {
-    private static final Logger log = LogManager.getLogger(EvalExtensionPlugin.class);
+
+    private static final Logger LOGGER = LogManager.getLogger(EvalExtensionPlugin.class);
 
     public static final String JOB_INDEX_NAME = ".scheduler_sample_extension";
 
@@ -70,12 +71,14 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
             final IndexNameExpressionResolver indexNameExpressionResolver,
             final Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
+
         final EvalJobRunner jobRunner = EvalJobRunner.getJobRunnerInstance();
         jobRunner.setClusterService(clusterService);
         jobRunner.setThreadPool(threadPool);
         jobRunner.setClient(client);
 
         return Collections.emptyList();
+
     }
 
     @Override
@@ -101,8 +104,11 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
             XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
             while (!parser.nextToken().equals(XContentParser.Token.END_OBJECT)) {
-                String fieldName = parser.currentName();
+
+                final String fieldName = parser.currentName();
+
                 parser.nextToken();
+
                 switch (fieldName) {
                     case EvalJobParameter.NAME_FIELD:
                         jobParameter.setJobName(parser.text());
@@ -131,8 +137,11 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
                     default:
                         XContentParserUtils.throwUnknownToken(parser.currentToken(), parser.getTokenLocation());
                 }
+
             }
+
             return jobParameter;
+
         };
 
     }
