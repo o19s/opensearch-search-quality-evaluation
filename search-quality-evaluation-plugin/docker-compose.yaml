@@ -1,7 +1,7 @@
 services:
 
   opensearch:
-    build: ./search-quality-evaluation-plugin
+    build: .
     container_name: opensearch
     environment:
       discovery.type: single-node
