@@ -48,12 +48,12 @@ import java.util.function.Supplier;
  * Sample JobScheduler extension plugin.
  *
  * It use ".scheduler_sample_extension" index to manage its scheduled jobs, and exposes a REST API
- * endpoint using {@link EvalExtensionRestHandler}.
+ * endpoint using {@link SearchQualityEvaluationRestHandler}.
  *
  */
-public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSchedulerExtension {
+public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugin, JobSchedulerExtension {
 
-    private static final Logger LOGGER = LogManager.getLogger(EvalExtensionPlugin.class);
+    private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationPlugin.class);
 
     public static final String JOB_INDEX_NAME = ".scheduler_sample_extension";
 
@@ -72,7 +72,7 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
             final Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
 
-        final EvalJobRunner jobRunner = EvalJobRunner.getJobRunnerInstance();
+        final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
         jobRunner.setClusterService(clusterService);
         jobRunner.setThreadPool(threadPool);
         jobRunner.setClient(client);
@@ -93,14 +93,14 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
 
     @Override
     public ScheduledJobRunner getJobRunner() {
-        return EvalJobRunner.getJobRunnerInstance();
+        return SearchQualityEvaluationJobRunner.getJobRunnerInstance();
     }
 
     @Override
     public ScheduledJobParser getJobParser() {
 
         return (parser, id, jobDocVersion) -> {
-            EvalJobParameter jobParameter = new EvalJobParameter();
+            SearchQualityEvaluationJobParameter jobParameter = new SearchQualityEvaluationJobParameter();
             XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
             while (!parser.nextToken().equals(XContentParser.Token.END_OBJECT)) {
@@ -110,28 +110,28 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
                 parser.nextToken();
 
                 switch (fieldName) {
-                    case EvalJobParameter.NAME_FIELD:
+                    case SearchQualityEvaluationJobParameter.NAME_FIELD:
                         jobParameter.setJobName(parser.text());
                         break;
-                    case EvalJobParameter.ENABLED_FILED:
+                    case SearchQualityEvaluationJobParameter.ENABLED_FILED:
                         jobParameter.setEnabled(parser.booleanValue());
                         break;
-                    case EvalJobParameter.ENABLED_TIME_FILED:
+                    case SearchQualityEvaluationJobParameter.ENABLED_TIME_FILED:
                         jobParameter.setEnabledTime(parseInstantValue(parser));
                         break;
-                    case EvalJobParameter.LAST_UPDATE_TIME_FIELD:
+                    case SearchQualityEvaluationJobParameter.LAST_UPDATE_TIME_FIELD:
                         jobParameter.setLastUpdateTime(parseInstantValue(parser));
                         break;
-                    case EvalJobParameter.SCHEDULE_FIELD:
+                    case SearchQualityEvaluationJobParameter.SCHEDULE_FIELD:
                         jobParameter.setSchedule(ScheduleParser.parse(parser));
                         break;
-                    case EvalJobParameter.INDEX_NAME_FIELD:
+                    case SearchQualityEvaluationJobParameter.INDEX_TO_WATCH:
                         jobParameter.setIndexToWatch(parser.text());
                         break;
-                    case EvalJobParameter.LOCK_DURATION_SECONDS:
+                    case SearchQualityEvaluationJobParameter.LOCK_DURATION_SECONDS:
                         jobParameter.setLockDurationSeconds(parser.longValue());
                         break;
-                    case EvalJobParameter.JITTER:
+                    case SearchQualityEvaluationJobParameter.JITTER:
                         jobParameter.setJitter(parser.doubleValue());
                         break;
                     default:
@@ -171,7 +171,7 @@ public class EvalExtensionPlugin extends Plugin implements ActionPlugin, JobSche
         final IndexNameExpressionResolver indexNameExpressionResolver,
         final Supplier<DiscoveryNodes> nodesInCluster
     ) {
-        return Collections.singletonList(new EvalExtensionRestHandler());
+        return Collections.singletonList(new SearchQualityEvaluationRestHandler());
     }
 
 }

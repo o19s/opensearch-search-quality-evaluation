@@ -40,21 +40,21 @@ import java.util.UUID;
  *
  * This sample job runner takes the "indexToWatch" from job parameter and logs that index's shards.
  */
-public class EvalJobRunner implements ScheduledJobRunner {
+public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
-    private static final Logger LOGGER = LogManager.getLogger(EvalJobRunner.class);
+    private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationJobRunner.class);
 
-    private static EvalJobRunner INSTANCE;
+    private static SearchQualityEvaluationJobRunner INSTANCE;
 
-    public static EvalJobRunner getJobRunnerInstance() {
+    public static SearchQualityEvaluationJobRunner getJobRunnerInstance() {
 
         if (INSTANCE != null) {
             return INSTANCE;
         }
 
-        synchronized (EvalJobRunner.class) {
+        synchronized (SearchQualityEvaluationJobRunner.class) {
             if (INSTANCE == null) {
-                INSTANCE = new EvalJobRunner();
+                INSTANCE = new SearchQualityEvaluationJobRunner();
             }
             return INSTANCE;
         }
@@ -65,7 +65,7 @@ public class EvalJobRunner implements ScheduledJobRunner {
     private ThreadPool threadPool;
     private Client client;
 
-    private EvalJobRunner() {
+    private SearchQualityEvaluationJobRunner() {
         // Singleton class, use getJobRunner method instead of constructor
     }
 
@@ -82,9 +82,11 @@ public class EvalJobRunner implements ScheduledJobRunner {
     }
 
     @Override
-    public void runJob(ScheduledJobParameter jobParameter, JobExecutionContext context) {
+    public void runJob(final ScheduledJobParameter jobParameter, final JobExecutionContext context) {
 
-        if (!(jobParameter instanceof EvalJobParameter)) {
+        LOGGER.info("Running custom job! = " + jobParameter.getName());
+
+        if (!(jobParameter instanceof SearchQualityEvaluationJobParameter)) {
             throw new IllegalStateException(
                 "Job parameter is not instance of SampleJobParameter, type: " + jobParameter.getClass().getCanonicalName()
             );
@@ -109,12 +111,12 @@ public class EvalJobRunner implements ScheduledJobRunner {
                         return;
                     }
 
-                    final EvalJobParameter parameter = (EvalJobParameter) jobParameter;
+                    final SearchQualityEvaluationJobParameter searchQualityEvaluationJobParameter = (SearchQualityEvaluationJobParameter) jobParameter;
 
                     final StringBuilder msg = new StringBuilder();
-                    msg.append("Watching index ").append(parameter.getIndexToWatch()).append("\n");
+                    msg.append("Watching index ").append(searchQualityEvaluationJobParameter.getIndexToWatch()).append("\n");
 
-                    final List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(parameter.getIndexToWatch());
+                    final List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(searchQualityEvaluationJobParameter.getIndexToWatch());
 
                     for (final ShardRouting shardRouting : shardRoutingList) {
                         msg.append(shardRouting.shardId().getId())
@@ -126,8 +128,8 @@ public class EvalJobRunner implements ScheduledJobRunner {
                     }
 
                     LOGGER.info(msg.toString());
-                    runTaskForIntegrationTests(parameter);
-                    runTaskForLockIntegrationTests(parameter);
+                    runTaskForIntegrationTests(searchQualityEvaluationJobParameter);
+                    runTaskForLockIntegrationTests(searchQualityEvaluationJobParameter);
 
                     lockService.release(
                         lock,
@@ -145,16 +147,17 @@ public class EvalJobRunner implements ScheduledJobRunner {
 
     }
 
-    private void runTaskForIntegrationTests(EvalJobParameter jobParameter) {
+    private void runTaskForIntegrationTests(SearchQualityEvaluationJobParameter jobParameter) {
         this.client.index(
             new IndexRequest(jobParameter.getIndexToWatch()).id(UUID.randomUUID().toString())
                 .source("{\"message\": \"message\"}", XContentType.JSON)
         );
     }
 
-    private void runTaskForLockIntegrationTests(EvalJobParameter jobParameter) throws InterruptedException {
+    private void runTaskForLockIntegrationTests(SearchQualityEvaluationJobParameter jobParameter) throws InterruptedException {
         if (jobParameter.getName().equals("sample-job-lock-test-it")) {
             Thread.sleep(180000);
         }
     }
+
 }

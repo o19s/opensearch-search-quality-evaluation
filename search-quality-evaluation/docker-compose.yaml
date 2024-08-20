@@ -1,11 +1,7 @@
 services:
 
-  judgment_maker:
-    build: ./judgment-maker
-    container_name: judgment_maker
-
   opensearch:
-    build: ./opensearch
+    build: ./search-quality-evaluation-plugin
     container_name: opensearch
     environment:
       discovery.type: single-node

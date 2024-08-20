@@ -8,6 +8,8 @@
  */
 package org.opensearch.eval;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
@@ -26,8 +28,6 @@ import org.opensearch.rest.RestResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -45,9 +45,11 @@ import java.util.List;
  * Users can remove that job by calling
  * {@code DELETE /_plugins/scheduler_sample/watch?id=dashboards-job-id}
  */
-public class EvalExtensionRestHandler extends BaseRestHandler {
+public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
-    public static final String WATCH_INDEX_URI = "/_plugins/scheduler_eval/watch";
+    private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationRestHandler.class);
+
+    public static final String WATCH_INDEX_URI = "/_plugins/search_quality_evaluation/watch";
 
     @Override
     public String getName() {
@@ -56,13 +58,17 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
 
     @Override
     public List<Route> routes() {
-        return List.of(new Route(RestRequest.Method.POST, WATCH_INDEX_URI), new Route(RestRequest.Method.DELETE, WATCH_INDEX_URI));
+        return List.of(
+                new Route(RestRequest.Method.POST, WATCH_INDEX_URI),
+                new Route(RestRequest.Method.DELETE, WATCH_INDEX_URI));
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
 
         if (request.method().equals(RestRequest.Method.POST)) {
+
+            LOGGER.info("Received post to make a schedule");
 
             // compose SampleJobParameter object from request
             final String id = request.param("id");
@@ -75,10 +81,10 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
             final Double jitter = jitterString != null ? Double.parseDouble(jitterString) : null;
 
             if (id == null || indexName == null) {
-                throw new IllegalArgumentException("Must specify id and index parameter");
+                throw new IllegalArgumentException("Must specify id and index parameter!");
             }
 
-            final EvalJobParameter jobParameter = new EvalJobParameter(
+            final SearchQualityEvaluationJobParameter jobParameter = new SearchQualityEvaluationJobParameter(
                 jobName,
                 indexName,
                 new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.MINUTES),
@@ -86,7 +92,7 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
                 jitter
             );
 
-            final IndexRequest indexRequest = new IndexRequest().index(EvalExtensionPlugin.JOB_INDEX_NAME)
+            final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.JOB_INDEX_NAME)
                 .id(id)
                 .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null))
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -96,9 +102,9 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
                 // index the job parameter
                 client.index(indexRequest, new ActionListener<IndexResponse>() {
                     @Override
-                    public void onResponse(IndexResponse indexResponse) {
+                    public void onResponse(final IndexResponse indexResponse) {
                         try {
-                            RestResponse restResponse = new BytesRestResponse(
+                            final RestResponse restResponse = new BytesRestResponse(
                                 RestStatus.OK,
                                 indexResponse.toXContent(JsonXContent.contentBuilder(), null)
                             );
@@ -119,12 +125,12 @@ public class EvalExtensionRestHandler extends BaseRestHandler {
 
             // delete job parameter doc from index
             final String id = request.param("id");
-            final DeleteRequest deleteRequest = new DeleteRequest().index(EvalExtensionPlugin.JOB_INDEX_NAME).id(id);
+            final DeleteRequest deleteRequest = new DeleteRequest().index(SearchQualityEvaluationPlugin.JOB_INDEX_NAME).id(id);
 
             return restChannel -> {
                 client.delete(deleteRequest, new ActionListener<DeleteResponse>() {
                     @Override
-                    public void onResponse(DeleteResponse deleteResponse) {
+                    public void onResponse(final DeleteResponse deleteResponse) {
                         restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Job deleted."));
                     }
 

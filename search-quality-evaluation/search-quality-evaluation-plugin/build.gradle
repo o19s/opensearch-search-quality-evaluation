@@ -5,9 +5,9 @@ apply plugin: 'opensearch.yaml-rest-test'
 apply plugin: 'maven-publish'
 
 opensearchplugin {
-    name 'opensearch-eval'
-    description 'OpenSearch Eval'
-    classname 'org.opensearch.eval.EvalPlugin'
+    name 'search-quality-evaluation-plugin'
+    description 'OpenSearch Search Quality Evaluation'
+    classname 'org.opensearch.eval.SearchQualityEvaluationPlugin'
     licenseFile rootProject.file('LICENSE')
     noticeFile rootProject.file('NOTICE')
 }

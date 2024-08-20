@@ -21,7 +21,7 @@ import java.time.Instant;
  * It adds an additional "indexToWatch" field to {@link ScheduledJobParameter}, which stores the index
  * the job runner will watch.
  */
-public class EvalJobParameter implements ScheduledJobParameter {
+public class SearchQualityEvaluationJobParameter implements ScheduledJobParameter {
 
     public static final String NAME_FIELD = "name";
     public static final String ENABLED_FILED = "enabled";
@@ -30,34 +30,40 @@ public class EvalJobParameter implements ScheduledJobParameter {
     public static final String SCHEDULE_FIELD = "schedule";
     public static final String ENABLED_TIME_FILED = "enabled_time";
     public static final String ENABLED_TIME_FILED_READABLE = "enabled_time_field";
-    public static final String INDEX_NAME_FIELD = "index_name_to_watch";
     public static final String LOCK_DURATION_SECONDS = "lock_duration_seconds";
     public static final String JITTER = "jitter";
+    public static final String INDEX_TO_WATCH = "index_to_watch";
 
+    // Properties from ScheduledJobParameter.
     private String jobName;
     private Instant lastUpdateTime;
     private Instant enabledTime;
     private boolean isEnabled;
     private Schedule schedule;
-    private String indexToWatch;
     private Long lockDurationSeconds;
     private Double jitter;
 
-    public EvalJobParameter() {
+    // Custom properties for this job.
+    private String indexToWatch;
+
+    public SearchQualityEvaluationJobParameter() {
 
     }
 
-    public EvalJobParameter(String name, String indexToWatch, Schedule schedule, Long lockDurationSeconds, Double jitter) {
+    public SearchQualityEvaluationJobParameter(final String name, final String indexToWatch, final Schedule schedule,
+                                               final Long lockDurationSeconds, final Double jitter) {
         this.jobName = name;
-        this.indexToWatch = indexToWatch;
         this.schedule = schedule;
-
-        Instant now = Instant.now();
         this.isEnabled = true;
-        this.enabledTime = now;
-        this.lastUpdateTime = now;
         this.lockDurationSeconds = lockDurationSeconds;
         this.jitter = jitter;
+
+        final Instant now = Instant.now();
+        this.enabledTime = now;
+        this.lastUpdateTime = now;
+
+        this.indexToWatch = indexToWatch;
+
     }
 
     @Override
@@ -140,7 +146,7 @@ public class EvalJobParameter implements ScheduledJobParameter {
                 .field(NAME_FIELD, this.jobName)
                 .field(ENABLED_FILED, this.isEnabled)
                 .field(SCHEDULE_FIELD, this.schedule)
-                .field(INDEX_NAME_FIELD, this.indexToWatch);
+                .field(INDEX_TO_WATCH, this.indexToWatch);
 
         if (this.enabledTime != null) {
             builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());
