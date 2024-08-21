@@ -26,44 +26,50 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationJobRunner.class);
 
-//    private static SearchQualityEvaluationJobRunner INSTANCE;
-//
-//    public static SearchQualityEvaluationJobRunner getJobRunnerInstance() {
-//
-//        if (INSTANCE != null) {
-//            return INSTANCE;
-//        }
-//
-//        synchronized (SearchQualityEvaluationJobRunner.class) {
-//            if (INSTANCE == null) {
-//                INSTANCE = new SearchQualityEvaluationJobRunner();
-//            }
-//            return INSTANCE;
-//        }
-//
-//    }
+    private static SearchQualityEvaluationJobRunner INSTANCE;
 
-    private final ClusterService clusterService;
-    private final ThreadPool threadPool;
-    private final Client client;
+    public static SearchQualityEvaluationJobRunner getJobRunnerInstance() {
 
-    public SearchQualityEvaluationJobRunner(ClusterService clusterService, ThreadPool threadPool, Client client) {
-        this.clusterService = clusterService;
-        this.threadPool = threadPool;
-        this.client = client;
+        LOGGER.info("Getting job runner instance");
+
+        if (INSTANCE != null) {
+            return INSTANCE;
+        }
+
+        synchronized (SearchQualityEvaluationJobRunner.class) {
+            if (INSTANCE == null) {
+                INSTANCE = new SearchQualityEvaluationJobRunner();
+            }
+            return INSTANCE;
+        }
+
     }
 
-//    public void setClusterService(ClusterService clusterService) {
+    private ClusterService clusterService;
+    private ThreadPool threadPool;
+    private Client client;
+
+    private SearchQualityEvaluationJobRunner() {
+
+    }
+
+//    public SearchQualityEvaluationJobRunner(ClusterService clusterService, ThreadPool threadPool, Client client) {
 //        this.clusterService = clusterService;
-//    }
-//
-//    public void setThreadPool(ThreadPool threadPool) {
 //        this.threadPool = threadPool;
-//    }
-//
-//    public void setClient(Client client) {
 //        this.client = client;
 //    }
+
+    public void setClusterService(ClusterService clusterService) {
+        this.clusterService = clusterService;
+    }
+
+    public void setThreadPool(ThreadPool threadPool) {
+        this.threadPool = threadPool;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
+    }
 
     @Override
     public void runJob(final ScheduledJobParameter jobParameter, final JobExecutionContext context) {

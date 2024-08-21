@@ -68,15 +68,15 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
             final IndexNameExpressionResolver indexNameExpressionResolver,
             final Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
-//
-//        final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
-//        jobRunner.setClusterService(clusterService);
-//        jobRunner.setThreadPool(threadPool);
-//        jobRunner.setClient(client);
 
-        this.clusterService = clusterService;
-        this.threadPool = threadPool;
-        this.client = client;
+        final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
+        jobRunner.setClusterService(clusterService);
+        jobRunner.setThreadPool(threadPool);
+        jobRunner.setClient(client);
+
+//        this.clusterService = clusterService;
+//        this.threadPool = threadPool;
+//        this.client = client;
 
         return Collections.emptyList();
 
@@ -96,8 +96,8 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
     @Override
     public ScheduledJobRunner getJobRunner() {
         LOGGER.info("Creating job runner");
-        return new SearchQualityEvaluationJobRunner(clusterService, threadPool, client);
-        //return SearchQualityEvaluationJobRunner.getJobRunnerInstance();
+        //return new SearchQualityEvaluationJobRunner(clusterService, threadPool, client);
+        return SearchQualityEvaluationJobRunner.getJobRunnerInstance();
     }
 
     @Override
