@@ -11,80 +11,64 @@ package org.opensearch.eval;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.Client;
-import org.opensearch.cluster.routing.ShardRouting;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.utils.LockService;
-import org.opensearch.plugins.Plugin;
 import org.opensearch.threadpool.ThreadPool;
 
-import java.util.List;
-import java.util.UUID;
-
-/**
- * A sample job runner class.
- *
- * The job runner should be a singleton class if it uses OpenSearch client or other objects passed
- * from OpenSearch. Because when registering the job runner to JobScheduler plugin, OpenSearch has
- * not invoke plugins' createComponents() method. That is saying the plugin is not completely initalized,
- * and the OpenSearch {@link Client}, {@link ClusterService} and other objects
- * are not available to plugin and this job runner.
- *
- * So we have to move this job runner intialization to {@link Plugin} createComponents() method, and using
- * singleton job runner to ensure we register a usable job runner instance to JobScheduler plugin.
- *
- * This sample job runner takes the "indexToWatch" from job parameter and logs that index's shards.
- */
 public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationJobRunner.class);
 
-    private static SearchQualityEvaluationJobRunner INSTANCE;
+//    private static SearchQualityEvaluationJobRunner INSTANCE;
+//
+//    public static SearchQualityEvaluationJobRunner getJobRunnerInstance() {
+//
+//        if (INSTANCE != null) {
+//            return INSTANCE;
+//        }
+//
+//        synchronized (SearchQualityEvaluationJobRunner.class) {
+//            if (INSTANCE == null) {
+//                INSTANCE = new SearchQualityEvaluationJobRunner();
+//            }
+//            return INSTANCE;
+//        }
+//
+//    }
 
-    public static SearchQualityEvaluationJobRunner getJobRunnerInstance() {
+    private final ClusterService clusterService;
+    private final ThreadPool threadPool;
+    private final Client client;
 
-        if (INSTANCE != null) {
-            return INSTANCE;
-        }
-
-        synchronized (SearchQualityEvaluationJobRunner.class) {
-            if (INSTANCE == null) {
-                INSTANCE = new SearchQualityEvaluationJobRunner();
-            }
-            return INSTANCE;
-        }
-
-    }
-
-    private ClusterService clusterService;
-    private ThreadPool threadPool;
-    private Client client;
-
-    private SearchQualityEvaluationJobRunner() {
-        // Singleton class, use getJobRunner method instead of constructor
-    }
-
-    public void setClusterService(ClusterService clusterService) {
+    public SearchQualityEvaluationJobRunner(ClusterService clusterService, ThreadPool threadPool, Client client) {
         this.clusterService = clusterService;
-    }
-
-    public void setThreadPool(ThreadPool threadPool) {
         this.threadPool = threadPool;
-    }
-
-    public void setClient(Client client) {
         this.client = client;
     }
+
+//    public void setClusterService(ClusterService clusterService) {
+//        this.clusterService = clusterService;
+//    }
+//
+//    public void setThreadPool(ThreadPool threadPool) {
+//        this.threadPool = threadPool;
+//    }
+//
+//    public void setClient(Client client) {
+//        this.client = client;
+//    }
 
     @Override
     public void runJob(final ScheduledJobParameter jobParameter, final JobExecutionContext context) {
 
-        LOGGER.info("Running custom job! = " + jobParameter.getName());
+        LOGGER.info("Running custom job! = {}", jobParameter.getName());
 
         if (!(jobParameter instanceof SearchQualityEvaluationJobParameter)) {
             throw new IllegalStateException(
@@ -113,27 +97,18 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
                     final SearchQualityEvaluationJobParameter searchQualityEvaluationJobParameter = (SearchQualityEvaluationJobParameter) jobParameter;
 
-                    final StringBuilder msg = new StringBuilder();
-                    msg.append("Watching index ").append(searchQualityEvaluationJobParameter.getIndexToWatch()).append("\n");
+                    LOGGER.info("Message from inside the job.");
 
-                    final List<ShardRouting> shardRoutingList = this.clusterService.state().routingTable().allShards(searchQualityEvaluationJobParameter.getIndexToWatch());
+                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.SCHEDULED_JOBS_INDEX_NAME)
+                            .id("100")
+                            .source(searchQualityEvaluationJobParameter.toXContent(JsonXContent.contentBuilder(), null))
+                            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-                    for (final ShardRouting shardRouting : shardRoutingList) {
-                        msg.append(shardRouting.shardId().getId())
-                            .append("\t")
-                            .append(shardRouting.currentNodeId())
-                            .append("\t")
-                            .append(shardRouting.active() ? "active" : "inactive")
-                            .append("\n");
-                    }
-
-                    LOGGER.info(msg.toString());
-                    runTaskForIntegrationTests(searchQualityEvaluationJobParameter);
-                    runTaskForLockIntegrationTests(searchQualityEvaluationJobParameter);
+                    client.index(indexRequest);
 
                     lockService.release(
                         lock,
-                        ActionListener.wrap(released -> { LOGGER.info("Released lock for job {}", jobParameter.getName()); }, exception -> {
+                        ActionListener.wrap(released -> LOGGER.info("Released lock for job {}", jobParameter.getName()), exception -> {
                             throw new IllegalStateException("Failed to release lock.");
                         })
                     );
@@ -145,19 +120,6 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
         threadPool.generic().submit(runnable);
 
-    }
-
-    private void runTaskForIntegrationTests(SearchQualityEvaluationJobParameter jobParameter) {
-        this.client.index(
-            new IndexRequest(jobParameter.getIndexToWatch()).id(UUID.randomUUID().toString())
-                .source("{\"message\": \"message\"}", XContentType.JSON)
-        );
-    }
-
-    private void runTaskForLockIntegrationTests(SearchQualityEvaluationJobParameter jobParameter) throws InterruptedException {
-        if (jobParameter.getName().equals("sample-job-lock-test-it")) {
-            Thread.sleep(180000);
-        }
     }
 
 }

@@ -2,14 +2,18 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.yaml-rest-test'
-apply plugin: 'maven-publish'
 
 opensearchplugin {
     name 'search-quality-evaluation-plugin'
     description 'OpenSearch Search Quality Evaluation'
     classname 'org.opensearch.eval.SearchQualityEvaluationPlugin'
-    licenseFile rootProject.file('LICENSE')
-    noticeFile rootProject.file('NOTICE')
+    extendedPlugins = ['opensearch-job-scheduler']
+}
+
+ext {
+    projectSubstitutions = [:]
+    licenseFile = rootProject.file('LICENSE')
+    noticeFile = rootProject.file('NOTICE')
 }
 
 group = 'org.opensearch'
@@ -19,19 +23,7 @@ version = "${evalVersion}"
 testingConventions.enabled = false
 loggerUsageCheck.enabled = false
 validateNebulaPom.enabled = false
-
-buildscript {
-    repositories {
-        mavenLocal()
-        maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
-        mavenCentral()
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-
-    dependencies {
-        classpath "org.opensearch.gradle:build-tools:${opensearchVersion}"
-    }    
-}
+thirdPartyAudit.enabled = false
 
 repositories {
     mavenLocal()
@@ -40,12 +32,10 @@ repositories {
     maven { url "https://plugins.gradle.org/m2/" }
 }
 
-thirdPartyAudit.enabled = false
-
 dependencies {
     runtimeOnly "org.apache.logging.log4j:log4j-core:${versions.log4j}"
-    implementation 'org.opensearch:opensearch-job-scheduler:2.16.0.0'
-    implementation 'org.opensearch:opensearch-job-scheduler-spi:2.16.0.0'
+    compileOnly "org.opensearch:opensearch-job-scheduler:2.16.0.0"
+    compileOnly "org.opensearch:opensearch-job-scheduler-spi:2.16.0.0"
     api "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson}"
     api "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_databind}"
     api "org.apache.httpcomponents:httpcore:${versions.httpcore}"

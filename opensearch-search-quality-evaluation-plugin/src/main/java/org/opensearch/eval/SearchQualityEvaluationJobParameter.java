@@ -15,12 +15,6 @@ import org.opensearch.jobscheduler.spi.schedule.Schedule;
 import java.io.IOException;
 import java.time.Instant;
 
-/**
- * A sample job parameter.
- * <p>
- * It adds an additional "indexToWatch" field to {@link ScheduledJobParameter}, which stores the index
- * the job runner will watch.
- */
 public class SearchQualityEvaluationJobParameter implements ScheduledJobParameter {
 
     public static final String NAME_FIELD = "name";
@@ -38,7 +32,7 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
     private String jobName;
     private Instant lastUpdateTime;
     private Instant enabledTime;
-    private boolean isEnabled;
+    private boolean enabled;
     private Schedule schedule;
     private Long lockDurationSeconds;
     private Double jitter;
@@ -54,7 +48,7 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
                                                final Long lockDurationSeconds, final Double jitter) {
         this.jobName = name;
         this.schedule = schedule;
-        this.isEnabled = true;
+        this.enabled = true;
         this.lockDurationSeconds = lockDurationSeconds;
         this.jitter = jitter;
 
@@ -88,7 +82,7 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
 
     @Override
     public boolean isEnabled() {
-        return this.isEnabled;
+        return this.enabled;
     }
 
     @Override
@@ -118,7 +112,7 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
     }
 
     public void setEnabled(boolean enabled) {
-        isEnabled = enabled;
+        this.enabled = enabled;
     }
 
     public void setSchedule(Schedule schedule) {
@@ -138,15 +132,15 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
     }
 
     @Override
-    public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+    public XContentBuilder toXContent(final XContentBuilder builder, final Params params) throws IOException {
 
         builder.startObject();
 
         builder
-                .field(NAME_FIELD, this.jobName)
-                .field(ENABLED_FILED, this.isEnabled)
-                .field(SCHEDULE_FIELD, this.schedule)
-                .field(INDEX_TO_WATCH, this.indexToWatch);
+            .field(NAME_FIELD, this.jobName)
+            .field(ENABLED_FILED, this.enabled)
+            .field(SCHEDULE_FIELD, this.schedule)
+            .field(INDEX_TO_WATCH, this.indexToWatch);
 
         if (this.enabledTime != null) {
             builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());

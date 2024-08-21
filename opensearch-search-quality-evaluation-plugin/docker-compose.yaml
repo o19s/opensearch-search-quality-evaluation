@@ -21,19 +21,24 @@ services:
       - "9600:9600"
     networks:
       - opensearch-net
+#    volumes:
+#      - opensearch-data1:/usr/share/opensearch/data
 
-  opensearch_dashboards:
-    image: opensearchproject/opensearch-dashboards:2.16.0
-    container_name: opensearch_dashboards
-    ports:
-      - "5601:5601"
-    environment:
-      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
-      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
-    depends_on:
-      - opensearch
-    networks:
-      - opensearch-net
+#  opensearch_dashboards:
+#    image: opensearchproject/opensearch-dashboards:2.16.0
+#    container_name: opensearch_dashboards
+#    ports:
+#      - "5601:5601"
+#    environment:
+#      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+#      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+#    depends_on:
+#      - opensearch
+#    networks:
+#      - opensearch-net
+
+#volumes:
+#  opensearch-data1:
 
 networks:
   opensearch-net:

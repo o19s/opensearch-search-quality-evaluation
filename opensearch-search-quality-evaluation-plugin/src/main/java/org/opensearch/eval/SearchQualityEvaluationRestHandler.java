@@ -30,30 +30,15 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-/**
- * A sample rest handler that supports schedule and deschedule job operation
- *
- * Users need to provide "id", "index", "job_name", and "interval" parameter to schedule
- * a job. e.g.
- * {@code
- * POST /_plugins/scheduler_sample/watch?id=dashboards-job-id&job_name=watch dashboards index&index=.opensearch_dashboards_1&interval=1
- * }
- *
- * creates a job with id "dashboards-job-id" and job name "watch dashboards index",
- * which logs ".opensearch_dashboards_1" index's shards info every 1 minute
- *
- * Users can remove that job by calling
- * {@code DELETE /_plugins/scheduler_sample/watch?id=dashboards-job-id}
- */
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationRestHandler.class);
 
-    public static final String WATCH_INDEX_URI = "/_plugins/search_quality_evaluation/watch";
+    public static final String WATCH_INDEX_URI = "/_plugins/search_quality_eval/watch";
 
     @Override
     public String getName() {
-        return "Implicit Judgments Eval Job Scheduler";
+        return "Search Quality Evaluation";
     }
 
     @Override
@@ -68,14 +53,12 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
         if (request.method().equals(RestRequest.Method.POST)) {
 
-            LOGGER.info("Received post to make a schedule");
-
             // compose SampleJobParameter object from request
             final String id = request.param("id");
             final String indexName = request.param("index");
             final String jobName = request.param("job_name");
             final String interval = request.param("interval");
-            final String lockDurationSecondsString = request.param("lock_duration_seconds");
+            final String lockDurationSecondsString = request.param("lock_duration_seconds", "30");
             final Long lockDurationSeconds = lockDurationSecondsString != null ? Long.parseLong(lockDurationSecondsString) : null;
             final String jitterString = request.param("jitter");
             final Double jitter = jitterString != null ? Double.parseDouble(jitterString) : null;
@@ -92,7 +75,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 jitter
             );
 
-            final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.JOB_INDEX_NAME)
+            final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.SCHEDULED_JOBS_INDEX_NAME)
                 .id(id)
                 .source(jobParameter.toXContent(JsonXContent.contentBuilder(), null))
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
@@ -100,7 +83,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             return restChannel -> {
 
                 // index the job parameter
-                client.index(indexRequest, new ActionListener<IndexResponse>() {
+                client.index(indexRequest, new ActionListener<>() {
                     @Override
                     public void onResponse(final IndexResponse indexResponse) {
                         try {
@@ -125,7 +108,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
             // delete job parameter doc from index
             final String id = request.param("id");
-            final DeleteRequest deleteRequest = new DeleteRequest().index(SearchQualityEvaluationPlugin.JOB_INDEX_NAME).id(id);
+            final DeleteRequest deleteRequest = new DeleteRequest().index(SearchQualityEvaluationPlugin.SCHEDULED_JOBS_INDEX_NAME).id(id);
 
             return restChannel -> {
                 client.delete(deleteRequest, new ActionListener<DeleteResponse>() {

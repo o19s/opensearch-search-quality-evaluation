@@ -44,18 +44,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
-/**
- * Sample JobScheduler extension plugin.
- *
- * It use ".scheduler_sample_extension" index to manage its scheduled jobs, and exposes a REST API
- * endpoint using {@link SearchQualityEvaluationRestHandler}.
- *
- */
 public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugin, JobSchedulerExtension {
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationPlugin.class);
 
-    public static final String JOB_INDEX_NAME = ".scheduler_sample_extension";
+    public static final String SCHEDULED_JOBS_INDEX_NAME = ".scheduler_search_quality_eval";
+
+    private ClusterService clusterService;
+    private ThreadPool threadPool;
+    private Client client;
 
     @Override
     public Collection<Object> createComponents(
@@ -71,11 +68,15 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
             final IndexNameExpressionResolver indexNameExpressionResolver,
             final Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
+//
+//        final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
+//        jobRunner.setClusterService(clusterService);
+//        jobRunner.setThreadPool(threadPool);
+//        jobRunner.setClient(client);
 
-        final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
-        jobRunner.setClusterService(clusterService);
-        jobRunner.setThreadPool(threadPool);
-        jobRunner.setClient(client);
+        this.clusterService = clusterService;
+        this.threadPool = threadPool;
+        this.client = client;
 
         return Collections.emptyList();
 
@@ -83,24 +84,30 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     @Override
     public String getJobType() {
-        return "scheduler_sample_extension";
+        LOGGER.info("Getting job type.");
+        return "scheduler_search_quality_eval";
     }
 
     @Override
     public String getJobIndex() {
-        return JOB_INDEX_NAME;
+        return SCHEDULED_JOBS_INDEX_NAME;
     }
 
     @Override
     public ScheduledJobRunner getJobRunner() {
-        return SearchQualityEvaluationJobRunner.getJobRunnerInstance();
+        LOGGER.info("Creating job runner");
+        return new SearchQualityEvaluationJobRunner(clusterService, threadPool, client);
+        //return SearchQualityEvaluationJobRunner.getJobRunnerInstance();
     }
 
     @Override
     public ScheduledJobParser getJobParser() {
 
         return (parser, id, jobDocVersion) -> {
-            SearchQualityEvaluationJobParameter jobParameter = new SearchQualityEvaluationJobParameter();
+
+            LOGGER.info("Getting job parser");
+
+            final SearchQualityEvaluationJobParameter jobParameter = new SearchQualityEvaluationJobParameter();
             XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
             while (!parser.nextToken().equals(XContentParser.Token.END_OBJECT)) {
@@ -146,7 +153,7 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     }
 
-    private Instant parseInstantValue(XContentParser parser) throws IOException {
+    private Instant parseInstantValue(final XContentParser parser) throws IOException {
 
         if (XContentParser.Token.VALUE_NULL.equals(parser.currentToken())) {
             return null;
