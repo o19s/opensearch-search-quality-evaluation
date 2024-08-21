@@ -48,7 +48,7 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationPlugin.class);
 
-    public static final String SCHEDULED_JOBS_INDEX_NAME = ".scheduler_search_quality_eval";
+    public static final String SCHEDULED_JOBS_INDEX_NAME = "scheduler_search_quality_eval";
 
     private ClusterService clusterService;
     private ThreadPool threadPool;

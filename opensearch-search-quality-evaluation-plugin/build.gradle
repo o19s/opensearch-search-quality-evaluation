@@ -1,5 +1,8 @@
-apply plugin: 'java'
-apply plugin: 'idea'
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.yaml-rest-test'
 
@@ -21,26 +24,39 @@ version = "${evalVersion}"
 
 // disabling some unnecessary validations for this plugin
 testingConventions.enabled = false
+forbiddenApis.ignoreFailures = true
 loggerUsageCheck.enabled = false
 validateNebulaPom.enabled = false
 thirdPartyAudit.enabled = false
 
+buildscript {
+    repositories {
+        mavenLocal()
+        maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+
+    dependencies {
+        classpath "org.opensearch.gradle:build-tools:${opensearchVersion}"
+    }
+}
+
 repositories {
     mavenLocal()
-    maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
     mavenCentral()
-    maven { url "https://plugins.gradle.org/m2/" }
+    maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
 dependencies {
     runtimeOnly "org.apache.logging.log4j:log4j-core:${versions.log4j}"
     compileOnly "org.opensearch:opensearch-job-scheduler:2.16.0.0"
     compileOnly "org.opensearch:opensearch-job-scheduler-spi:2.16.0.0"
-    api "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson}"
-    api "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_databind}"
-    api "org.apache.httpcomponents:httpcore:${versions.httpcore}"
-    api "org.apache.httpcomponents:httpclient:${versions.httpclient}"
-    api "commons-logging:commons-logging:${versions.commonslogging}"
+    compileOnly "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson}"
+    compileOnly "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_databind}"
+    compileOnly "org.apache.httpcomponents:httpcore:${versions.httpcore}"
+    compileOnly "org.apache.httpcomponents:httpclient:${versions.httpclient}"
+    compileOnly "commons-logging:commons-logging:${versions.commonslogging}"
     yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:${versions.log4j}"
 }
 
