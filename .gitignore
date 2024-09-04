@@ -5,3 +5,5 @@ __pycache__/
 *.zip
 *.csv
 .idea/
+*.7z
+track2/
