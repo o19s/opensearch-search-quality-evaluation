@@ -1,11 +1,6 @@
 package org.opensearch.searchevaluationframework;
 
 import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.RequestOptions;
@@ -30,33 +25,11 @@ public class OpenSearchHelper {
 
     private final RestHighLevelClient client;
 
-    public OpenSearchHelper() throws Exception {
+    public OpenSearchHelper() {
 
-        //Point to keystore with appropriate certificates for security.
-        //System.setProperty("javax.net.ssl.trustStore", "/full/path/to/keystore");
-        //System.setProperty("javax.net.ssl.trustStorePassword", "password-to-keystore");
-
-        //Establish credentials to use basic authentication.
-        //Only for demo purposes. Don't specify your credentials in code.
-        //final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-
-        //credentialsProvider.setCredentials(AuthScope.ANY,
-        //        new UsernamePasswordCredentials("admin", "admin"));
-
-        //Create a client.
         final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
-                /*.setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
-                    @Override
-                    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
-                        return httpClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                    }
-                });*/
         this.client = new RestHighLevelClient(builder);
 
-    }
-
-    public RestHighLevelClient getClient() {
-        return this.client;
     }
 
     public Collection<UbiEvent> getUbiEvents(int from) throws IOException {
@@ -77,7 +50,6 @@ public class OpenSearchHelper {
     public SearchHit[] getUbiQueries(int from) throws IOException {
         return getDocuments(UBI_QUERIES_INDEX, from);
     }
-
 
     private SearchHit[] getDocuments(final String indexName, final int from) throws IOException {
 

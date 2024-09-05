@@ -7,7 +7,7 @@ import java.util.Map;
 
 public class UbiEvent {
 
-    //       {
+//       {
 //        "_index": "ubi_events",
 //        "_id": "6e7020c4-a7c5-482d-8478-4a0d32c07564",
 //        "_score": 1,
@@ -33,12 +33,13 @@ public class UbiEvent {
 //            "dwell_time": null
 //          }
 //        }
-//      },
+//      }
 
     private String actionName;
     private String clientId;
     private String queryId;
     private String objectId;
+    private String sessionId;
     private int position;
 
     public UbiEvent(SearchHit hit) {
@@ -51,16 +52,23 @@ public class UbiEvent {
             }
         }
 
+        @SuppressWarnings("unchecked")
         final Map<String, Object> eventAttributes = (Map<String, Object>) hit.getSourceAsMap().get("event_attributes");
-        //System.out.println(eventAttributes.get("session_id"));
+        this.sessionId = eventAttributes.get("session_id").toString();
 
         // TODO: Why is object_id a list?
+        @SuppressWarnings("unchecked")
         final Map<String, List<String>> object = (Map<String, List<String>>) eventAttributes.get("object");
-        this.objectId = ((List<String>) object.get("object_id")).get(0);
+        this.objectId = object.get("object_id").get(0);
 
         // TODO: position is an object and I am using it solely as an integer.
+        @SuppressWarnings("unchecked")
         final Map<String, Integer> position = (Map<String, Integer>) eventAttributes.get("position");
         this.position = position.get("index");
+
+    }
+
+    private UbiEvent() {
 
     }
 
@@ -73,40 +81,24 @@ public class UbiEvent {
         return actionName;
     }
 
-    public void setActionName(String actionName) {
-        this.actionName = actionName;
-    }
-
     public String getClientId() {
         return clientId;
-    }
-
-    public void setClientId(String clientId) {
-        this.clientId = clientId;
     }
 
     public String getQueryId() {
         return queryId;
     }
 
-    public void setQueryId(String queryId) {
-        this.queryId = queryId;
-    }
-
     public String getObjectId() {
         return objectId;
-    }
-
-    public void setObjectId(String objectId) {
-        this.objectId = objectId;
     }
 
     public int getPosition() {
         return position;
     }
 
-    public void setPosition(int position) {
-        this.position = position;
+    public String getSessionId() {
+        return sessionId;
     }
 
 }
