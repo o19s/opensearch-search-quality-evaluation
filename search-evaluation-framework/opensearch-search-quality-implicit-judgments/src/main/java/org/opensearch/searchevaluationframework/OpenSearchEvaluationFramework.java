@@ -45,6 +45,11 @@ public class OpenSearchEvaluationFramework {
 
     }
 
+    /**
+     * Calculate the rank-aggregated click through from the UBI events.
+     * @return The rank-aggregated click through.
+     * @throws IOException Thrown when a problem accessing OpenSearch.
+     */
     public Map<Integer, Double> getRankAggregatedClickThrough() throws IOException {
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
