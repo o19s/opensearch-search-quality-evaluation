@@ -1,4 +1,3 @@
-# opensearch-search-quality-evaluation
+# OpenSearch Hybrid Search / Search Quality Evaluation Framework
 
-* [hybrid-search](https://github.com/o19s/opensearch-search-quality-evaluation/tree/main/hybrid-search) - Playground for hybrid search experiments.
-* [opensearch-search-quality-evaluation-plugin](https://github.com/o19s/opensearch-search-quality-evaluation/tree/main/opensearch-search-quality-evaluation-plugin) - OpenSearch job scheduler plugin for evaluation framework.
+This repository is for the OpenSearch hybrid search and search quality evaluation framework.
