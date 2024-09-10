@@ -8,3 +8,15 @@ __pycache__/
 *.7z
 track2/
 target/
+
+# Gradle
+.gradle/
+buildSrc/
+**/build/
+!src/**/build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+.gradletasknamecache
+.project
+.classpath
