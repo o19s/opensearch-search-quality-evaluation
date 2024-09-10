@@ -54,17 +54,19 @@ public class UbiEvent {
 
         @SuppressWarnings("unchecked")
         final Map<String, Object> eventAttributes = (Map<String, Object>) hit.getSourceAsMap().get("event_attributes");
-        this.sessionId = eventAttributes.get("session_id").toString();
+        //this.sessionId = eventAttributes.get("session_id").toString();
 
         // TODO: Why is object_id a list?
         @SuppressWarnings("unchecked")
         final Map<String, List<String>> object = (Map<String, List<String>>) eventAttributes.get("object");
-        this.objectId = object.get("object_id").get(0);
+        this.objectId = String.valueOf(object.get("object_id")); //.get(0);
 
         // TODO: position is an object and I am using it solely as an integer.
         @SuppressWarnings("unchecked")
         final Map<String, Integer> position = (Map<String, Integer>) eventAttributes.get("position");
-        this.position = position.get("index");
+        if(position != null) {
+            this.position = position.get("index");
+        }
 
     }
 
