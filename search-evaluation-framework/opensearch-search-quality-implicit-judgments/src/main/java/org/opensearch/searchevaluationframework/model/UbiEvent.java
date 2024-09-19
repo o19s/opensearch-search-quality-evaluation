@@ -42,7 +42,8 @@ public class UbiEvent {
     private String sessionId;
     private int position;
 
-    public UbiEvent(SearchHit hit) {
+    public UbiEvent(final SearchHit hit) {
+
         this.actionName = hit.getSourceAsMap().get("action_name").toString();
         this.clientId = hit.getSourceAsMap().get("client_id").toString();
 

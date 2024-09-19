@@ -1,11 +1,18 @@
 package org.opensearch.searchevaluationframework;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkRequestBuilder;
+import org.opensearch.action.bulk.BulkResponse;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.common.xcontent.XContentType;
+import org.opensearch.searchevaluationframework.model.ClickthroughRate;
 import org.opensearch.searchevaluationframework.model.UbiEvent;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -26,15 +33,19 @@ import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.searchevaluationframework.model.UbiEvent;
+import org.opensearch.searchevaluationframework.model.UbiSearch;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class OpenSearchEvaluationFramework {
 
     public static final String UBI_EVENTS_INDEX = "ubi_events";
     public static final String UBI_QUERIES_INDEX = "ubi_queries";
+
+    public static final String CLICK_EVENT = "click";
 
     private final RestHighLevelClient client;
 
@@ -42,6 +53,62 @@ public class OpenSearchEvaluationFramework {
 
         final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
         this.client = new RestHighLevelClient(builder);
+
+    }
+
+    public Collection<ClickthroughRate> getClickthroughRate() throws IOException {
+
+        // For each query:
+        // - Get each document returned in that query (in the QueryResponse object).
+        // - Calculate the clickthrough rate for the document. (clicks/impressions)
+
+        final String query = "{\"match_all\":{}}";
+        final BoolQueryBuilder queryBuilder = new BoolQueryBuilder().must(new WrapperQueryBuilder(query));
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(1000);
+        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
+
+        final SearchRequest searchRequest = Requests
+                .searchRequest(UBI_EVENTS_INDEX)
+                .source(searchSourceBuilder)
+                .scroll(scroll);
+
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        String scrollId = searchResponse.getScrollId();
+        SearchHit[] searchHits = searchResponse.getHits().getHits();
+
+        final Collection<ClickthroughRate> clickthroughRates = new LinkedList<>();
+
+        while (searchHits != null && searchHits.length > 0) {
+
+            for (final SearchHit hit : searchHits) {
+
+                final UbiEvent ubiEvent = new UbiEvent(hit);
+                final ClickthroughRate clickthroughRate = new ClickthroughRate(ubiEvent.getQueryId());
+
+                if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), CLICK_EVENT)) {
+                    clickthroughRate.logClick();
+                } else {
+                    clickthroughRate.logEvent();
+                }
+
+                clickthroughRates.add(clickthroughRate);
+                System.out.println(clickthroughRate.toString());
+
+            }
+
+            final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+            scrollRequest.scroll(scroll);
+
+            searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
+            scrollId = searchResponse.getScrollId();
+
+            searchHits = searchResponse.getHits().getHits();
+
+        }
+
+        index(clickthroughRates);
+
+        return clickthroughRates;
 
     }
 
@@ -77,7 +144,7 @@ public class OpenSearchEvaluationFramework {
                 final UbiEvent ubiEvent = new UbiEvent(hit);
 
                 // Increment the number of clicks for the position.
-                if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), "click")) {
+                if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), CLICK_EVENT)) {
                     rankAggregatedClickThrough.merge(ubiEvent.getPosition(), 1.0, Double::sum);
                 }
 
@@ -93,7 +160,6 @@ public class OpenSearchEvaluationFramework {
             scrollId = searchResponse.getScrollId();
 
             searchHits = searchResponse.getHits().getHits();
-            System.out.println("hits: " + searchHits.length);
 
         }
 
@@ -111,6 +177,28 @@ public class OpenSearchEvaluationFramework {
         System.out.println("Number of total events: " + totalEvents);
 
         return rankAggregatedClickThrough;
+
+    }
+
+    private void index(final Collection<ClickthroughRate> clickthroughRates) throws IOException {
+
+        final BulkRequest request = new BulkRequest();
+
+        for(final ClickthroughRate clickthroughRate : clickthroughRates) {
+
+            final Map<String, Object> jsonMap = new HashMap<>();
+            jsonMap.put("query_id", clickthroughRate.getQueryId());
+            jsonMap.put("clicks", clickthroughRate.getClicks());
+            jsonMap.put("events", clickthroughRate.getEvents());
+            jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
+
+            final IndexRequest indexRequest = new IndexRequest("click_through_rates").id(UUID.randomUUID().toString()).source(jsonMap);
+
+            request.add(indexRequest);
+
+        }
+
+        client.bulk(request, RequestOptions.DEFAULT);
 
     }
 
