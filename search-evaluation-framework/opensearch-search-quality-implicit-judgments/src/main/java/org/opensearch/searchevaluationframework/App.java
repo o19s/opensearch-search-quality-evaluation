@@ -17,11 +17,9 @@ public class App {
 
         // Calculate the rank-aggregated click-through.
         final Map<Integer, Double> rankAggregatedClickThrough = openSearchEvaluationFramework.getRankAggregatedClickThrough();
-        // TODO: Index the <k,v> pairs in rankAggregatedClickThrough.
 
         // Calculate the click-through rate for query/doc pairs.
         final Collection<ClickthroughRate> clickthroughRates = openSearchEvaluationFramework.getClickthroughRate();
-        // TODO: Index the properties in each ClickthroughRate object.
 
     }
 
