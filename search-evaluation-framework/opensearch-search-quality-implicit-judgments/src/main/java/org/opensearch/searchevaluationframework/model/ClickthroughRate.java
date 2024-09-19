@@ -2,12 +2,12 @@ package org.opensearch.searchevaluationframework.model;
 
 public class ClickthroughRate {
 
-    private final String queryId;
+    private final String objectId;
     private int clicks;
     private int events;
 
-    public ClickthroughRate(String queryId) {
-        this.queryId = queryId;
+    public ClickthroughRate(final String objectId) {
+        this.objectId = objectId;
     }
 
     public void logClick() {
@@ -25,11 +25,7 @@ public class ClickthroughRate {
 
     @Override
     public String toString() {
-        return "queryId: " + queryId + ", clicks: " + clicks + ", events: " + events + ", ctr: " + getClickthroughRate();
-    }
-
-    public String getQueryId() {
-        return queryId;
+        return "clicks: " + clicks + ", events: " + events + ", ctr: " + getClickthroughRate();
     }
 
     public int getClicks() {
@@ -38,6 +34,10 @@ public class ClickthroughRate {
 
     public int getEvents() {
         return events;
+    }
+
+    public String getObjectId() {
+        return objectId;
     }
 
 }

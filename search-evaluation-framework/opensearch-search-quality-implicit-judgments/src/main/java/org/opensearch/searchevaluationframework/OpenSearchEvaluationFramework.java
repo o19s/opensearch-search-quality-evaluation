@@ -20,6 +20,7 @@ import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.searchevaluationframework.model.ClickthroughRate;
+import org.opensearch.searchevaluationframework.model.Judgment;
 import org.opensearch.searchevaluationframework.model.UbiEvent;
 
 import java.io.IOException;
@@ -31,13 +32,14 @@ import java.util.UUID;
 
 public class OpenSearchEvaluationFramework {
 
+    // OpenSearch indexes.
     public static final String INDEX_UBI_EVENTS = "ubi_events";
     public static final String INDEX_UBI_QUERIES = "ubi_queries";
     public static final String INDEX_RANK_AGGREGATED_CTR = "rank_aggregated_ctr";
     public static final String INDEX_QUERY_DOC_CTR = "click_through_rates";
+    public static final String INDEX_JUDGMENT = "judgments";
 
     public static final String EVENT_CLICK = "click";
-
 
     private final RestHighLevelClient client;
 
@@ -48,11 +50,21 @@ public class OpenSearchEvaluationFramework {
 
     }
 
-    public Collection<ClickthroughRate> getClickthroughRate() throws IOException {
+    public Collection<Judgment> getJudgments(final Map<Integer, Double> rankAggregatedClickThrough, Map<String, Collection<ClickthroughRate>> clickthroughRates) throws IOException {
+
+        final Collection<Judgment> judgments = new LinkedList<>();
+
+        indexJudgments(judgments);
+
+        return judgments;
+
+    }
+
+    public Map<String, Collection<ClickthroughRate>> getClickthroughRate() throws IOException {
 
         // For each query:
         // - Get each document returned in that query (in the QueryResponse object).
-        // - Calculate the clickthrough rate for the document. (clicks/impressions)
+        // - Calculate the click-through rate for the document. (clicks/impressions)
 
         final String query = "{\"match_all\":{}}";
         final BoolQueryBuilder queryBuilder = new BoolQueryBuilder().must(new WrapperQueryBuilder(query));
@@ -68,23 +80,22 @@ public class OpenSearchEvaluationFramework {
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
 
-        final Collection<ClickthroughRate> clickthroughRates = new LinkedList<>();
+        final Map<String, Collection<ClickthroughRate>> queriesToClickthroughRates = new HashMap<>();
 
         while (searchHits != null && searchHits.length > 0) {
 
             for (final SearchHit hit : searchHits) {
 
                 final UbiEvent ubiEvent = new UbiEvent(hit);
-                final ClickthroughRate clickthroughRate = new ClickthroughRate(ubiEvent.getQueryId());
+
+                final Collection<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(ubiEvent.getQueryId(), new LinkedList<>());
+                final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getObjectId()));
 
                 if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
                     clickthroughRate.logClick();
                 } else {
                     clickthroughRate.logEvent();
                 }
-
-                clickthroughRates.add(clickthroughRate);
-                System.out.println(clickthroughRate.toString());
 
             }
 
@@ -98,9 +109,9 @@ public class OpenSearchEvaluationFramework {
 
         }
 
-        index(clickthroughRates);
+        indexClickthroughRates(queriesToClickthroughRates);
 
-        return clickthroughRates;
+        return queriesToClickthroughRates;
 
     }
 
@@ -156,11 +167,11 @@ public class OpenSearchEvaluationFramework {
         }
 
         // Now for each position, divide its value by the total number of events.
+        // This is the click-through rate.
         for(final Integer i : rankAggregatedClickThrough.keySet()) {
             rankAggregatedClickThrough.put(i, rankAggregatedClickThrough.get(i) / totalEvents);
         }
 
-        // Clear the scroll
         final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
         clearScrollRequest.addScrollId(scrollId);
         client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
@@ -168,13 +179,13 @@ public class OpenSearchEvaluationFramework {
         System.out.println("Rank-aggregated click through: " + rankAggregatedClickThrough);
         System.out.println("Number of total events: " + totalEvents);
 
-        index(rankAggregatedClickThrough);
+        indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
         return rankAggregatedClickThrough;
 
     }
 
-    private void index(final Map<Integer, Double> rankAggregatedClickThrough) throws IOException {
+    private void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws IOException {
 
         if(!rankAggregatedClickThrough.isEmpty()) {
 
@@ -198,21 +209,52 @@ public class OpenSearchEvaluationFramework {
 
     }
 
-    private void index(final Collection<ClickthroughRate> clickthroughRates) throws IOException {
+    private void indexClickthroughRates(final Map<String, Collection<ClickthroughRate>> clickthroughRates) throws IOException {
 
         if(!clickthroughRates.isEmpty()) {
 
             final BulkRequest request = new BulkRequest();
 
-            for (final ClickthroughRate clickthroughRate : clickthroughRates) {
+            for(final String queryId : clickthroughRates.keySet()) {
+
+                for(final ClickthroughRate clickthroughRate : clickthroughRates.get(queryId)) {
+
+                    final Map<String, Object> jsonMap = new HashMap<>();
+                    jsonMap.put("query_id", queryId);
+                    jsonMap.put("clicks", clickthroughRate.getClicks());
+                    jsonMap.put("events", clickthroughRate.getEvents());
+                    jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
+
+                    final IndexRequest indexRequest = new IndexRequest(INDEX_QUERY_DOC_CTR).id(UUID.randomUUID().toString()).source(jsonMap);
+
+                    request.add(indexRequest);
+
+                }
+
+            }
+
+            client.bulk(request, RequestOptions.DEFAULT);
+
+        }
+
+    }
+
+    private void indexJudgments(final Collection<Judgment> judgments) throws IOException {
+
+        if(!judgments.isEmpty()) {
+
+            final BulkRequest request = new BulkRequest();
+
+            for (final Judgment judgment : judgments) {
 
                 final Map<String, Object> jsonMap = new HashMap<>();
-                jsonMap.put("query_id", clickthroughRate.getQueryId());
-                jsonMap.put("clicks", clickthroughRate.getClicks());
-                jsonMap.put("events", clickthroughRate.getEvents());
-                jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
+                jsonMap.put("timestamp", judgment.getTimestamp());
+                jsonMap.put("query_id", judgment.getQueryId());
+                jsonMap.put("query", judgment.getQuery());
+                jsonMap.put("document", judgment.getDocument());
+                jsonMap.put("judgment", judgment.getJudgment());
 
-                final IndexRequest indexRequest = new IndexRequest(INDEX_QUERY_DOC_CTR).id(UUID.randomUUID().toString()).source(jsonMap);
+                final IndexRequest indexRequest = new IndexRequest(INDEX_JUDGMENT).id(UUID.randomUUID().toString()).source(jsonMap);
 
                 request.add(indexRequest);
 
