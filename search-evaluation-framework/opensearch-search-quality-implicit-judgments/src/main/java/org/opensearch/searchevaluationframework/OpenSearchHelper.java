@@ -1,8 +1,5 @@
 package org.opensearch.searchevaluationframework;
 
-import org.apache.commons.codec.digest.HmacUtils;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.util.QueryBuilder;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.search.SearchRequest;
@@ -30,14 +27,20 @@ public class OpenSearchHelper {
     // Used to cache the query ID->hash to avoid unnecessary lookups to OpenSearch.
     private static final Map<String, String> queryHashCache = new HashMap<>();
 
-    public static String getQueryHash(final RestHighLevelClient client, final String queryId) throws IOException {
+    private final RestHighLevelClient client;
+
+    public OpenSearchHelper(final RestHighLevelClient client) {
+        this.client = client;
+    }
+
+    public String getQueryHash(final String queryId) throws IOException {
 
         // If it's in the cache just get it and return it.
         if(queryHashCache.containsKey(queryId)) {
             return queryHashCache.get(queryId);
         }
 
-        final UbiSearch ubiSearch = getQueryFromQueryId(client, queryId);
+        final UbiSearch ubiSearch = getQueryFromQueryId(queryId);
         final String hash = String.valueOf(ubiSearch.hashCode());
 
         // Cache it and return it.
@@ -52,7 +55,7 @@ public class OpenSearchHelper {
      * @param queryId The query ID.
      * @return A {@link UbiSearch} object for the given query ID.
      */
-    public static UbiSearch getQueryFromQueryId(final RestHighLevelClient client, final String queryId) throws IOException {
+    public UbiSearch getQueryFromQueryId(final String queryId) throws IOException {
 
         final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
@@ -75,7 +78,7 @@ public class OpenSearchHelper {
 
     }
 
-    public static void indexRankAggregatedClickthrough(final RestHighLevelClient client, final Map<Integer, Double> rankAggregatedClickThrough) throws IOException {
+    public void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws IOException {
 
         if(!rankAggregatedClickThrough.isEmpty()) {
 
@@ -99,7 +102,7 @@ public class OpenSearchHelper {
 
     }
 
-    public static void indexClickthroughRates(final RestHighLevelClient client, final Map<String, Collection<ClickthroughRate>> clickthroughRates) throws IOException {
+    public void indexClickthroughRates(final Map<String, Collection<ClickthroughRate>> clickthroughRates) throws IOException {
 
         if(!clickthroughRates.isEmpty()) {
 
@@ -129,7 +132,7 @@ public class OpenSearchHelper {
 
     }
 
-    public static void indexJudgments(final RestHighLevelClient client, final Collection<Judgment> judgments) throws IOException {
+    public void indexJudgments(final Collection<Judgment> judgments) throws IOException {
 
         if(!judgments.isEmpty()) {
 

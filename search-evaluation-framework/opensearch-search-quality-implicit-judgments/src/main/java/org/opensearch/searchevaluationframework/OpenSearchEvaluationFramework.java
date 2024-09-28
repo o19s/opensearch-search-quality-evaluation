@@ -36,11 +36,13 @@ public class OpenSearchEvaluationFramework {
     public static final String EVENT_CLICK = "click";
 
     private final RestHighLevelClient client;
+    private final OpenSearchHelper openSearchHelper;
 
     public OpenSearchEvaluationFramework() {
 
         final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
         this.client = new RestHighLevelClient(builder);
+        this.openSearchHelper = new OpenSearchHelper(client);
 
     }
 
@@ -80,7 +82,7 @@ public class OpenSearchEvaluationFramework {
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but
                 // they are the same search.
-                final String queryHash = OpenSearchHelper.getQueryHash(client, ubiEvent.getQueryId());
+                final String queryHash = openSearchHelper.getQueryHash(ubiEvent.getQueryId());
 
                 // Get the clicks for this queryId from the map, or an empty list if this is a new query.
                 final Collection<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(queryHash, new LinkedList<>());
@@ -106,7 +108,7 @@ public class OpenSearchEvaluationFramework {
 
         }
 
-        OpenSearchHelper.indexClickthroughRates(client, queriesToClickthroughRates);
+        openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
 
         return queriesToClickthroughRates;
 
@@ -176,7 +178,7 @@ public class OpenSearchEvaluationFramework {
         System.out.println("Rank-aggregated click through: " + rankAggregatedClickThrough);
         System.out.println("Number of total events: " + totalEvents);
 
-        OpenSearchHelper.indexRankAggregatedClickthrough(client, rankAggregatedClickThrough);
+        openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
         return rankAggregatedClickThrough;
 
@@ -196,7 +198,7 @@ public class OpenSearchEvaluationFramework {
 
         }
 
-        OpenSearchHelper.indexJudgments(client, judgments);
+        openSearchHelper.indexJudgments(judgments);
 
         return judgments;
 
