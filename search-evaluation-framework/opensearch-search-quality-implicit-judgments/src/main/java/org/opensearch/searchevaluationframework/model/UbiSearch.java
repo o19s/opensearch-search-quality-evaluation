@@ -23,8 +23,17 @@ public class UbiSearch {
         this.userQuery = hit.getSourceAsMap().get("user_query").toString();
         this.query = hit.getSourceAsMap().get("query").toString();
 
+        // TODO: Maybe make this optional so it's only done when needed?
         //this.queryResponse =
 
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 17;
+        // The user query is what makes it unique.
+        result = 31 * result + userQuery.hashCode();
+        return result;
     }
 
     public long getTimestamp() {
