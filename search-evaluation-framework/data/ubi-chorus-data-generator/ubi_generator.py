@@ -7,7 +7,16 @@ from opensearchpy import OpenSearch
 client = OpenSearch("http://localhost:9200", use_ssl=False)
 
 search_terms = ["computer", "laptop", "notebook", "desk", "power plug", "brother", "ink", "hard drive"]
-actions = ["click_through", "add_to_cart", "click", "watch", "view", "purchase"]
+actions_weights = [10, 5, 1, 3, 4, 1]
+actions = ["click", "click_through", "add_to_cart", "watch", "view", "purchase"]
+
+weighted_actions = []
+for aw, a in zip(actions_weights, actions):
+    for x in range(aw):
+        weighted_actions.append(a)
+
+print("Actions: " + str(actions))
+print("Weighted actions: " + str(weighted_actions))
 
 object_id_field = "ean"
 item_description_field = "title"
@@ -52,14 +61,14 @@ for x in range(number_of_user_queries):
     for y in range(random_number_of_events):
             
         random_search_result_index = random.randint(0, page_size - 1)
-        random_action_index = random.randint(0, len(actions) - 1)
+        random_action_index = random.randint(0, len(weighted_actions) - 1)
         session_id = str(uuid.uuid4())
         
         #print("random_action_index = " + str(random_action_index))
         #print("random_search_result_index = " + str(random_search_result_index))
 
         ubi_event = {
-            "action_name": actions[random_action_index],
+            "action_name": weighted_actions[random_action_index],
             "client_id": client_id,
             "query_id": query_id,
             "message_type": None,
