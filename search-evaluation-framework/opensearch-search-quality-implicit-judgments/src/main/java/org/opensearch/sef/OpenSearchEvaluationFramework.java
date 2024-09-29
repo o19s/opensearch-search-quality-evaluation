@@ -1,7 +1,9 @@
-package org.opensearch.searchevaluationframework;
+package org.opensearch.sef;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.action.search.ClearScrollRequest;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
@@ -13,15 +15,13 @@ import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
-import org.opensearch.searchevaluationframework.model.ClickthroughRate;
-import org.opensearch.searchevaluationframework.model.Judgment;
-import org.opensearch.searchevaluationframework.model.UbiEvent;
+import org.opensearch.sef.model.ClickthroughRate;
+import org.opensearch.sef.model.Judgment;
+import org.opensearch.sef.model.ubi.UbiEvent;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.io.PushbackReader;
+import java.util.*;
 
 public class OpenSearchEvaluationFramework {
 
@@ -32,10 +32,13 @@ public class OpenSearchEvaluationFramework {
     public static final String INDEX_QUERY_DOC_CTR = "click_through_rates";
     public static final String INDEX_JUDGMENT = "judgments";
 
+    // UBI event names.
     public static final String EVENT_CLICK = "click";
 
     private final RestHighLevelClient client;
     private final OpenSearchHelper openSearchHelper;
+
+    private static final Logger LOGGER = LogManager.getLogger(OpenSearchEvaluationFramework.class.getName());
 
     public OpenSearchEvaluationFramework() {
 
@@ -50,7 +53,7 @@ public class OpenSearchEvaluationFramework {
      * @return A map of query_id to the clickthrough rate for each query result.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    public Map<String, Collection<ClickthroughRate>> getClickthroughRate() throws IOException {
+    public Map<String, Set<ClickthroughRate>> getClickthroughRate(final boolean persist) throws IOException {
 
         // For each query:
         // - Get each document returned in that query (in the QueryResponse object).
@@ -70,7 +73,7 @@ public class OpenSearchEvaluationFramework {
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
 
-        final Map<String, Collection<ClickthroughRate>> queriesToClickthroughRates = new HashMap<>();
+        final Map<String, Set<ClickthroughRate>> queriesToClickthroughRates = new HashMap<>();
 
         while (searchHits != null && searchHits.length > 0) {
 
@@ -79,12 +82,12 @@ public class OpenSearchEvaluationFramework {
                 final UbiEvent ubiEvent = new UbiEvent(hit);
 
                 // We need to the hash of the query_id because two users can both search
-                // for "computer" and those searches will have different query IDs, but
-                // they are the same search.
+                // for "computer" and those searches will have different query IDs, but they are the same search.
                 final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
+                // LOGGER.debug("user_query = {}", userQuery);
 
                 // Get the clicks for this queryId from the map, or an empty list if this is a new query.
-                final Collection<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedList<>());
+                final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
 
                 // Get the ClickthroughRate object for the object that was interacted with.
                 final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getObjectId()));
@@ -94,6 +97,10 @@ public class OpenSearchEvaluationFramework {
                 } else {
                     clickthroughRate.logEvent();
                 }
+
+                clickthroughRates.add(clickthroughRate);
+                queriesToClickthroughRates.put(userQuery, clickthroughRates);
+                // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
 
             }
 
@@ -107,7 +114,9 @@ public class OpenSearchEvaluationFramework {
 
         }
 
-        openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
+        if(persist) {
+            openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
+        }
 
         return queriesToClickthroughRates;
 
@@ -118,7 +127,7 @@ public class OpenSearchEvaluationFramework {
      * @return A map of positions to clicks.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    public Map<Integer, Double> getRankAggregatedClickThrough() throws IOException {
+    public Map<Integer, Double> getRankAggregatedClickThrough(final boolean persist) throws IOException {
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
 
@@ -140,9 +149,9 @@ public class OpenSearchEvaluationFramework {
 
         while (searchHits != null && searchHits.length > 0) {
 
-            for (final SearchHit hit : searchHits) {
+            for (final SearchHit searchHit : searchHits) {
 
-                final UbiEvent ubiEvent = new UbiEvent(hit);
+                final UbiEvent ubiEvent = new UbiEvent(searchHit);
 
                 // Increment the number of clicks for the position.
                 if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
@@ -177,14 +186,17 @@ public class OpenSearchEvaluationFramework {
         System.out.println("Rank-aggregated click through: " + rankAggregatedClickThrough);
         System.out.println("Number of total events: " + totalEvents);
 
-        openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
+        if(persist) {
+            openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
+        }
 
         return rankAggregatedClickThrough;
 
     }
 
     public Collection<Judgment> getJudgments(final Map<Integer, Double> rankAggregatedClickThrough,
-                                             final Map<String, Collection<ClickthroughRate>> clickthroughRates) throws IOException {
+                                             final Map<String, Set<ClickthroughRate>> clickthroughRates,
+                                             final boolean persist) throws IOException {
 
         // Calculate the COEC.
         // Numerator is the total number of clicks received by a query/result pair.
@@ -197,6 +209,7 @@ public class OpenSearchEvaluationFramework {
             number of times shown as a result of query q at rank r
          */
 
+        // Format: datetime, query_id, query, document, judgment
         final Collection<Judgment> judgments = new LinkedList<>();
 
         // Up to Rank R
@@ -222,9 +235,27 @@ public class OpenSearchEvaluationFramework {
 
         }
 
-        openSearchHelper.indexJudgments(judgments);
+        if(persist) {
+            openSearchHelper.indexJudgments(judgments);
+        }
 
         return judgments;
+
+    }
+
+    public void showClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) {
+
+        for(final String userQuery : clickthroughRates.keySet()) {
+
+            System.out.println("user_query: " + userQuery);
+
+            for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
+
+                System.out.println("\t - " + clickthroughRate.toString());
+
+            }
+
+        }
 
     }
 

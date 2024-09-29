@@ -1,9 +1,12 @@
-package org.opensearch.searchevaluationframework.model;
+package org.opensearch.sef.model.ubi;
 
 import org.opensearch.search.SearchHit;
 
 import java.util.Map;
 
+/**
+ * A UBI query.
+ */
 public class UbiQuery {
 
     private final long timestamp;

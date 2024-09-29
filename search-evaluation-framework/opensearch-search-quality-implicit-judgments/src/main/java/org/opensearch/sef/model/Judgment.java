@@ -1,5 +1,8 @@
-package org.opensearch.searchevaluationframework.model;
+package org.opensearch.sef.model;
 
+/**
+ * A judgment of a search result's quality for a given query.
+ */
 public class Judgment {
 
     private final long timestamp;

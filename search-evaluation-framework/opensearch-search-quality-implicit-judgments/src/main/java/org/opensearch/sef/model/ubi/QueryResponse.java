@@ -1,7 +1,10 @@
-package org.opensearch.searchevaluationframework.model;
+package org.opensearch.sef.model.ubi;
 
 import java.util.List;
 
+/**
+ * A query response for a {@link UbiQuery query}.
+ */
 public class QueryResponse {
 
     private final String queryId;

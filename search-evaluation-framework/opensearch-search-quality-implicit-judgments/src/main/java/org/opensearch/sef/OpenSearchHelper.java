@@ -1,4 +1,4 @@
-package org.opensearch.searchevaluationframework;
+package org.opensearch.sef;
 
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
@@ -10,17 +10,14 @@ import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
-import org.opensearch.searchevaluationframework.model.ClickthroughRate;
-import org.opensearch.searchevaluationframework.model.Judgment;
-import org.opensearch.searchevaluationframework.model.UbiQuery;
+import org.opensearch.sef.model.ClickthroughRate;
+import org.opensearch.sef.model.Judgment;
+import org.opensearch.sef.model.ubi.UbiQuery;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
-import static org.opensearch.searchevaluationframework.OpenSearchEvaluationFramework.*;
+import static org.opensearch.sef.OpenSearchEvaluationFramework.*;
 
 public class OpenSearchHelper {
 
@@ -64,7 +61,7 @@ public class OpenSearchHelper {
         final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
 
-        // The query_id should be unique anyway but we are limiting it to a single result anyway.
+        // The query_id should be unique anyway, but we are limiting it to a single result anyway.
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(qb);
         searchSourceBuilder.from(0);
@@ -118,7 +115,7 @@ public class OpenSearchHelper {
      * @param clickthroughRates A map of query IDs to a collection of {@link ClickthroughRate} objects.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
-    public void indexClickthroughRates(final Map<String, Collection<ClickthroughRate>> clickthroughRates) throws IOException {
+    public void indexClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) throws IOException {
 
         if(!clickthroughRates.isEmpty()) {
 
