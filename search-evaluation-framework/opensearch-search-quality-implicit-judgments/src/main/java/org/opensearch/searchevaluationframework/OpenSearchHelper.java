@@ -12,7 +12,7 @@ import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.searchevaluationframework.model.ClickthroughRate;
 import org.opensearch.searchevaluationframework.model.Judgment;
-import org.opensearch.searchevaluationframework.model.UbiSearch;
+import org.opensearch.searchevaluationframework.model.UbiQuery;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -24,38 +24,42 @@ import static org.opensearch.searchevaluationframework.OpenSearchEvaluationFrame
 
 public class OpenSearchHelper {
 
-    // Used to cache the query ID->hash to avoid unnecessary lookups to OpenSearch.
-    private static final Map<String, String> queryHashCache = new HashMap<>();
-
     private final RestHighLevelClient client;
+
+    // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
+    private static final Map<String, String> userQueryCache = new HashMap<>();
 
     public OpenSearchHelper(final RestHighLevelClient client) {
         this.client = client;
     }
 
-    public String getQueryHash(final String queryId) throws IOException {
+    /**
+     * Gets the user query for a given query ID.
+     * @param queryId The query ID.
+     * @return The user query.
+     * @throws IOException Thrown when there is a problem accessing OpenSearch.
+     */
+    public String getUserQuery(final String queryId) throws IOException {
 
         // If it's in the cache just get it and return it.
-        if(queryHashCache.containsKey(queryId)) {
-            return queryHashCache.get(queryId);
+        if(userQueryCache.containsKey(queryId)) {
+            return userQueryCache.get(queryId);
         }
 
-        final UbiSearch ubiSearch = getQueryFromQueryId(queryId);
-        final String hash = String.valueOf(ubiSearch.hashCode());
-
         // Cache it and return it.
-        queryHashCache.put(queryId, hash);
+        final UbiQuery ubiQuery = getQueryFromQueryId(queryId);
+        userQueryCache.put(queryId, ubiQuery.getUserQuery());
 
-        return hash;
+        return ubiQuery.getUserQuery();
 
     }
 
     /**
      * Gets the query object for a given query ID.
      * @param queryId The query ID.
-     * @return A {@link UbiSearch} object for the given query ID.
+     * @return A {@link UbiQuery} object for the given query ID.
      */
-    public UbiSearch getQueryFromQueryId(final String queryId) throws IOException {
+    public UbiQuery getQueryFromQueryId(final String queryId) throws IOException {
 
         final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
@@ -74,13 +78,20 @@ public class OpenSearchHelper {
         // Will only be a single result.
         final SearchHit hit = response.getHits().getHits()[0];
 
-        return new UbiSearch(hit);
+        return new UbiQuery(hit);
 
     }
 
+    /**
+     * Index the rank-aggregated clickthrough values.
+     * @param rankAggregatedClickThrough A map of position to clickthrough values.
+     * @throws IOException Thrown when there is a problem accessing OpenSearch.
+     */
     public void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws IOException {
 
         if(!rankAggregatedClickThrough.isEmpty()) {
+
+            // TODO: Split this into multiple bulk insert requests.
 
             final BulkRequest request = new BulkRequest();
 
@@ -102,9 +113,16 @@ public class OpenSearchHelper {
 
     }
 
+    /**
+     * Index the clickthrough rates.
+     * @param clickthroughRates A map of query IDs to a collection of {@link ClickthroughRate} objects.
+     * @throws IOException Thrown when there is a problem accessing OpenSearch.
+     */
     public void indexClickthroughRates(final Map<String, Collection<ClickthroughRate>> clickthroughRates) throws IOException {
 
         if(!clickthroughRates.isEmpty()) {
+
+            // TODO: Split this into multiple bulk insert requests.
 
             final BulkRequest request = new BulkRequest();
 
@@ -132,9 +150,16 @@ public class OpenSearchHelper {
 
     }
 
+    /**
+     * Index the judgments.
+     * @param judgments A collection of {@link Judgment judgments}.
+     * @throws IOException Thrown when there is a problem accessing OpenSearch.
+     */
     public void indexJudgments(final Collection<Judgment> judgments) throws IOException {
 
         if(!judgments.isEmpty()) {
+
+            // TODO: Split this into multiple bulk insert requests.
 
             final BulkRequest request = new BulkRequest();
 

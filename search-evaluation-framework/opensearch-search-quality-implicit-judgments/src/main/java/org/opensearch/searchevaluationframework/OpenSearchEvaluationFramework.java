@@ -16,7 +16,6 @@ import org.opensearch.search.builder.SearchSourceBuilder;
 import org.opensearch.searchevaluationframework.model.ClickthroughRate;
 import org.opensearch.searchevaluationframework.model.Judgment;
 import org.opensearch.searchevaluationframework.model.UbiEvent;
-import org.opensearch.searchevaluationframework.model.UbiSearch;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -49,7 +48,7 @@ public class OpenSearchEvaluationFramework {
     /**
      * Gets the clickthrough rates for each query and its results.
      * @return A map of query_id to the clickthrough rate for each query result.
-     * @throws IOException
+     * @throws IOException Thrown when a problem accessing OpenSearch.
      */
     public Map<String, Collection<ClickthroughRate>> getClickthroughRate() throws IOException {
 
@@ -82,10 +81,10 @@ public class OpenSearchEvaluationFramework {
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but
                 // they are the same search.
-                final String queryHash = openSearchHelper.getQueryHash(ubiEvent.getQueryId());
+                final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
 
                 // Get the clicks for this queryId from the map, or an empty list if this is a new query.
-                final Collection<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(queryHash, new LinkedList<>());
+                final Collection<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedList<>());
 
                 // Get the ClickthroughRate object for the object that was interacted with.
                 final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getObjectId()));
@@ -116,7 +115,7 @@ public class OpenSearchEvaluationFramework {
 
     /**
      * Calculate the rank-aggregated click through from the UBI events.
-     * @return The rank-aggregated click through.
+     * @return A map of positions to clicks.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
     public Map<Integer, Double> getRankAggregatedClickThrough() throws IOException {
@@ -192,9 +191,34 @@ public class OpenSearchEvaluationFramework {
         // Denominator is the expected clicks (EC) that an average result would receive after being impressed i times at rank r,
         // and CTR is the average CTR for each position in the results page (up to R) computed over all queries and results.
 
+        /*
+            Number of clicks
+            ----------------
+            number of times shown as a result of query q at rank r
+         */
+
         final Collection<Judgment> judgments = new LinkedList<>();
 
+        // Up to Rank R
+        final int rank = 1;
+
         for(final String queryId : clickthroughRates.keySet()) {
+
+            // The clickthrough rates for this query.
+            final Collection<ClickthroughRate> ctrs = clickthroughRates.get(queryId);
+
+            for(final ClickthroughRate ctr : ctrs) {
+
+                // The numerator is the total number of clicks received by a query/result pair.
+                final int totalNumberClicksForQueryResult = ctr.getClicks();
+
+                // The denominator is the number of times shown as a result of query q at rank r
+
+                // TODO: Get the number of times this result was shown for this query at rank r.
+                // select count(*) from ubi_queries where object_id = @ and query_response.queryResponseObjectIds contains this query in position rank R.
+
+            }
+
 
         }
 

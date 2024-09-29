@@ -2,10 +2,9 @@ package org.opensearch.searchevaluationframework.model;
 
 import org.opensearch.search.SearchHit;
 
-import java.util.List;
 import java.util.Map;
 
-public class UbiSearch {
+public class UbiQuery {
 
     private final long timestamp;
     private final String queryId;
@@ -15,7 +14,7 @@ public class UbiSearch {
     private Map<String, String> queryAttributes;
     private QueryResponse queryResponse;
 
-    public UbiSearch(final SearchHit hit) {
+    public UbiQuery(final SearchHit hit) {
 
         this.timestamp = Long.parseLong(hit.getSourceAsMap().get("timestamp").toString());
         this.queryId = hit.getSourceAsMap().get("query_id").toString();
@@ -29,10 +28,25 @@ public class UbiSearch {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null) {
+            return false;
+        }
+        if (this.getClass() != o.getClass()) {
+            return false;
+        }
+        final UbiQuery ubiQuery = (UbiQuery) o;
+        return queryId.equals(ubiQuery.queryId) && (userQuery.equals(ubiQuery.userQuery));
+    }
+
+    @Override
     public int hashCode() {
         int result = 17;
-        // The user query is what makes it unique.
-        result = 31 * result + userQuery.hashCode();
+        result = 29 * result + queryId.hashCode();
+        result = 29 * result + userQuery.hashCode();
         return result;
     }
 
