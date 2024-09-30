@@ -6,6 +6,7 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.common.document.DocumentField;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.search.SearchHit;
@@ -76,6 +77,39 @@ public class OpenSearchHelper {
         final SearchHit hit = response.getHits().getHits()[0];
 
         return new UbiQuery(hit);
+
+    }
+
+    public int getCountOfQueriesForUserQueryHavingResultInRankR(final String userQuery, final String objectId, final int rank) throws IOException {
+
+        int countOfTimesShownAtRank = 0;
+
+        final String query = "{\"match\": {\"user_query\": \"" + userQuery + "\" }}";
+        final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
+
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(qb);
+
+        final String[] indexes = {INDEX_UBI_QUERIES};
+
+        final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
+        final SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+
+        for(final SearchHit searchHit : response.getHits().getHits()) {
+
+            //System.out.println(searchHit.getSourceAsMap().get("query_response_object_ids"));
+
+            final List<String> queryResponseObjectIds = (List<String>) searchHit.getSourceAsMap().get("query_response_object_ids");
+
+            //System.out.println(queryResponseObjectIds.get(rank) + " =?= " + objectId);
+
+            if(queryResponseObjectIds.get(rank).equals(objectId)) {
+                countOfTimesShownAtRank++;
+            }
+
+        }
+
+        return countOfTimesShownAtRank;
 
     }
 

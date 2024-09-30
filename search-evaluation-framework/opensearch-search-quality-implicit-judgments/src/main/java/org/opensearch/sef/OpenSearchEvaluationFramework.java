@@ -209,10 +209,10 @@ public class OpenSearchEvaluationFramework {
         // Up to Rank R
         final int rank = 1;
 
-        for(final String queryId : clickthroughRates.keySet()) {
+        for(final String userQuery : clickthroughRates.keySet()) {
 
             // The clickthrough rates for this query.
-            final Collection<ClickthroughRate> ctrs = clickthroughRates.get(queryId);
+            final Collection<ClickthroughRate> ctrs = clickthroughRates.get(userQuery);
 
             for(final ClickthroughRate ctr : ctrs) {
 
@@ -222,10 +222,18 @@ public class OpenSearchEvaluationFramework {
                     v * mean_ctr
 
                     v = number of times shown for query q at rank r
-                 */
+                */
 
-                // The numerator is the total number of clicks received by a query/result pair.
+                // queryId is the query.
+                // ctr.getObjectId() is the result.
+                // ctr.getClicks() is the number of clicks for the query/result pair.
+                // This is the numerator.
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
+
+                // TODO: Get all queries having this user_query.
+                final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
+
+                System.out.println("countOfTimesShownAtRank = " + countOfTimesShownAtRank);
 
                 // The denominator is the number of times shown as a result of query q at rank r
                 rankAggregatedClickThrough.get(rank);

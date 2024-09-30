@@ -35,7 +35,7 @@ public class App {
         // Generate and index the implicit judgments.
         final Collection<Judgment> judgments = openSearchEvaluationFramework.getJudgments(rankAggregatedClickThrough, clickthroughRates, persist);
         LOGGER.info("Number of judgments: {}", judgments.size());
-        //openSearchEvaluationFramework.showJudgments(judgments);
+        openSearchEvaluationFramework.showJudgments(judgments);
 
     }
 
