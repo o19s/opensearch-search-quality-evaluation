@@ -1,6 +1,6 @@
 package org.opensearch.sef.model;
 
-import org.opensearch.sef.model.ubi.UbiQuery;
+import org.apache.commons.lang3.builder.EqualsBuilder;
 
 /**
  * A query result and its number of clicks and total events.
@@ -18,18 +18,8 @@ public class ClickthroughRate {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null) {
-            return false;
-        }
-        if (this.getClass() != o.getClass()) {
-            return false;
-        }
-        final ClickthroughRate ctr = (ClickthroughRate) o;
-        return objectId.equals(ctr.objectId);
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
     }
 
     @Override

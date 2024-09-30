@@ -124,7 +124,7 @@ public class OpenSearchEvaluationFramework {
 
     /**
      * Calculate the rank-aggregated click through from the UBI events.
-     * @return A map of positions to clicks.
+     * @return A map of positions to clickthrough rates.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
     public Map<Integer, Double> getRankAggregatedClickThrough(final boolean persist) throws IOException {
@@ -183,8 +183,8 @@ public class OpenSearchEvaluationFramework {
         clearScrollRequest.addScrollId(scrollId);
         client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
 
-        System.out.println("Rank-aggregated click through: " + rankAggregatedClickThrough);
-        System.out.println("Number of total events: " + totalEvents);
+        LOGGER.info("Rank-aggregated click through: {}", rankAggregatedClickThrough);
+        LOGGER.info("Number of total events: {}", totalEvents);
 
         if(persist) {
             openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
@@ -203,12 +203,6 @@ public class OpenSearchEvaluationFramework {
         // Denominator is the expected clicks (EC) that an average result would receive after being impressed i times at rank r,
         // and CTR is the average CTR for each position in the results page (up to R) computed over all queries and results.
 
-        /*
-            Number of clicks
-            ----------------
-            number of times shown as a result of query q at rank r
-         */
-
         // Format: datetime, query_id, query, document, judgment
         final Collection<Judgment> judgments = new LinkedList<>();
 
@@ -222,16 +216,23 @@ public class OpenSearchEvaluationFramework {
 
             for(final ClickthroughRate ctr : ctrs) {
 
+                /*
+                    number of clicks
+                    ----------------
+                    v * mean_ctr
+
+                    v = number of times shown for query q at rank r
+                 */
+
                 // The numerator is the total number of clicks received by a query/result pair.
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
 
                 // The denominator is the number of times shown as a result of query q at rank r
+                rankAggregatedClickThrough.get(rank);
 
-                // TODO: Get the number of times this result was shown for this query at rank r.
-                // select count(*) from ubi_queries where object_id = @ and query_response.queryResponseObjectIds contains this query in position rank R.
+
 
             }
-
 
         }
 
@@ -247,13 +248,33 @@ public class OpenSearchEvaluationFramework {
 
         for(final String userQuery : clickthroughRates.keySet()) {
 
-            System.out.println("user_query: " + userQuery);
+            LOGGER.info("user_query: {}", userQuery);
 
             for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
 
-                System.out.println("\t - " + clickthroughRate.toString());
+                LOGGER.info("\t - {}", clickthroughRate.toString());
 
             }
+
+        }
+
+    }
+
+    public void showRankAggregatedClickThrough(final Map<Integer, Double> rankAggregatedClickThrough) {
+
+        for(final int position : rankAggregatedClickThrough.keySet()) {
+
+            LOGGER.info("Position: {}, # clicks: {}", position, rankAggregatedClickThrough.get(position));
+
+        }
+
+    }
+
+    public void showJudgments(final Collection<Judgment> judgments) {
+
+        for(final Judgment judgment : judgments) {
+
+            LOGGER.info(judgment.toString());
 
         }
 

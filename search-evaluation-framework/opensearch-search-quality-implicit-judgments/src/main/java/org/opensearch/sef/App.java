@@ -25,6 +25,7 @@ public class App {
         // Calculate and index the rank-aggregated click-through.
         final Map<Integer, Double> rankAggregatedClickThrough = openSearchEvaluationFramework.getRankAggregatedClickThrough(persist);
         LOGGER.info("Rank-aggregated clickthrough positions: {}", rankAggregatedClickThrough.size());
+        openSearchEvaluationFramework.showRankAggregatedClickThrough(rankAggregatedClickThrough);
 
         // Calculate and index the click-through rate for query/doc pairs.
         final Map<String, Set<ClickthroughRate>> clickthroughRates = openSearchEvaluationFramework.getClickthroughRate(persist);
@@ -34,6 +35,7 @@ public class App {
         // Generate and index the implicit judgments.
         final Collection<Judgment> judgments = openSearchEvaluationFramework.getJudgments(rankAggregatedClickThrough, clickthroughRates, persist);
         LOGGER.info("Number of judgments: {}", judgments.size());
+        //openSearchEvaluationFramework.showJudgments(judgments);
 
     }
 

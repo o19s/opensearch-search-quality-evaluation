@@ -1,5 +1,8 @@
 package org.opensearch.sef.model;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 /**
  * A judgment of a search result's quality for a given query.
  */
@@ -17,6 +20,27 @@ public class Judgment {
         this.query = query;
         this.document = document;
         this.judgment = judgment;
+    }
+
+    @Override
+    public String toString() {
+        return "timestamp: " + timestamp + ", query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + judgment;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).
+                append(timestamp).
+                append(queryId).
+                append(query).
+                append(document).
+                append(judgment).
+                toHashCode();
     }
 
     public long getTimestamp() {

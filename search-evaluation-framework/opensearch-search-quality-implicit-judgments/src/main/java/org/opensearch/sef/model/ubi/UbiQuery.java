@@ -1,5 +1,7 @@
 package org.opensearch.sef.model.ubi;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.opensearch.search.SearchHit;
 
 import java.util.Map;
@@ -31,26 +33,17 @@ public class UbiQuery {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null) {
-            return false;
-        }
-        if (this.getClass() != o.getClass()) {
-            return false;
-        }
-        final UbiQuery ubiQuery = (UbiQuery) o;
-        return queryId.equals(ubiQuery.queryId) && (userQuery.equals(ubiQuery.userQuery));
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
     }
 
     @Override
     public int hashCode() {
-        int result = 17;
-        result = 29 * result + queryId.hashCode();
-        result = 29 * result + userQuery.hashCode();
-        return result;
+        return new HashCodeBuilder(17, 37).
+                append(queryId).
+                append(userQuery).
+                append(clientId).
+                toHashCode();
     }
 
     public long getTimestamp() {

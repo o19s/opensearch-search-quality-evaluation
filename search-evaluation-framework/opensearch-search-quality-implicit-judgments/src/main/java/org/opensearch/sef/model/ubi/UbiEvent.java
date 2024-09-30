@@ -1,9 +1,7 @@
 package org.opensearch.sef.model.ubi;
 
-import org.opensearch.common.io.stream.BytesStreamOutput;
 import org.opensearch.search.SearchHit;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

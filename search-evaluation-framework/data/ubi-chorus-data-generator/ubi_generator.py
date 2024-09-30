@@ -6,8 +6,9 @@ from opensearchpy import OpenSearch
 
 client = OpenSearch("http://localhost:9200", use_ssl=False)
 
+# The random search terms and weighted actions.
 search_terms = ["computer", "laptop", "notebook", "desk", "power plug", "brother", "ink", "hard drive"]
-actions_weights = [10, 5, 1, 3, 4, 1]
+actions_weights = [75, 5, 1, 3, 4, 1]
 actions = ["click", "click_through", "add_to_cart", "watch", "view", "purchase"]
 
 weighted_actions = []
