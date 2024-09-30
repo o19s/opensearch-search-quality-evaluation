@@ -47,7 +47,8 @@ for x in range(number_of_user_queries):
             "ubi": {
                 "client_id": client_id,
                 "query_id": query_id,
-                "user_query": random_search_term
+                "user_query": random_search_term,
+                "object_id_field": "ean"
             }
         }
      }
