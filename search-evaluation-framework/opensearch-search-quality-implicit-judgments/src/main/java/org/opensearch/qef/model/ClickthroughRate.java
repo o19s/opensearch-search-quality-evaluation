@@ -1,4 +1,4 @@
-package org.opensearch.sef.model;
+package org.opensearch.qef.model;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 

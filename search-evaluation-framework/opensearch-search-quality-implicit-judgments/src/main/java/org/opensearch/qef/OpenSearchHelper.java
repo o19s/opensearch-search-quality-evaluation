@@ -1,4 +1,4 @@
-package org.opensearch.sef;
+package org.opensearch.qef;
 
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
@@ -6,19 +6,18 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.RequestOptions;
 import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.common.document.DocumentField;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
-import org.opensearch.sef.model.ClickthroughRate;
-import org.opensearch.sef.model.Judgment;
-import org.opensearch.sef.model.ubi.UbiQuery;
+import org.opensearch.qef.model.ClickthroughRate;
+import org.opensearch.qef.model.Judgment;
+import org.opensearch.qef.model.ubi.UbiQuery;
 
 import java.io.IOException;
 import java.util.*;
 
-import static org.opensearch.sef.OpenSearchEvaluationFramework.*;
+import static org.opensearch.qef.OpenSearchEvaluationFramework.*;
 
 public class OpenSearchHelper {
 

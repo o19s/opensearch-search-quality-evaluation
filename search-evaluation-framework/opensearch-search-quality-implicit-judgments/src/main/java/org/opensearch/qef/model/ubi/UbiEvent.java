@@ -1,8 +1,7 @@
-package org.opensearch.sef.model.ubi;
+package org.opensearch.qef.model.ubi;
 
 import org.opensearch.search.SearchHit;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -19,7 +18,7 @@ public class UbiEvent {
     private final String sessionId;
     private final int position;
 
-    public UbiEvent(final SearchHit hit) throws IOException {
+    public UbiEvent(final SearchHit hit) {
 
         this.actionName = hit.getSourceAsMap().get("action_name").toString();
         this.clientId = hit.getSourceAsMap().get("client_id").toString();

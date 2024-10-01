@@ -1,4 +1,4 @@
-package org.opensearch.sef;
+package org.opensearch.qef.clickmodel.coec;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHost;
@@ -12,18 +12,19 @@ import org.opensearch.client.*;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.WrapperQueryBuilder;
+import org.opensearch.qef.OpenSearchHelper;
+import org.opensearch.qef.clickmodel.ClickModel;
+import org.opensearch.qef.model.ClickthroughRate;
+import org.opensearch.qef.model.Judgment;
+import org.opensearch.qef.model.ubi.UbiEvent;
 import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
-import org.opensearch.sef.model.ClickthroughRate;
-import org.opensearch.sef.model.Judgment;
-import org.opensearch.sef.model.ubi.UbiEvent;
 
 import java.io.IOException;
-import java.io.PushbackReader;
 import java.util.*;
 
-public class OpenSearchEvaluationFramework {
+public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     // OpenSearch indexes.
     public static final String INDEX_UBI_EVENTS = "ubi_events";
@@ -38,13 +39,94 @@ public class OpenSearchEvaluationFramework {
     private final RestHighLevelClient client;
     private final OpenSearchHelper openSearchHelper;
 
-    private static final Logger LOGGER = LogManager.getLogger(OpenSearchEvaluationFramework.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
 
-    public OpenSearchEvaluationFramework() {
+    public CoecClickModel() {
 
         final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
         this.client = new RestHighLevelClient(builder);
         this.openSearchHelper = new OpenSearchHelper(client);
+
+    }
+
+    @Override
+    public Collection<Judgment> getJudgments(CoecClickModelParameters parameters) throws IOException {
+
+        // Calculate and index the rank-aggregated click-through.
+        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough(parameters.isPersist());
+        LOGGER.info("Rank-aggregated clickthrough positions: {}", rankAggregatedClickThrough.size());
+        showRankAggregatedClickThrough(rankAggregatedClickThrough);
+
+        // Calculate and index the click-through rate for query/doc pairs.
+        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate(parameters.isPersist());
+        LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
+        showClickthroughRates(clickthroughRates);
+
+        // Generate and index the implicit judgments.
+        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates, parameters.isPersist());
+        LOGGER.info("Number of judgments: {}", judgments.size());
+        showJudgments(judgments);
+
+        return judgments;
+
+    }
+
+    private Collection<Judgment> calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
+                                               final Map<String, Set<ClickthroughRate>> clickthroughRates,
+                                               final boolean persist) throws IOException {
+
+        // Calculate the COEC.
+        // Numerator is the total number of clicks received by a query/result pair.
+        // Denominator is the expected clicks (EC) that an average result would receive after being impressed i times at rank r,
+        // and CTR is the average CTR for each position in the results page (up to R) computed over all queries and results.
+
+        // Format: datetime, query_id, query, document, judgment
+        final Collection<Judgment> judgments = new LinkedList<>();
+
+        // Up to Rank R
+        final int rank = 1;
+
+        for(final String userQuery : clickthroughRates.keySet()) {
+
+            // The clickthrough rates for this query.
+            final Collection<ClickthroughRate> ctrs = clickthroughRates.get(userQuery);
+
+            for(final ClickthroughRate ctr : ctrs) {
+
+                /*
+                    number of clicks
+                    ----------------
+                    v * mean_ctr
+
+                    v = number of times shown for query q at rank r
+                */
+
+                // queryId is the query.
+                // ctr.getObjectId() is the result.
+                // ctr.getClicks() is the number of clicks for the query/result pair.
+                // This is the numerator.
+                final int totalNumberClicksForQueryResult = ctr.getClicks();
+
+                // TODO: Get all queries having this user_query.
+                final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
+
+                System.out.println("countOfTimesShownAtRank = " + countOfTimesShownAtRank);
+
+                // The denominator is the number of times shown as a result of query q at rank r
+                rankAggregatedClickThrough.get(rank);
+
+
+
+            }
+
+        }
+
+        if(persist) {
+            openSearchHelper.indexJudgments(judgments);
+        }
+
+        return judgments;
+
 
     }
 
@@ -194,64 +276,6 @@ public class OpenSearchEvaluationFramework {
 
     }
 
-    public Collection<Judgment> getJudgments(final Map<Integer, Double> rankAggregatedClickThrough,
-                                             final Map<String, Set<ClickthroughRate>> clickthroughRates,
-                                             final boolean persist) throws IOException {
-
-        // Calculate the COEC.
-        // Numerator is the total number of clicks received by a query/result pair.
-        // Denominator is the expected clicks (EC) that an average result would receive after being impressed i times at rank r,
-        // and CTR is the average CTR for each position in the results page (up to R) computed over all queries and results.
-
-        // Format: datetime, query_id, query, document, judgment
-        final Collection<Judgment> judgments = new LinkedList<>();
-
-        // Up to Rank R
-        final int rank = 1;
-
-        for(final String userQuery : clickthroughRates.keySet()) {
-
-            // The clickthrough rates for this query.
-            final Collection<ClickthroughRate> ctrs = clickthroughRates.get(userQuery);
-
-            for(final ClickthroughRate ctr : ctrs) {
-
-                /*
-                    number of clicks
-                    ----------------
-                    v * mean_ctr
-
-                    v = number of times shown for query q at rank r
-                */
-
-                // queryId is the query.
-                // ctr.getObjectId() is the result.
-                // ctr.getClicks() is the number of clicks for the query/result pair.
-                // This is the numerator.
-                final int totalNumberClicksForQueryResult = ctr.getClicks();
-
-                // TODO: Get all queries having this user_query.
-                final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
-
-                System.out.println("countOfTimesShownAtRank = " + countOfTimesShownAtRank);
-
-                // The denominator is the number of times shown as a result of query q at rank r
-                rankAggregatedClickThrough.get(rank);
-
-
-
-            }
-
-        }
-
-        if(persist) {
-            openSearchHelper.indexJudgments(judgments);
-        }
-
-        return judgments;
-
-    }
-
     public void showClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) {
 
         for(final String userQuery : clickthroughRates.keySet()) {
@@ -273,16 +297,6 @@ public class OpenSearchEvaluationFramework {
         for(final int position : rankAggregatedClickThrough.keySet()) {
 
             LOGGER.info("Position: {}, # clicks: {}", position, rankAggregatedClickThrough.get(position));
-
-        }
-
-    }
-
-    public void showJudgments(final Collection<Judgment> judgments) {
-
-        for(final Judgment judgment : judgments) {
-
-            LOGGER.info(judgment.toString());
 
         }
 

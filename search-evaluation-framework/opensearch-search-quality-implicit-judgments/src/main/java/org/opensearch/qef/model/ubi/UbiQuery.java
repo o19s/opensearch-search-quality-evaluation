@@ -1,4 +1,4 @@
-package org.opensearch.sef.model.ubi;
+package org.opensearch.qef.model.ubi;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;

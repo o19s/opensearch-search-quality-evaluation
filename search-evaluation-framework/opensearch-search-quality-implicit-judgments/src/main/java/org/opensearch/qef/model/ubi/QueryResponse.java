@@ -1,4 +1,4 @@
-package org.opensearch.sef.model.ubi;
+package org.opensearch.qef.model.ubi;
 
 import java.util.List;
 

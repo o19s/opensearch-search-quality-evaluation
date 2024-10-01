@@ -1,9 +1,9 @@
-package org.opensearch.sef;
+package org.opensearch.qef;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.sef.model.ClickthroughRate;
-import org.opensearch.sef.model.Judgment;
+import org.opensearch.qef.model.ClickthroughRate;
+import org.opensearch.qef.model.Judgment;
 
 import java.util.Collection;
 import java.util.Map;
