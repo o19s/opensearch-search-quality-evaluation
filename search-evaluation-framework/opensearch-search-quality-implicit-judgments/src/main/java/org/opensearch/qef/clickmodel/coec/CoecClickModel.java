@@ -36,12 +36,15 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     // UBI event names.
     public static final String EVENT_CLICK = "click";
 
+    private final CoecClickModelParameters parameters;
     private final RestHighLevelClient client;
     private final OpenSearchHelper openSearchHelper;
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
 
-    public CoecClickModel() {
+    public CoecClickModel(final CoecClickModelParameters parameters) {
+
+        this.parameters = parameters;
 
         final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
         this.client = new RestHighLevelClient(builder);
@@ -50,20 +53,20 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     }
 
     @Override
-    public Collection<Judgment> getJudgments(CoecClickModelParameters parameters) throws IOException {
+    public Collection<Judgment> calculateJudgments() throws IOException {
 
         // Calculate and index the rank-aggregated click-through.
-        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough(parameters.isPersist());
+        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough();
         LOGGER.info("Rank-aggregated clickthrough positions: {}", rankAggregatedClickThrough.size());
         showRankAggregatedClickThrough(rankAggregatedClickThrough);
 
         // Calculate and index the click-through rate for query/doc pairs.
-        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate(parameters.isPersist());
+        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate();
         LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
         showClickthroughRates(clickthroughRates);
 
         // Generate and index the implicit judgments.
-        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates, parameters.isPersist());
+        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates);
         LOGGER.info("Number of judgments: {}", judgments.size());
         showJudgments(judgments);
 
@@ -72,8 +75,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     }
 
     private Collection<Judgment> calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
-                                               final Map<String, Set<ClickthroughRate>> clickthroughRates,
-                                               final boolean persist) throws IOException {
+                                               final Map<String, Set<ClickthroughRate>> clickthroughRates) throws IOException {
 
         // Calculate the COEC.
         // Numerator is the total number of clicks received by a query/result pair.
@@ -121,7 +123,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         }
 
-        if(persist) {
+        if(parameters.isPersist()) {
             openSearchHelper.indexJudgments(judgments);
         }
 
@@ -135,7 +137,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
      * @return A map of query_id to the clickthrough rate for each query result.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    public Map<String, Set<ClickthroughRate>> getClickthroughRate(final boolean persist) throws IOException {
+    private Map<String, Set<ClickthroughRate>> getClickthroughRate() throws IOException {
 
         // For each query:
         // - Get each document returned in that query (in the QueryResponse object).
@@ -196,7 +198,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         }
 
-        if(persist) {
+        if(parameters.isPersist()) {
             openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
         }
 
@@ -209,7 +211,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
      * @return A map of positions to clickthrough rates.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    public Map<Integer, Double> getRankAggregatedClickThrough(final boolean persist) throws IOException {
+    public Map<Integer, Double> getRankAggregatedClickThrough() throws IOException {
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
 
@@ -268,7 +270,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         LOGGER.info("Rank-aggregated click through: {}", rankAggregatedClickThrough);
         LOGGER.info("Number of total events: {}", totalEvents);
 
-        if(persist) {
+        if(parameters.isPersist()) {
             openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
         }
 
@@ -276,7 +278,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     }
 
-    public void showClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) {
+    private void showClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) {
 
         for(final String userQuery : clickthroughRates.keySet()) {
 
@@ -292,7 +294,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     }
 
-    public void showRankAggregatedClickThrough(final Map<Integer, Double> rankAggregatedClickThrough) {
+    private void showRankAggregatedClickThrough(final Map<Integer, Double> rankAggregatedClickThrough) {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
 

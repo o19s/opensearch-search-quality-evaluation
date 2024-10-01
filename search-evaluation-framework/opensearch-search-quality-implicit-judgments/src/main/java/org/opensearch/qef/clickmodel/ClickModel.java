@@ -9,7 +9,7 @@ import java.util.Collection;
 
 public abstract class ClickModel<T extends ClickModelParameters> {
 
-    public abstract Collection<Judgment> getJudgments(T parameters) throws IOException;
+    public abstract Collection<Judgment> calculateJudgments() throws IOException;
 
     private static final Logger LOGGER = LogManager.getLogger(ClickModel.class.getName());
 

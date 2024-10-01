@@ -17,7 +17,10 @@ import org.opensearch.qef.model.ubi.UbiQuery;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opensearch.qef.OpenSearchEvaluationFramework.*;
+import static org.opensearch.qef.clickmodel.coec.CoecClickModel.INDEX_JUDGMENT;
+import static org.opensearch.qef.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
+import static org.opensearch.qef.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
+import static org.opensearch.qef.clickmodel.coec.CoecClickModel.INDEX_UBI_QUERIES;
 
 public class OpenSearchHelper {
 
