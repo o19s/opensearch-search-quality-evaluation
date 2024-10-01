@@ -44,7 +44,7 @@ public class UbiEvent {
             // TODO: Why is object a map of String to List<String>?
             final Map<String, List<String>> object = (Map<String, List<String>>) eventAttributes.get("object");
             if(object.containsKey("object_id")) {
-                this.objectId = String.valueOf(object.get("object_id").get(0));
+                this.objectId = String.valueOf(object.get("object_id"));
             } else {
                 this.objectId = null;
             }
