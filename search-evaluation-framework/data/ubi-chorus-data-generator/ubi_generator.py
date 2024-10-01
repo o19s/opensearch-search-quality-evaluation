@@ -19,7 +19,7 @@ for aw, a in zip(actions_weights, actions):
 print("Actions: " + str(actions))
 print("Weighted actions: " + str(weighted_actions))
 
-object_id_field = "ean"
+object_id_field = "primary_ean"
 item_description_field = "title"
 index_name = "ecommerce"
 number_of_user_queries = 1000
@@ -48,7 +48,7 @@ for x in range(number_of_user_queries):
                 "client_id": client_id,
                 "query_id": query_id,
                 "user_query": random_search_term,
-                "object_id_field": "ean"
+                "object_id_field": "primary_ean"
             }
         }
      }
