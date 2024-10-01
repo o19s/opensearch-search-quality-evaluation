@@ -27,8 +27,6 @@ import java.util.*;
 public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     // OpenSearch indexes.
-    public static final String INDEX_UBI_EVENTS = "ubi_events";
-    public static final String INDEX_UBI_QUERIES = "ubi_queries";
     public static final String INDEX_RANK_AGGREGATED_CTR = "rank_aggregated_ctr";
     public static final String INDEX_QUERY_DOC_CTR = "click_through_rates";
     public static final String INDEX_JUDGMENT = "judgments";
