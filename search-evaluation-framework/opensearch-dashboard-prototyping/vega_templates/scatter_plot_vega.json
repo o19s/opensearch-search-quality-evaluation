@@ -1,65 +1,38 @@
 {
-    "$schema": "https://vega.github.io/schema/vega/v5.json",
-    "description": "Scatter plot with interpolated density-based jittering along the x-axis to simulate violin plot behavior.",
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Metrics over time by name",
+    "config": {
+      "header": {
+        "titleFontSize": 18,
+        "titleFontWeight": "bold"
+      }
+    },
+    
+    "data": {"dummy": "empty"},
+    "transform": [{"calculate": "random()", "as": "random"}],
 
-    "width": 600,
-    "height": 600,
-    "padding": 5,
+    "facet": {
+      "title": "Metric",
+      "field": "metric",
+      "type": "nominal",
+      "header":{
+        "labelColor":"steelblue",
+        "labelFontSize":16
+      }  
+    },
+    "columns": 4,
+    "spec": {
+      "mark": "circle",
+      "width": 200,
+      "height": 300,
+      "encoding": {
+        "x": {"field": "search_config", "type": "nominal"},
+        "y": {"field": "value", "type": "quantitative"},
+        "xOffset": {"field": "random", "type": "quantitative"},
+        "tooltip": {"field": "query", "type": "nominal"},
+        "opacity": {"value": 1.0}
+      }
+    }
   
-    "data": [
-    ],
 
-    "scales": [
-        {
-          "name": "y",
-          "type": "linear",
-          "round": true,
-          "nice": true,
-          "zero": true,
-          "domain": {"data": "metrics", "field": "value"},
-          "range": "height"
-        },
-        {
-          "name": "x",
-          "type": "linear",
-          "round": true,
-          "nice": true,
-          "zero": true,
-          "domain": [-1.0, 1.0],
-          "range": "width"
-        }
-      ],
-
-      "axes": [
-        {
-          "scale": "y",
-          "grid": true,
-          "domain": false,
-          "orient": "left",
-          "titlePadding": 5,
-          "title": "Metric Value"
-        }
-      ],    
-
-      "marks": [
-        {
-          "name": "marks",
-          "type": "symbol",
-          "from": {"data": "metrics"},
-          "encode": {
-            "enter": {
-              "x": {"scale": "x" , "field": "jitter_x"},
-              "y": {"scale": "y", "field": "value"},
-              "size": {"value": 100},
-              "shape": {"value": "circle"},
-              "opacity": {"value": 1},
-              "stroke": {"value": "#4682b4"},
-              "tooltip": {"signal": "{\"query\": datum.query}" },
-              "fill": {"value": "#4682b4"}
-            }
-          }
-        }
-      ]
-    
-    
 }

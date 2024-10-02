@@ -1,7 +1,14 @@
+import argparse
 import json
 
 import pandas as pd
 
+plots = ["scatter_plot"]
+
+parser = argparse.ArgumentParser(description='Vega Dashboard generator')
+parser.add_argument("--test", action="store_true")
+parser.add_argument("--plot", required=True, help="plot to generate, one of: f{plots}")
+args = parser.parse_args()
 
 dfm = pd.read_csv("metrics.csv")
 
@@ -15,19 +22,21 @@ def metrics_to_vega_data(df):
             value=row["value"],
         ))
     return dict(
-        name = "metrics_input",
         values = rows,
     )
 
-jmetrics = metrics_to_vega_data(dfm.head(10))
+assert args.plot in plots
 
-with open("vega_templates/scatter_plot_vega.json") as f:
+with open(f"vega_templates/{args.plot}_vega.json") as f:
     dash = json.load(f)
 
-with open("vega_templates/scatter_plot_data.json") as f:
-    data_transform = json.load(f)
-
-
-dash["data"] = [jmetrics] + data_transform["data"] + dash["data"]
+if args.test:
+    jmetrics = metrics_to_vega_data(dfm.head(10))
+    dash["data"] = jmetrics
+else:
+    with open(f"vega_templates/{args.plot}_data.json") as f:
+        jmetrics = json.load(f)
+        dash["data"] = jmetrics["data"]
+        dash["transform"] = jmetrics["transform"] + dash["transform"]
 
 print(json.dumps(dash, indent=2))

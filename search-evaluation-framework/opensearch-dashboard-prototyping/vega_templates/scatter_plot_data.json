@@ -1,72 +1,22 @@
 {
-    "data": [
-        {
-            "name": "binned_metrics",
-            "source": "metrics_input",
-            "transform": [
-              {"type": "formula", "expr": "log(1 + datum.value)", "as": "lvalue"},
-              {
-                "type": "bin",
-                "field": "lvalue",
-                "as": [
-                  "lvalue_0",
-                  "value_1"
-                ],
-                "extent": [
-                  0,
-                  2
-                ],
-                "step": 0.2
-              }
-            ]
+    "data": {
+        "url": {
+          "%context%": "true",
+          "%timefield%": "datetime",
+          "index": "sqe_metrics*",
+          "body": {
+            "size": 10000
+          }    
         },
-        {
-            "name": "counted",
-            "source": "binned_metrics",
-            "transform": [
-              {
-                "type": "aggregate",
-                "groupby": ["lvalue_0"]
-              }
-            ]
-        },
-        {
-            "name": "max_counted",
-            "source": "counted",
-            "transform": [
-              {
-                "type": "aggregate",
-                "fields": ["count"],
-                "ops": ["max"],
-                "as": ["max_count"]
-              },
-              {"type": "formula", "expr": "0", "as": "dummy"}
-            ]
-        },
-        {
-            "name": "metrics",
-            "source": "binned_metrics",
-            "transform": [
-              {
-                "type": "lookup",
-                "from": "counted",
-                "key": "lvalue_0",
-                "fields": ["lvalue_0"],
-                "values": ["count"],
-                "as": ["count"]
-              },
-              {"type": "formula", "expr": "0", "as": "dummy"},
-              {
-                "type": "lookup",
-                "from": "max_counted",
-                "key": "dummy",
-                "fields": ["dummy"],
-                "values": ["max_count"],
-                "as": ["max_count"]
-              },
-              {"type": "formula", "expr": "datum.count/datum.max_count", "as": "norm_counted"},
-              {"type": "formula", "expr": "(random()-0.5)*datum.norm_counted*0.7", "as": "jitter_x"}
-            ]
+        "format":{
+          "type": "json",
+          "property": "hits.hits"
         }
+    },
+    "transform": [
+        { "calculate": "datum._source.search_config", "as": "search_config" },
+        { "calculate": "datum._source.query", "as": "query" },
+        { "calculate": "datum._source.metric", "as": "metric" },
+        { "calculate": "datum._source.value", "as": "value" }
     ]
 }
