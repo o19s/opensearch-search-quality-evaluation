@@ -1,0 +1,37 @@
+{
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "Metrics over time by name",
+    "config": {
+      "header": {
+        "titleFontSize": 18,
+        "titleFontWeight": "bold"
+      }
+    },
+    
+    "data": {"dummy": "empty"},
+    "transform": [{"calculate": "random()", "as": "random"}],
+
+    "facet": {
+      "title": "Metric",
+      "field": "metric",
+      "type": "nominal",
+      "header":{
+        "labelColor":"steelblue",
+        "labelFontSize":16
+      }  
+    },
+    "spec": {
+      "mark": "circle",
+      "width": 400,
+      "height": 200,
+      "encoding": {
+        "y": {"field": "search_config", "type": "nominal"},
+        "x": {"field": "value", "type": "quantitative"},
+        "yOffset": {"field": "random", "type": "quantitative"},
+        "tooltip": {"field": "query", "type": "nominal"},
+        "opacity": {"value": 1.0}
+      }
+    }
+  
+
+}

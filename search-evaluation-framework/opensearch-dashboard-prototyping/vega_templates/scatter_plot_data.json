@@ -1,0 +1,22 @@
+{
+    "data": {
+        "url": {
+          "%context%": "true",
+          "%timefield%": "datetime",
+          "index": "sqe_metrics*",
+          "body": {
+            "size": 10000
+          }    
+        },
+        "format":{
+          "type": "json",
+          "property": "hits.hits"
+        }
+    },
+    "transform": [
+        { "calculate": "datum._source.search_config", "as": "search_config" },
+        { "calculate": "datum._source.query", "as": "query" },
+        { "calculate": "datum._source.metric", "as": "metric" },
+        { "calculate": "datum._source.value", "as": "value" }
+    ]
+}
