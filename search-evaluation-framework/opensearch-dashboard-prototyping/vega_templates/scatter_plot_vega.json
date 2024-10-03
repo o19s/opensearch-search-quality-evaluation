@@ -20,15 +20,14 @@
         "labelFontSize":16
       }  
     },
-    "columns": 4,
     "spec": {
       "mark": "circle",
-      "width": 200,
-      "height": 300,
+      "width": 400,
+      "height": 200,
       "encoding": {
-        "x": {"field": "search_config", "type": "nominal"},
-        "y": {"field": "value", "type": "quantitative"},
-        "xOffset": {"field": "random", "type": "quantitative"},
+        "y": {"field": "search_config", "type": "nominal"},
+        "x": {"field": "value", "type": "quantitative"},
+        "yOffset": {"field": "random", "type": "quantitative"},
         "tooltip": {"field": "query", "type": "nominal"},
         "opacity": {"value": 1.0}
       }

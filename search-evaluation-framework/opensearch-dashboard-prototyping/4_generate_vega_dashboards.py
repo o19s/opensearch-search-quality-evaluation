@@ -3,7 +3,7 @@ import json
 
 import pandas as pd
 
-plots = ["scatter_plot"]
+plots = ["scatter_plot", "violin_plot"]
 
 parser = argparse.ArgumentParser(description='Vega Dashboard generator')
 parser.add_argument("--test", action="store_true")
