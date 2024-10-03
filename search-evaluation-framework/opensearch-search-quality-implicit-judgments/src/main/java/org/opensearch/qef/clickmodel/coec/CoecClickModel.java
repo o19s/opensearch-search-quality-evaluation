@@ -296,10 +296,14 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
 
-            LOGGER.info("Position: {}, # clicks: {}", position, rankAggregatedClickThrough.get(position));
+            LOGGER.info("Position: {}, # ctr: {}", position, round(rankAggregatedClickThrough.get(position)));
 
         }
 
+    }
+
+    private double round(final double value) {
+        return (double) Math.round(value * 1000) / 1000;
     }
 
 }

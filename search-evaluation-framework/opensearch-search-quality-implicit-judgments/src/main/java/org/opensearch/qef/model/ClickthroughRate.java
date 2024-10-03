@@ -31,7 +31,11 @@ public class ClickthroughRate {
 
     @Override
     public String toString() {
-        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + events + ", ctr: " + getClickthroughRate();
+        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + events + ", ctr: " + round(getClickthroughRate());
+    }
+
+    private double round(final double value) {
+        return (double) Math.round(value * 1000) / 1000;
     }
 
     public void logClick() {
