@@ -1,0 +1,1 @@
+curl -X POST "http://localhost:5601/api/saved_objects/_import?overwrite=true" -H "osd-xsrf: true" --form file=@search_dashboard.ndjson
