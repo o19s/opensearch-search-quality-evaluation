@@ -38,7 +38,7 @@ public class ClickthroughRate {
 
     @Override
     public String toString() {
-        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + events + ", ctr: " + Utils.toSignificantFiguresString(getClickthroughRate());
+        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + events + ", ctr: " + Utils.round(getClickthroughRate());
     }
 
     public void logClick() {

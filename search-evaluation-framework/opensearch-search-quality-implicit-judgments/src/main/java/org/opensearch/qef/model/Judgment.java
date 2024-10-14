@@ -28,7 +28,7 @@ public class Judgment {
     }
 
     public String toJudgmentString() {
-        return queryId + ", " + query + ", " + document + ", " + judgment;
+        return queryId + ", " + query + ", " + document + ", " + Utils.round(judgment);
     }
 
     public static void showJudgments(final Collection<Judgment> judgments) {
@@ -43,7 +43,7 @@ public class Judgment {
 
     @Override
     public String toString() {
-        return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + judgment;
+        return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + Utils.round(judgment);
     }
 
     @Override

@@ -4,6 +4,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.qef.model.ClickthroughRate;
 import org.opensearch.qef.model.Judgment;
 
@@ -17,7 +19,9 @@ public class CoecClickModelTest {
     @Test
     public void calculateJudgmentForDoc1() throws IOException {
 
-        final CoecClickModelParameters parameters = new CoecClickModelParameters(false, 20);
+        final RestHighLevelClient restHighLevelClient = Mockito.mock(RestHighLevelClient.class);
+
+        final CoecClickModelParameters parameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
         final CoecClickModel coecClickModel = new CoecClickModel(parameters);
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
@@ -29,7 +33,7 @@ public class CoecClickModelTest {
         final Map<String, Set<ClickthroughRate>> clickthroughRates = new HashMap<>();
         clickthroughRates.put("computer", ctrs);
 
-        final Collection< Judgment> judgments = coecClickModel.calculateJudgments(rankAggregatedClickThrough, clickthroughRates);
+        final Collection< Judgment> judgments = coecClickModel.calculateCoec(rankAggregatedClickThrough, clickthroughRates);
 
         Judgment.showJudgments(judgments);
 
@@ -41,7 +45,9 @@ public class CoecClickModelTest {
     @Test
     public void calculateJudgmentForDoc2() throws IOException {
 
-        final CoecClickModelParameters parameters = new CoecClickModelParameters(false, 20);
+        final RestHighLevelClient restHighLevelClient = Mockito.mock(RestHighLevelClient.class);
+
+        final CoecClickModelParameters parameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
         final CoecClickModel coecClickModel = new CoecClickModel(parameters);
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
@@ -53,7 +59,7 @@ public class CoecClickModelTest {
         final Map<String, Set<ClickthroughRate>> clickthroughRates = new HashMap<>();
         clickthroughRates.put("computer", ctrs);
 
-        final Collection< Judgment> judgments = coecClickModel.calculateJudgments(rankAggregatedClickThrough, clickthroughRates);
+        final Collection< Judgment> judgments = coecClickModel.calculateCoec(rankAggregatedClickThrough, clickthroughRates);
 
         Judgment.showJudgments(judgments);
 

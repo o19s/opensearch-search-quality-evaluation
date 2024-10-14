@@ -1,7 +1,11 @@
 package org.opensearch.qef;
 
+import org.apache.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.qef.clickmodel.coec.CoecClickModel;
 import org.opensearch.qef.clickmodel.coec.CoecClickModelParameters;
 import org.opensearch.qef.model.Judgment;
@@ -17,7 +21,10 @@ public class App {
 
     public static void main(String[] args) throws Exception {
 
-        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(false, 20);
+        final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
+        final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
+
+        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
         final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();

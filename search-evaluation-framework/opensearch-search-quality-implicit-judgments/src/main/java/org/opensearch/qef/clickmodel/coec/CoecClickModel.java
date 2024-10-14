@@ -1,14 +1,15 @@
 package org.opensearch.qef.clickmodel.coec;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.search.ClearScrollRequest;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.action.search.SearchScrollRequest;
-import org.opensearch.client.*;
+import org.opensearch.client.RequestOptions;
+import org.opensearch.client.Requests;
+import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.WrapperQueryBuilder;
@@ -44,9 +45,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     public CoecClickModel(final CoecClickModelParameters parameters) {
 
         this.parameters = parameters;
-
-        final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
-        this.client = new RestHighLevelClient(builder);
+        this.client = parameters.getRestHighLevelClient();
         this.openSearchHelper = new OpenSearchHelper(client);
 
     }
@@ -74,17 +73,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     }
 
-    public Collection<Judgment> calculateJudgments(final Map<Integer, Double> rankAggregatedClickThrough, final Map<String, Set<ClickthroughRate>> clickthroughRates) throws IOException {
-
-        // Generate and index the implicit judgments.
-        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates);
-        LOGGER.info("Number of judgments: {}", judgments.size());
-
-        return judgments;
-
-    }
-
-    private Collection<Judgment> calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
+    public Collection<Judgment> calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
                                                final Map<String, Set<ClickthroughRate>> clickthroughRates) throws IOException {
 
         // Calculate the COEC.
@@ -321,7 +310,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
 
-            LOGGER.info("Position: {}, # ctr: {}", position, Utils.toSignificantFiguresString(rankAggregatedClickThrough.get(position)));
+            LOGGER.info("Position: {}, # ctr: {}", position, Utils.round(rankAggregatedClickThrough.get(position), parameters.getRoundingDigits()));
 
         }
 
