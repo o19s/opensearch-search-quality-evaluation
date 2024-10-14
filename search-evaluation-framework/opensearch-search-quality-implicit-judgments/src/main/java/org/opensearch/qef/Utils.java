@@ -9,12 +9,17 @@ public class Utils {
 
     }
 
-    public static String toSignificantFiguresString(final double value) {
+    public static String toSignificantFiguresString(final double value, final int significantFigures) {
 
-        final int significantFigures = 3;
         final BigDecimal bd = new BigDecimal(value);
 
         return String.format(Locale.US, "%." + significantFigures + "G", bd);
+
+    }
+
+    public static String toSignificantFiguresString(final double value) {
+
+        return toSignificantFiguresString(value, 3);
 
     }
 

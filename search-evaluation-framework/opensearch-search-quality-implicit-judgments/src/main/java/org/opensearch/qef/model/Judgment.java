@@ -2,29 +2,32 @@ package org.opensearch.qef.model;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.opensearch.qef.Utils;
 
 /**
  * A judgment of a search result's quality for a given query.
  */
 public class Judgment {
 
-    private final long timestamp;
     private final String queryId;
     private final String query;
     private final String document;
     private final double judgment;
 
-    public Judgment(final long timestamp, final String queryId, final String query, final String document, final double judgment) {
-        this.timestamp = timestamp;
+    public Judgment(final String queryId, final String query, final String document, final double judgment) {
         this.queryId = queryId;
         this.query = query;
         this.document = document;
         this.judgment = judgment;
     }
 
+    public String toJudgmentString() {
+        return queryId + ":" + query + ":" + document + ":" + Utils.toSignificantFiguresString(judgment, 6);
+    }
+
     @Override
     public String toString() {
-        return "timestamp: " + timestamp + ", query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + judgment;
+        return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + judgment;
     }
 
     @Override
@@ -35,16 +38,11 @@ public class Judgment {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).
-                append(timestamp).
                 append(queryId).
                 append(query).
                 append(document).
                 append(judgment).
                 toHashCode();
-    }
-
-    public long getTimestamp() {
-        return timestamp;
     }
 
     public String getQueryId() {

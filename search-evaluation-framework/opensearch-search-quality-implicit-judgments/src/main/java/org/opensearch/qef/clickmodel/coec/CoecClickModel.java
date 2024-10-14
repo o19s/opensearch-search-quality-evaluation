@@ -83,7 +83,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         // Denominator is the expected clicks (EC) that an average result would receive after being impressed i times at rank r,
         // and CTR is the average CTR for each position in the results page (up to R) computed over all queries and results.
 
-        // Format: datetime, query_id, query, document, judgment
+        // Format: query_id, query, document, judgment
         final Collection<Judgment> judgments = new LinkedList<>();
 
         // Up to Rank R
@@ -104,28 +104,30 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                     v = number of times shown for query q at rank r
                 */
 
-                // queryId is the query.
-                // ctr.getObjectId() is the result.
-                // ctr.getClicks() is the number of clicks for the query/result pair.
+                // rankAggregatedClickThrough
+                // A map of positions to clickthrough rates.
 
-                // Numerator is number of clicks at all ranks.
-                final int totalNumberClicksForQueryResult = ctr.getClicks();
+                // Denominator is average clickthrough rate at R, times, number of times shown for query q at rank r
 
-                for(int rank = 0; rank < maxRank; rank++) {
+                double denominatorSum = 0;
 
+                for(int r = 0; r < maxRank; r++) {
 
+                    final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(r, 0.0);
+                    final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
+
+                    denominatorSum += (meanCtrAtRank * countOfTimesShownAtRank);
 
                 }
 
-//                // TODO: Get all queries having this user_query.
-//                final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
-//
-//                System.out.println("countOfTimesShownAtRank = " + countOfTimesShownAtRank);
-//
-//                // The denominator is the number of times shown as a result of query q at rank r
-//                rankAggregatedClickThrough.get(rank);
+                // Numerator is sum of clicks at all ranks up to the maxRank.
+                final int totalNumberClicksForQueryResult = ctr.getClicks();
 
+                // Divide the numerator by the denominator (value).
+                final double judgment = totalNumberClicksForQueryResult / denominatorSum;
 
+                // Add the judgment to the list.
+                judgments.add(new Judgment("query_id", userQuery, ctr.getObjectId(), judgment));
 
             }
 

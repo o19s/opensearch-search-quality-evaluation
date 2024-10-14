@@ -19,7 +19,7 @@ public abstract class ClickModel<T extends ClickModelParameters> {
     public void showJudgments(final Collection<Judgment> judgments) {
 
         for(final Judgment judgment : judgments) {
-            LOGGER.info(judgment.toString());
+            LOGGER.info(judgment.toJudgmentString());
         }
 
     }

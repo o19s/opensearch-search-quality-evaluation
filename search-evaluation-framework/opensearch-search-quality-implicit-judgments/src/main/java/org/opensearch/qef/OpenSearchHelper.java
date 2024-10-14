@@ -99,11 +99,7 @@ public class OpenSearchHelper {
 
         for(final SearchHit searchHit : response.getHits().getHits()) {
 
-            //System.out.println(searchHit.getSourceAsMap().get("query_response_object_ids"));
-
             final List<String> queryResponseObjectIds = (List<String>) searchHit.getSourceAsMap().get("query_response_object_ids");
-
-            //System.out.println(queryResponseObjectIds.get(rank) + " =?= " + objectId);
 
             if(queryResponseObjectIds.get(rank).equals(objectId)) {
                 countOfTimesShownAtRank++;
@@ -199,7 +195,6 @@ public class OpenSearchHelper {
             for (final Judgment judgment : judgments) {
 
                 final Map<String, Object> jsonMap = new HashMap<>();
-                jsonMap.put("timestamp", judgment.getTimestamp());
                 jsonMap.put("query_id", judgment.getQueryId());
                 jsonMap.put("query", judgment.getQuery());
                 jsonMap.put("document", judgment.getDocument());
