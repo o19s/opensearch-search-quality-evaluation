@@ -24,8 +24,10 @@ public class App {
         final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
         final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
 
+        final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
+
         final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
-        final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters);
+        final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
         Judgment.showJudgments(judgments);

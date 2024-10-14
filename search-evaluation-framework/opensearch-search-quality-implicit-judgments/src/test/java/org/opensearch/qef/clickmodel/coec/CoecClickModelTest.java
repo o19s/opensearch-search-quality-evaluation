@@ -6,11 +6,17 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.qef.OpenSearchHelper;
 import org.opensearch.qef.model.ClickthroughRate;
 import org.opensearch.qef.model.Judgment;
 
 import java.io.IOException;
 import java.util.*;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 public class CoecClickModelTest {
 
@@ -20,9 +26,12 @@ public class CoecClickModelTest {
     public void calculateJudgmentForDoc1() throws IOException {
 
         final RestHighLevelClient restHighLevelClient = Mockito.mock(RestHighLevelClient.class);
+        final OpenSearchHelper openSearchHelper = Mockito.mock(OpenSearchHelper.class);
+
+        when(openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(anyString(), anyString(), anyInt())).thenReturn(250);
 
         final CoecClickModelParameters parameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
-        final CoecClickModel coecClickModel = new CoecClickModel(parameters);
+        final CoecClickModel coecClickModel = new CoecClickModel(parameters, openSearchHelper);
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
         rankAggregatedClickThrough.put(1, 0.450);
@@ -46,9 +55,12 @@ public class CoecClickModelTest {
     public void calculateJudgmentForDoc2() throws IOException {
 
         final RestHighLevelClient restHighLevelClient = Mockito.mock(RestHighLevelClient.class);
+        final OpenSearchHelper openSearchHelper = Mockito.mock(OpenSearchHelper.class);
+
+        when(openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(anyString(), anyString(), anyInt())).thenReturn(124);
 
         final CoecClickModelParameters parameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
-        final CoecClickModel coecClickModel = new CoecClickModel(parameters);
+        final CoecClickModel coecClickModel = new CoecClickModel(parameters, openSearchHelper);
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
         rankAggregatedClickThrough.put(2, 0.175);

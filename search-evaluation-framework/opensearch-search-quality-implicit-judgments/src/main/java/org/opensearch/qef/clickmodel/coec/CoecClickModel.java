@@ -42,11 +42,11 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
 
-    public CoecClickModel(final CoecClickModelParameters parameters) {
+    public CoecClickModel(final CoecClickModelParameters parameters, final OpenSearchHelper openSearchHelper) {
 
         this.parameters = parameters;
         this.client = parameters.getRestHighLevelClient();
-        this.openSearchHelper = new OpenSearchHelper(client);
+        this.openSearchHelper = openSearchHelper;
 
     }
 
