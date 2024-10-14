@@ -78,7 +78,7 @@ for x in range(number_of_user_queries):
             "timestamp": time(),
             "event_attributes": {
                 "object": {
-                    "object_id_field": "ean",
+                    "object_id_field": "primary_ean",
                     "object_id": query_response["hits"]["hits"][random_search_result_index]["_source"][object_id_field],
                     "description": query_response["hits"]["hits"][random_search_result_index]["_source"][item_description_field]
                 },

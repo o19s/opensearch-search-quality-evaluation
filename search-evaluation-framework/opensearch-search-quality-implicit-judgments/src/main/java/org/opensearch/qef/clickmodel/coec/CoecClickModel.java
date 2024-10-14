@@ -13,6 +13,7 @@ import org.opensearch.common.unit.TimeValue;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.qef.OpenSearchHelper;
+import org.opensearch.qef.Utils;
 import org.opensearch.qef.clickmodel.ClickModel;
 import org.opensearch.qef.model.ClickthroughRate;
 import org.opensearch.qef.model.Judgment;
@@ -296,14 +297,10 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
 
-            LOGGER.info("Position: {}, # ctr: {}", position, round(rankAggregatedClickThrough.get(position)));
+            LOGGER.info("Position: {}, # ctr: {}", position, Utils.round(rankAggregatedClickThrough.get(position)));
 
         }
 
-    }
-
-    private double round(final double value) {
-        return (double) Math.round(value * 1000) / 1000;
     }
 
 }
