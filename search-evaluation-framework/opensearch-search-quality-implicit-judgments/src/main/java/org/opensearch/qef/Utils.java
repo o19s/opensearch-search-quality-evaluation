@@ -1,13 +1,21 @@
 package org.opensearch.qef;
 
+import java.math.BigDecimal;
+import java.util.Locale;
+
 public class Utils {
 
     private Utils() {
 
     }
 
-    public static double round(final double value) {
-        return (double) Math.round(value * 1000) / 1000;
+    public static String toSignificantFiguresString(final double value) {
+
+        final int significantFigures = 3;
+        final BigDecimal bd = new BigDecimal(value);
+
+        return String.format(Locale.US, "%." + significantFigures + "G", bd);
+
     }
 
 }

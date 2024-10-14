@@ -297,7 +297,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
 
-            LOGGER.info("Position: {}, # ctr: {}", position, Utils.round(rankAggregatedClickThrough.get(position)));
+            LOGGER.info("Position: {}, # ctr: {}", position, Utils.toSignificantFiguresString(rankAggregatedClickThrough.get(position)));
 
         }
 
