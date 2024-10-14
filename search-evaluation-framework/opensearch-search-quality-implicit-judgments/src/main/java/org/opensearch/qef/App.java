@@ -21,6 +21,7 @@ public class App {
         final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
+        Judgment.showJudgments(judgments);
 
     }
 

@@ -18,6 +18,12 @@ public class ClickthroughRate {
         this.events = 0;
     }
 
+    public ClickthroughRate(final String objectId, final int clicks, final int events) {
+        this.objectId = objectId;
+        this.clicks = clicks;
+        this.events = events;
+    }
+
     @Override
     public boolean equals(Object obj) {
         return EqualsBuilder.reflectionEquals(this, obj);

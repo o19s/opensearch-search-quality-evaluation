@@ -2,12 +2,18 @@ package org.opensearch.qef.model;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.qef.Utils;
+
+import java.util.Collection;
 
 /**
  * A judgment of a search result's quality for a given query.
  */
 public class Judgment {
+
+    private static final Logger LOGGER = LogManager.getLogger(Judgment.class.getName());
 
     private final String queryId;
     private final String query;
@@ -22,7 +28,15 @@ public class Judgment {
     }
 
     public String toJudgmentString() {
-        return queryId + ":" + query + ":" + document + ":" + Utils.toSignificantFiguresString(judgment, 6);
+        return queryId + ":" + query + ":" + document + ":" + judgment;
+    }
+
+    public static void showJudgments(final Collection<Judgment> judgments) {
+
+        for(final Judgment judgment : judgments) {
+            LOGGER.info(judgment.toJudgmentString());
+        }
+
     }
 
     @Override

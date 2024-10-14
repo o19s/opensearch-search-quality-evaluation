@@ -16,12 +16,4 @@ public abstract class ClickModel<T extends ClickModelParameters> {
 
     private static final Logger LOGGER = LogManager.getLogger(ClickModel.class.getName());
 
-    public void showJudgments(final Collection<Judgment> judgments) {
-
-        for(final Judgment judgment : judgments) {
-            LOGGER.info(judgment.toJudgmentString());
-        }
-
-    }
-
 }

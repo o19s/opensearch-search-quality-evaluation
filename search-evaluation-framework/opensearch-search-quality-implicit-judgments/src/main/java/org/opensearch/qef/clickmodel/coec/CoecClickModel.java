@@ -69,7 +69,16 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         // Generate and index the implicit judgments.
         final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates);
         LOGGER.info("Number of judgments: {}", judgments.size());
-        showJudgments(judgments);
+
+        return judgments;
+
+    }
+
+    public Collection<Judgment> calculateJudgments(final Map<Integer, Double> rankAggregatedClickThrough, final Map<String, Set<ClickthroughRate>> clickthroughRates) throws IOException {
+
+        // Generate and index the implicit judgments.
+        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates);
+        LOGGER.info("Number of judgments: {}", judgments.size());
 
         return judgments;
 
@@ -96,19 +105,6 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
             for(final ClickthroughRate ctr : ctrs) {
 
-                /*
-                    number of clicks
-                    ----------------
-                    v * mean_ctr
-
-                    v = number of times shown for query q at rank r
-                */
-
-                // rankAggregatedClickThrough
-                // A map of positions to clickthrough rates.
-
-                // Denominator is average clickthrough rate at R, times, number of times shown for query q at rank r
-
                 double denominatorSum = 0;
 
                 for(int r = 0; r < maxRank; r++) {
@@ -116,12 +112,19 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                     final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(r, 0.0);
                     final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
 
+//                    System.out.println("rank = " + r);
+//                    System.out.println("\tmeanCtrAtRank = " + meanCtrAtRank);
+//                    System.out.println("\tcountOfTimesShownAtRank = " + countOfTimesShownAtRank);
+
                     denominatorSum += (meanCtrAtRank * countOfTimesShownAtRank);
 
                 }
 
                 // Numerator is sum of clicks at all ranks up to the maxRank.
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
+
+//                System.out.println("numerator = " + totalNumberClicksForQueryResult);
+//                System.out.println("denominator = " + denominatorSum);
 
                 // Divide the numerator by the denominator (value).
                 final double judgment = totalNumberClicksForQueryResult / denominatorSum;
