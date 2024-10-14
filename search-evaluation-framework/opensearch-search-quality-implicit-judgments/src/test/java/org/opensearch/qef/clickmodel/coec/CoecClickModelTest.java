@@ -15,7 +15,7 @@ public class CoecClickModelTest {
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModelTest.class.getName());
 
     @Test
-    public void calculateJudgments() throws IOException {
+    public void calculateJudgmentForDoc1() throws IOException {
 
         final CoecClickModelParameters parameters = new CoecClickModelParameters(false, 20);
         final CoecClickModel coecClickModel = new CoecClickModel(parameters);
@@ -27,14 +27,38 @@ public class CoecClickModelTest {
         ctrs.add(new ClickthroughRate("object_id_1", 110, 250));
 
         final Map<String, Set<ClickthroughRate>> clickthroughRates = new HashMap<>();
-        clickthroughRates.put("query_id", ctrs);
+        clickthroughRates.put("computer", ctrs);
 
         final Collection< Judgment> judgments = coecClickModel.calculateJudgments(rankAggregatedClickThrough, clickthroughRates);
 
         Judgment.showJudgments(judgments);
 
         Assertions.assertEquals(1, judgments.size());
-        Assertions.assertEquals(judgments.iterator().next().getJudgment(), 0.9777777777777777);
+        Assertions.assertEquals(0.9777777777777777, judgments.iterator().next().getJudgment(), 0.01);
+
+    }
+
+    @Test
+    public void calculateJudgmentForDoc2() throws IOException {
+
+        final CoecClickModelParameters parameters = new CoecClickModelParameters(false, 20);
+        final CoecClickModel coecClickModel = new CoecClickModel(parameters);
+
+        final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
+        rankAggregatedClickThrough.put(2, 0.175);
+
+        final Set<ClickthroughRate> ctrs = new HashSet<>();
+        ctrs.add(new ClickthroughRate("object_id_2", 31, 124));
+
+        final Map<String, Set<ClickthroughRate>> clickthroughRates = new HashMap<>();
+        clickthroughRates.put("computer", ctrs);
+
+        final Collection< Judgment> judgments = coecClickModel.calculateJudgments(rankAggregatedClickThrough, clickthroughRates);
+
+        Judgment.showJudgments(judgments);
+
+        Assertions.assertEquals(1, judgments.size());
+        Assertions.assertEquals(1.4285714285714286, judgments.iterator().next().getJudgment(), 0.01);
 
     }
 

@@ -130,6 +130,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 final double judgment = totalNumberClicksForQueryResult / denominatorSum;
 
                 // Add the judgment to the list.
+                // TODO: What to do for query ID when the values are per user_query instead?
                 judgments.add(new Judgment("query_id", userQuery, ctr.getObjectId(), judgment));
 
             }

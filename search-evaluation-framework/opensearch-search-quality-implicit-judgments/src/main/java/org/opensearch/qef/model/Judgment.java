@@ -28,10 +28,12 @@ public class Judgment {
     }
 
     public String toJudgmentString() {
-        return queryId + ":" + query + ":" + document + ":" + judgment;
+        return queryId + ", " + query + ", " + document + ", " + judgment;
     }
 
     public static void showJudgments(final Collection<Judgment> judgments) {
+
+        LOGGER.info("query_id, query, document, judgment");
 
         for(final Judgment judgment : judgments) {
             LOGGER.info(judgment.toJudgmentString());
