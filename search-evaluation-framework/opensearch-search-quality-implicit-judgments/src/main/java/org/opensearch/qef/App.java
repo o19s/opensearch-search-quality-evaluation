@@ -17,7 +17,7 @@ public class App {
 
     public static void main(String[] args) throws Exception {
 
-        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(false);
+        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(false, 20);
         final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();

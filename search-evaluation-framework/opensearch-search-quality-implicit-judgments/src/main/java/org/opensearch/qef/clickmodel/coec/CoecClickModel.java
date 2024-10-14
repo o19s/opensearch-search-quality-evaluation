@@ -54,13 +54,15 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     @Override
     public Collection<Judgment> calculateJudgments() throws IOException {
 
+        final int maxRank = parameters.getMaxRank();
+
         // Calculate and index the rank-aggregated click-through.
-        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough();
+        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough(maxRank);
         LOGGER.info("Rank-aggregated clickthrough positions: {}", rankAggregatedClickThrough.size());
         showRankAggregatedClickThrough(rankAggregatedClickThrough);
 
         // Calculate and index the click-through rate for query/doc pairs.
-        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate();
+        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate(maxRank);
         LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
         showClickthroughRates(clickthroughRates);
 
@@ -85,7 +87,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         final Collection<Judgment> judgments = new LinkedList<>();
 
         // Up to Rank R
-        final int rank = 1;
+        final int maxRank = 20;
 
         for(final String userQuery : clickthroughRates.keySet()) {
 
@@ -105,16 +107,23 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 // queryId is the query.
                 // ctr.getObjectId() is the result.
                 // ctr.getClicks() is the number of clicks for the query/result pair.
-                // This is the numerator.
+
+                // Numerator is number of clicks at all ranks.
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
 
-                // TODO: Get all queries having this user_query.
-                final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
+                for(int rank = 0; rank < maxRank; rank++) {
 
-                System.out.println("countOfTimesShownAtRank = " + countOfTimesShownAtRank);
 
-                // The denominator is the number of times shown as a result of query q at rank r
-                rankAggregatedClickThrough.get(rank);
+
+                }
+
+//                // TODO: Get all queries having this user_query.
+//                final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
+//
+//                System.out.println("countOfTimesShownAtRank = " + countOfTimesShownAtRank);
+//
+//                // The denominator is the number of times shown as a result of query q at rank r
+//                rankAggregatedClickThrough.get(rank);
 
 
 
@@ -128,15 +137,15 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         return judgments;
 
-
     }
 
     /**
      * Gets the clickthrough rates for each query and its results.
+     * @param maxRank The maximum rank position to consider.
      * @return A map of query_id to the clickthrough rate for each query result.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    private Map<String, Set<ClickthroughRate>> getClickthroughRate() throws IOException {
+    private Map<String, Set<ClickthroughRate>> getClickthroughRate(final int maxRank) throws IOException {
 
         // For each query:
         // - Get each document returned in that query (in the QueryResponse object).
@@ -164,26 +173,30 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
                 final UbiEvent ubiEvent = new UbiEvent(hit);
 
-                // We need to the hash of the query_id because two users can both search
-                // for "computer" and those searches will have different query IDs, but they are the same search.
-                final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
-                // LOGGER.debug("user_query = {}", userQuery);
+                if(ubiEvent.getPosition() <= maxRank) {
 
-                // Get the clicks for this queryId from the map, or an empty list if this is a new query.
-                final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
+                    // We need to the hash of the query_id because two users can both search
+                    // for "computer" and those searches will have different query IDs, but they are the same search.
+                    final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
+                    // LOGGER.debug("user_query = {}", userQuery);
 
-                // Get the ClickthroughRate object for the object that was interacted with.
-                final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getObjectId()));
+                    // Get the clicks for this queryId from the map, or an empty list if this is a new query.
+                    final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
 
-                if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
-                    clickthroughRate.logClick();
-                } else {
-                    clickthroughRate.logEvent();
+                    // Get the ClickthroughRate object for the object that was interacted with.
+                    final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getObjectId()));
+
+                    if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
+                        clickthroughRate.logClick();
+                    } else {
+                        clickthroughRate.logEvent();
+                    }
+
+                    clickthroughRates.add(clickthroughRate);
+                    queriesToClickthroughRates.put(userQuery, clickthroughRates);
+                    // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
+
                 }
-
-                clickthroughRates.add(clickthroughRate);
-                queriesToClickthroughRates.put(userQuery, clickthroughRates);
-                // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
 
             }
 
@@ -207,10 +220,11 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     /**
      * Calculate the rank-aggregated click through from the UBI events.
+     * @param maxRank The maximum rank position to consider.
      * @return A map of positions to clickthrough rates.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    public Map<Integer, Double> getRankAggregatedClickThrough() throws IOException {
+    public Map<Integer, Double> getRankAggregatedClickThrough(final int maxRank) throws IOException {
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
 
@@ -236,9 +250,13 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
                 final UbiEvent ubiEvent = new UbiEvent(searchHit);
 
-                // Increment the number of clicks for the position.
-                if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
-                    rankAggregatedClickThrough.merge(ubiEvent.getPosition(), 1.0, Double::sum);
+                if(ubiEvent.getPosition() <= maxRank) {
+
+                    // Increment the number of clicks for the position.
+                    if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
+                        rankAggregatedClickThrough.merge(ubiEvent.getPosition(), 1.0, Double::sum);
+                    }
+
                 }
 
             }
