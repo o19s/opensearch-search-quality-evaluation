@@ -14,10 +14,8 @@
     "timestamp" : 1.7276472197111678E9,
     "event_attributes" : {
       "object" : {
-        "object_id_field" : "ean",
-        "object_id" : [
-          "0731304258193"
-        ],
+        "object_id_field" : "primary_ean",
+        "object_id" : "0731304258193",
         "description" : "APC IT Power Distribution Module 3 Pole 5 Wire 32A IEC309 620cm power distribution unit (PDU)"
       },
       "position" : {

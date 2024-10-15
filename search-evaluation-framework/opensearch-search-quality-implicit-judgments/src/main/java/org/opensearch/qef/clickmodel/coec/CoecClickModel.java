@@ -177,30 +177,32 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 final Gson gson = new Gson();
                 final UbiEvent ubiEvent = gson.fromJson(hit.getSourceAsString(), UbiEvent.class);
 
-                //final UbiEvent ubiEvent = new UbiEvent(hit);
+                if(ubiEvent.getEventAttributes() != null && ubiEvent.getEventAttributes().getPosition() != null) {
 
-                if(ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
+                    if (ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
 
-                    // We need to the hash of the query_id because two users can both search
-                    // for "computer" and those searches will have different query IDs, but they are the same search.
-                    final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
-                    // LOGGER.debug("user_query = {}", userQuery);
+                        // We need to the hash of the query_id because two users can both search
+                        // for "computer" and those searches will have different query IDs, but they are the same search.
+                        final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
+                        // LOGGER.debug("user_query = {}", userQuery);
 
-                    // Get the clicks for this queryId from the map, or an empty list if this is a new query.
-                    final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
+                        // Get the clicks for this queryId from the map, or an empty list if this is a new query.
+                        final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
 
-                    // Get the ClickthroughRate object for the object that was interacted with.
-                    final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
+                        // Get the ClickthroughRate object for the object that was interacted with.
+                        final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
 
-                    if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
-                        clickthroughRate.logClick();
-                    } else {
-                        clickthroughRate.logEvent();
+                        if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
+                            clickthroughRate.logClick();
+                        } else {
+                            clickthroughRate.logEvent();
+                        }
+
+                        clickthroughRates.add(clickthroughRate);
+                        queriesToClickthroughRates.put(userQuery, clickthroughRates);
+                        // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
+
                     }
-
-                    clickthroughRates.add(clickthroughRate);
-                    queriesToClickthroughRates.put(userQuery, clickthroughRates);
-                    // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
 
                 }
 
@@ -256,11 +258,15 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
                 final UbiEvent ubiEvent = gson.fromJson(searchHit.getSourceAsString(), UbiEvent.class);
 
-                if(ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
+                if(ubiEvent.getEventAttributes() != null && ubiEvent.getEventAttributes().getPosition() != null) {
 
-                    // Increment the number of clicks for the position.
-                    if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
-                        rankAggregatedClickThrough.merge(ubiEvent.getEventAttributes().getPosition().getIndex(), 1.0, Double::sum);
+                    if (ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
+
+                        // Increment the number of clicks for the position.
+                        if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
+                            rankAggregatedClickThrough.merge(ubiEvent.getEventAttributes().getPosition().getIndex(), 1.0, Double::sum);
+                        }
+
                     }
 
                 }
