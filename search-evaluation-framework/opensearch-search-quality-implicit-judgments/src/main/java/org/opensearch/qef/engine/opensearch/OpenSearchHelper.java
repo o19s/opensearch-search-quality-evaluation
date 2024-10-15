@@ -1,5 +1,6 @@
-package org.opensearch.qef;
+package org.opensearch.qef.engine.opensearch;
 
+import com.google.gson.Gson;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.search.SearchRequest;
@@ -10,7 +11,7 @@ import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.qef.model.ClickthroughRate;
 import org.opensearch.qef.model.Judgment;
-import org.opensearch.qef.model.ubi.UbiQuery;
+import org.opensearch.qef.model.ubi.query.UbiQuery;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
@@ -30,6 +31,7 @@ import static org.opensearch.qef.clickmodel.coec.CoecClickModel.INDEX_UBI_QUERIE
 public class OpenSearchHelper {
 
     private final RestHighLevelClient client;
+    private final Gson gson = new Gson();
 
     // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
     private static final Map<String, String> userQueryCache = new HashMap<>();
@@ -83,7 +85,7 @@ public class OpenSearchHelper {
         // Will only be a single result.
         final SearchHit hit = response.getHits().getHits()[0];
 
-        return new UbiQuery(hit);
+        return gson.fromJson(hit.getSourceAsString(), UbiQuery.class);
 
     }
 

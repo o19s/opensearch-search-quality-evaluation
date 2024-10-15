@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opensearch.client.RestHighLevelClient;
-import org.opensearch.qef.OpenSearchHelper;
+import org.opensearch.qef.engine.opensearch.OpenSearchHelper;
 import org.opensearch.qef.model.ClickthroughRate;
 import org.opensearch.qef.model.Judgment;
 

@@ -1,5 +1,6 @@
 package org.opensearch.qef.clickmodel.coec;
 
+import com.google.gson.Gson;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,12 +14,13 @@ import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.WrapperQueryBuilder;
-import org.opensearch.qef.OpenSearchHelper;
-import org.opensearch.qef.Utils;
+import org.opensearch.qef.engine.opensearch.OpenSearchHelper;
+import org.opensearch.qef.util.MathUtils;
 import org.opensearch.qef.clickmodel.ClickModel;
 import org.opensearch.qef.model.ClickthroughRate;
 import org.opensearch.qef.model.Judgment;
-import org.opensearch.qef.model.ubi.UbiEvent;
+import org.opensearch.qef.model.ubi.event.UbiEvent;
+import org.opensearch.qef.util.UserQueryHash;
 import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -39,6 +41,9 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     private final CoecClickModelParameters parameters;
     private final RestHighLevelClient client;
     private final OpenSearchHelper openSearchHelper;
+
+    private final UserQueryHash userQueryHash = new UserQueryHash();
+    private final Gson gson = new Gson();
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
 
@@ -118,9 +123,12 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 // Divide the numerator by the denominator (value).
                 final double judgment = totalNumberClicksForQueryResult / denominatorSum;
 
+                // Hash the user query to get a query ID.
+                final int queryId = userQueryHash.getHash(userQuery);
+
                 // Add the judgment to the list.
                 // TODO: What to do for query ID when the values are per user_query instead?
-                judgments.add(new Judgment("query_id", userQuery, ctr.getObjectId(), judgment));
+                judgments.add(new Judgment(String.valueOf(queryId), userQuery, ctr.getObjectId(), judgment));
 
             }
 
@@ -166,9 +174,12 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
             for (final SearchHit hit : searchHits) {
 
-                final UbiEvent ubiEvent = new UbiEvent(hit);
+                final Gson gson = new Gson();
+                final UbiEvent ubiEvent = gson.fromJson(hit.getSourceAsString(), UbiEvent.class);
 
-                if(ubiEvent.getPosition() <= maxRank) {
+                //final UbiEvent ubiEvent = new UbiEvent(hit);
+
+                if(ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
 
                     // We need to the hash of the query_id because two users can both search
                     // for "computer" and those searches will have different query IDs, but they are the same search.
@@ -179,7 +190,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                     final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
 
                     // Get the ClickthroughRate object for the object that was interacted with.
-                    final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getObjectId()));
+                    final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
 
                     if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
                         clickthroughRate.logClick();
@@ -243,13 +254,13 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
             for (final SearchHit searchHit : searchHits) {
 
-                final UbiEvent ubiEvent = new UbiEvent(searchHit);
+                final UbiEvent ubiEvent = gson.fromJson(searchHit.getSourceAsString(), UbiEvent.class);
 
-                if(ubiEvent.getPosition() <= maxRank) {
+                if(ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
 
                     // Increment the number of clicks for the position.
                     if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
-                        rankAggregatedClickThrough.merge(ubiEvent.getPosition(), 1.0, Double::sum);
+                        rankAggregatedClickThrough.merge(ubiEvent.getEventAttributes().getPosition().getIndex(), 1.0, Double::sum);
                     }
 
                 }
@@ -310,7 +321,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
 
-            LOGGER.info("Position: {}, # ctr: {}", position, Utils.round(rankAggregatedClickThrough.get(position), parameters.getRoundingDigits()));
+            LOGGER.info("Position: {}, # ctr: {}", position, MathUtils.round(rankAggregatedClickThrough.get(position), parameters.getRoundingDigits()));
 
         }
 

@@ -1,4 +1,4 @@
-package org.opensearch.qef.model.ubi;
+package org.opensearch.qef.model.ubi.query;
 
 import java.util.List;
 

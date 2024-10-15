@@ -8,6 +8,7 @@ import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.qef.clickmodel.coec.CoecClickModel;
 import org.opensearch.qef.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.qef.engine.opensearch.OpenSearchHelper;
 import org.opensearch.qef.model.Judgment;
 
 import java.util.Collection;
@@ -26,7 +27,7 @@ public class App {
 
         final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
 
-        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
+        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, true, 20);
         final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();

@@ -4,7 +4,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.qef.Utils;
+import org.opensearch.qef.util.MathUtils;
 
 import java.util.Collection;
 
@@ -28,7 +28,7 @@ public class Judgment {
     }
 
     public String toJudgmentString() {
-        return queryId + ", " + query + ", " + document + ", " + Utils.round(judgment);
+        return queryId + ", " + query + ", " + document + ", " + MathUtils.round(judgment);
     }
 
     public static void showJudgments(final Collection<Judgment> judgments) {
@@ -43,7 +43,7 @@ public class Judgment {
 
     @Override
     public String toString() {
-        return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + Utils.round(judgment);
+        return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + MathUtils.round(judgment);
     }
 
     @Override

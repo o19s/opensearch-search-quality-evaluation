@@ -1,7 +1,7 @@
 package org.opensearch.qef.model;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.opensearch.qef.Utils;
+import org.opensearch.qef.util.MathUtils;
 
 /**
  * A query result and its number of clicks and total events.
@@ -38,7 +38,7 @@ public class ClickthroughRate {
 
     @Override
     public String toString() {
-        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + events + ", ctr: " + Utils.round(getClickthroughRate());
+        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + events + ", ctr: " + MathUtils.round(getClickthroughRate());
     }
 
     public void logClick() {
