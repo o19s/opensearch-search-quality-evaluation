@@ -1,23 +1,5 @@
-buildscript {
-    repositories {
-        mavenCentral()
-    }
-    dependencies {}
-}
-
 allprojects {
-    group 'org.o19s'
+    group 'org.opensearch'
     version '1.0.0-SNAPSHOT'
 }
 
-apply plugin: 'java'
-sourceCompatibility = 17
-targetCompatibility = 17
-
-project(':opensearch-search-quality-evaluation-plugin') {
-
-}
-
-project(':opensearch-search-quality-implicit-judgments') {
-
-}

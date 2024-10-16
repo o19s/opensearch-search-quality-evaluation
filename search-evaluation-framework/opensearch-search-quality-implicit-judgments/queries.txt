@@ -1,0 +1,12 @@
+GET ubi_queries/_search
+GET ubi_queries/_count
+
+GET ubi_events/_search
+GET ubi_events/_count
+
+
+GET rank_aggregated_ctr/_search
+
+GET click_through_rates/_search
+
+GET judgments/_search

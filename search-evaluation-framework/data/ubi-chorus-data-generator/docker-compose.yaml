@@ -22,7 +22,20 @@ services:
     networks:
       - opensearch
 
+  dashboards:
+    image: opensearchproject/opensearch-dashboards:2.17.1
+    container_name: dashboards
+    ports:
+      - 5601:5601
+    expose:
+      - 5601
+    environment:
+      OPENSEARCH_HOSTS: '["http://opensearch:9200"]'
+      DISABLE_SECURITY_DASHBOARDS_PLUGIN: "true"
+    depends_on:
+      - opensearch
+    networks:
+      - opensearch
+
 networks:
   opensearch:
-#volumes:
-#  opensearch_data:
