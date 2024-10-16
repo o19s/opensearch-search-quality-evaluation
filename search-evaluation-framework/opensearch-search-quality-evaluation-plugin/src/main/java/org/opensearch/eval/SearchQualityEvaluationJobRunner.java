@@ -8,11 +8,15 @@
  */
 package org.opensearch.eval;
 
+import org.apache.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.Client;
+import org.opensearch.client.RestClient;
+import org.opensearch.client.RestClientBuilder;
+import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.core.action.ActionListener;
@@ -20,7 +24,13 @@ import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.utils.LockService;
+import org.opensearch.qef.clickmodel.coec.CoecClickModel;
+import org.opensearch.qef.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.qef.engine.opensearch.OpenSearchHelper;
+import org.opensearch.qef.model.Judgment;
 import org.opensearch.threadpool.ThreadPool;
+
+import java.util.Collection;
 
 public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
@@ -105,12 +115,13 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
                     LOGGER.info("Message from inside the job.");
 
-                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.SCHEDULED_JOBS_INDEX_NAME)
-                            .id("100")
-                            .source(searchQualityEvaluationJobParameter.toXContent(JsonXContent.contentBuilder(), null))
-                            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-
-                    client.index(indexRequest);
+                    // TODO: Change to low-level client instead?
+                    final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
+                    final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
+                    final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
+                    final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, true, 20);
+                    final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
+                    final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
 
                     lockService.release(
                         lock,

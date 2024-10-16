@@ -34,7 +34,10 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationRestHandler.class);
 
-    public static final String WATCH_INDEX_URI = "/_plugins/search_quality_eval/watch";
+    /**
+     * URL for the implicit judgment generation.
+     */
+    public static final String SEARCH_QUALITY_EVAL_JUDGMENTS_URL = "/_plugins/search_quality_eval/judgments";
 
     @Override
     public String getName() {
@@ -44,8 +47,8 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
     @Override
     public List<Route> routes() {
         return List.of(
-                new Route(RestRequest.Method.POST, WATCH_INDEX_URI),
-                new Route(RestRequest.Method.DELETE, WATCH_INDEX_URI));
+                new Route(RestRequest.Method.POST, SEARCH_QUALITY_EVAL_JUDGMENTS_URL),
+                new Route(RestRequest.Method.DELETE, SEARCH_QUALITY_EVAL_JUDGMENTS_URL));
     }
 
     @Override

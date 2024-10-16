@@ -22,6 +22,9 @@ ext {
 group = 'org.opensearch'
 version = "${evalVersion}"
 
+sourceCompatibility = 17
+targetCompatibility = 17
+
 // disabling some unnecessary validations for this plugin
 testingConventions.enabled = false
 forbiddenApis.ignoreFailures = true
@@ -49,6 +52,8 @@ repositories {
 }
 
 dependencies {
+    implementation project(':opensearch-search-quality-implicit-judgments')
+    compileOnly "org.opensearch.client:opensearch-rest-high-level-client:${opensearchVersion}"
     runtimeOnly "org.apache.logging.log4j:log4j-core:${versions.log4j}"
     compileOnly "org.opensearch:opensearch-job-scheduler:2.16.0.0"
     compileOnly "org.opensearch:opensearch-job-scheduler-spi:2.16.0.0"

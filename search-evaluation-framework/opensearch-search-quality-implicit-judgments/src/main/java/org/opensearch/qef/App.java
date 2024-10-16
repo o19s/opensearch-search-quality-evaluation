@@ -14,7 +14,7 @@ import org.opensearch.qef.model.Judgment;
 import java.util.Collection;
 
 /**
- * Entry point for the OpenSearch Evaluation Framework.
+ * Entry point for the OpenSearch Evaluation Framework standalone app.
  */
 public class App {
 
