@@ -31,7 +31,7 @@ public class App {
         final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
-        Judgment.showJudgments(judgments);
+        //Judgment.showJudgments(judgments);
 
     }
 
