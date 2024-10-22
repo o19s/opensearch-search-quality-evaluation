@@ -12,6 +12,8 @@ import org.opensearch.client.Requests;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.QueryBuilder;
+import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.qef.clickmodel.ClickModel;
 import org.opensearch.qef.engine.opensearch.OpenSearchHelper;
@@ -28,7 +30,12 @@ import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Set;
 
 public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
@@ -65,22 +72,20 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         final int maxRank = parameters.getMaxRank();
 
         // Calculate and index the rank-aggregated click-through.
-        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough(maxRank);
+        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough();
         LOGGER.info("Rank-aggregated clickthrough positions: {}", rankAggregatedClickThrough.size());
         showRankAggregatedClickThrough(rankAggregatedClickThrough);
 
-//        // Calculate and index the click-through rate for query/doc pairs.
-//        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate(maxRank);
-//        LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
-//        showClickthroughRates(clickthroughRates);
-//
-//        // Generate and index the implicit judgments.
-//        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates);
-//        LOGGER.info("Number of judgments: {}", judgments.size());
+        // Calculate and index the click-through rate for query/doc pairs.
+        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate(maxRank);
+        LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
+        showClickthroughRates(clickthroughRates);
 
-       // return judgments;
+        // Generate and index the implicit judgments.
+        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates);
+        LOGGER.info("Number of judgments: {}", judgments.size());
 
-        return null;
+        return judgments;
 
     }
 
@@ -236,189 +241,71 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     /**
      * Calculate the rank-aggregated click through from the UBI events.
-     * @param maxRank The maximum rank position to consider.
      * @return A map of positions to clickthrough rates.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    public Map<Integer, Double> getRankAggregatedClickThrough(final int maxRank) throws IOException {
+    public Map<Integer, Double> getRankAggregatedClickThrough() throws IOException {
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
 
-        // TODO: Change this to a query over just clicks and views (configurable)
-        // over some past time period, and allow for selecting which application.
+        // TODO: Allow for a time period and for a specific application.
 
-        // Aggregation query to get event counts per position.
-        /**
-         * GET ubi_events/_search
-         * {
-         *   "size": 0,
-         *   "aggs": {
-         *     "By_Action": {
-         *       "terms": {
-         *         "field": "action_name"
-         *       },
-         *       "aggs": {
-         *         "By_Position": {
-         *           "terms": {
-         *             "field": "event_attributes.position.index"
-         *           }
-         *         }
-         *       }
-         *     }
-         *   }
-         * }
-         */
+        final QueryBuilder findRangeNumber = QueryBuilders.rangeQuery("event_attributes.position.index").lte(parameters.getMaxRank());
+        final QueryBuilder queryBuilder = new BoolQueryBuilder().must(findRangeNumber);
 
+        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.index").size(parameters.getMaxRank());
+        final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).size(parameters.getMaxRank());
 
-        TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.index");
-        TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator);
-
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        //searchSourceBuilder.query(QueryBuilders.queryStringQuery(myQueryString));
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(queryBuilder);
         searchSourceBuilder.aggregation(actionNameAggregation);
         searchSourceBuilder.from(0);
-        searchSourceBuilder.size(0);
+        searchSourceBuilder.size(100);
 
-        SearchRequest searchRequest = new SearchRequest(INDEX_UBI_EVENTS);
-        searchRequest.source(searchSourceBuilder);
-
+        final SearchRequest searchRequest = new SearchRequest(INDEX_UBI_EVENTS).source(searchSourceBuilder);
         final SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
 
-//        for(final Aggregation aggregation : searchResponse.getAggregations().asList()) {
-//            System.out.println("aggregation name: " + aggregation.getName());
-//            for(final String s : aggregation.getMetadata().keySet()) {
-//                System.out.println("\ts = " + aggregation.getMetadata().get(s));
-//            }
-//        }
-
-        final Map<Integer, Long> clickCounts = new HashMap<>();
-        final Map<Integer, Long> viewCounts = new HashMap<>();
+        final Map<Integer, Double> clickCounts = new HashMap<>();
+        final Map<Integer, Double> viewCounts = new HashMap<>();
 
         final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
         final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
         for(final Terms.Bucket actionBucket : actionBuckets) {
 
-            //System.out.println("Key: " + actionBucket.getKey() + " Count: " + actionBucket.getDocCount());
-
+            // Handle the "click" bucket.
             if(StringUtils.equalsIgnoreCase(actionBucket.getKey().toString(), EVENT_CLICK)) {
-                //clicks = actionBucket.getDocCount();
 
                 final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
-                    //System.out.println("\tKey: " + positionBucket.getKey() + " Count: " + positionBucket.getDocCount());
-                    clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), positionBucket.getDocCount());
+                    clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
             }
 
+            // Handle the "view" bucket.
             if(StringUtils.equalsIgnoreCase(actionBucket.getKey().toString(), EVENT_VIEW)) {
-                //views = actionBucket.getDocCount();
 
                 final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
-                    //System.out.println("\tKey: " + positionBucket.getKey() + " Count: " + positionBucket.getDocCount());
-                    viewCounts.put(Integer.valueOf(positionBucket.getKey().toString()), positionBucket.getDocCount());
+                    viewCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
             }
 
         }
 
-        for(final Integer i : clickCounts.keySet()) {
-            System.out.println("Position = " + i + ", Click Count = " + clickCounts.get(i));
+        for(final Integer x : clickCounts.keySet()) {
+            //System.out.println("Position = " + x + ", Click Count = " + clickCounts.get(x) + ", Event Count = " + viewCounts.get(x));
+            rankAggregatedClickThrough.put(x, clickCounts.get(x) / viewCounts.get(x));
         }
 
-        System.out.println("==================");
-
-        for(final Integer i : viewCounts.keySet()) {
-            System.out.println("Position = " + i + ", View Count = " + viewCounts.get(i));
+        if(parameters.isPersist()) {
+            openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
         }
-
-        System.out.println("==================");
-
-        for(int x = 0; x < clickCounts.size(); x++) {
-            if(clickCounts.get(x) != null) {
-                clickCounts.put(x, clickCounts.get(x) / (clickCounts.get(x) + viewCounts.get(x)));
-            }
-        }
-
-        System.out.println("==================");
-
-        for(final Integer i : clickCounts.keySet()) {
-            System.out.println("Position = " + i + ", CTR = " + clickCounts.get(i));
-        }
-
-//        System.out.println("---------------------");
-//
-//        Terms terms2 = searchResponse.getAggregations().get("By_Position");
-//        Collection<? extends Terms.Bucket> buckets2 = terms2.getBuckets();
-//        for (Terms.Bucket x : buckets2) {
-//            System.out.println("Key: " + x.getKey() + " Count: " + x.getDocCount());
-//        }
-
-        //String scrollId = searchResponse.getScrollId();
-//        SearchHit[] searchHits = searchResponse.getHits().getHits();
-//
-//        long totalEvents = 0;
-//
-//        while (searchHits != null && searchHits.length > 0) {
-//
-//            for (final SearchHit searchHit : searchHits) {
-//
-//                final UbiEvent ubiEvent = gson.fromJson(searchHit.getSourceAsString(), UbiEvent.class);
-//
-//                if(ubiEvent.getEventAttributes() != null && ubiEvent.getEventAttributes().getPosition() != null) {
-//
-//                    if (ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
-//
-//                        // Increment the number of clicks for the position.
-//                        if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
-//                            rankAggregatedClickThrough.merge(ubiEvent.getEventAttributes().getPosition().getIndex(), 1.0, Double::sum);
-//                        }
-//
-//                    }
-//
-//                }
-//
-//            }
-
-            // Sum up the total number of events.
-         //   totalEvents += searchHits.length;
-
-//            final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-//            scrollRequest.scroll(scroll);
-//
-//            searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
-//            scrollId = searchResponse.getScrollId();
-
-           // searchHits = searchResponse.getHits().getHits();
-
-   //     }
-
-//        // TODO: Change the denominator to be from totalEvents to
-//        // impressions at rank r (to avoid double counting).
-//        // Map from rank to number of impressions.
-//
-//        // Now for each position, divide its value by the total number of events.
-//        // This is the click-through rate.
-//        for(final Integer i : rankAggregatedClickThrough.keySet()) {
-//            rankAggregatedClickThrough.put(i, rankAggregatedClickThrough.get(i) / totalEvents);
-//        }
-//
-//        final ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
-//        clearScrollRequest.addScrollId(scrollId);
-//        client.clearScroll(clearScrollRequest, RequestOptions.DEFAULT);
-//
-//        LOGGER.info("Rank-aggregated click through: {}", rankAggregatedClickThrough);
-//        LOGGER.info("Number of total events: {}", totalEvents);
-//
-//        if(parameters.isPersist()) {
-//            openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
-//        }
 
         return rankAggregatedClickThrough;
 

@@ -115,8 +115,6 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
                     LOGGER.info("Message from inside the job.");
 
-                    client.search()
-
                     // TODO: Change to low-level client instead?
                     final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
                     final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
