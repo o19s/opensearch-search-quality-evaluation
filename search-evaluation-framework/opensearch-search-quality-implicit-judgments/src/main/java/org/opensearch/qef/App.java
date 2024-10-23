@@ -27,7 +27,7 @@ public class App {
 
         final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
 
-        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, true, 20);
+        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, false, 20);
         final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();

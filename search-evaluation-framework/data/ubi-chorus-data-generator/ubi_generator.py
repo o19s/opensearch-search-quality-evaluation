@@ -69,7 +69,7 @@ for x in range(number_of_user_queries):
         #print("random_action_index = " + str(random_action_index))
         #print("random_search_result_index = " + str(random_search_result_index))
 
-        ubi_event = {
+        ubi_click_event = {
             "action_name": weighted_actions[random_action_index],
             "client_id": client_id,
             "query_id": query_id,
@@ -88,13 +88,42 @@ for x in range(number_of_user_queries):
                 "session_id": session_id
             }
         }
-    
-        event_id = str(uuid.uuid4())
-        
-        response = client.index(
-            body = ubi_event,
+
+        client.index(
+            body = ubi_click_event,
             index = "ubi_events",
-            id = event_id,
+            id = str(uuid.uuid4()),
             refresh = True
         )
+
+        if weighted_actions[random_action_index] == "click":
+
+            # If the random action is a click, make a "view", too, because every click must have a view.
+            ubi_view_event = {
+                "action_name": "view",
+                "client_id": client_id,
+                "query_id": query_id,
+                "message_type": None,
+                "message": None,
+                "timestamp": time(),
+                "event_attributes": {
+                    "object": {
+                        "object_id_field": "primary_ean",
+                        "object_id": query_response["hits"]["hits"][random_search_result_index]["_source"][object_id_field],
+                        "description": query_response["hits"]["hits"][random_search_result_index]["_source"][item_description_field]
+                    },
+                    "position": {
+                        "index": random_search_result_index
+                    },
+                    "session_id": session_id
+                }
+            }
+
+            client.index(
+                body = ubi_view_event,
+                index = "ubi_events",
+                id = str(uuid.uuid4()),
+                refresh = True
+            )
+
 
