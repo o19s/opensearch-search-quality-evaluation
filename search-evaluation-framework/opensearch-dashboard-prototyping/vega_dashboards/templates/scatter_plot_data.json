@@ -15,6 +15,7 @@
     },
     "transform": [
         { "calculate": "datum._source.search_config", "as": "search_config" },
+        { "calculate": "datum._source.datetime", "as": "datetime" },
         { "calculate": "datum._source.query", "as": "query" },
         { "calculate": "datum._source.metric", "as": "metric" },
         { "calculate": "datum._source.value", "as": "value" }

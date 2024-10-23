@@ -27,8 +27,12 @@
       "encoding": {
         "y": {"field": "search_config", "type": "nominal"},
         "x": {"field": "value", "type": "quantitative"},
+        "color": {"field": "search_config", "type": "nominal"},
         "yOffset": {"field": "random", "type": "quantitative"},
-        "tooltip": {"field": "query", "type": "nominal"},
+        "tooltip": [
+          {"field": "query", "type": "nominal"},
+          {"field": "datetime", "type": "nominal"}
+        ],
         "opacity": {"value": 1.0}
       }
     }
