@@ -20,6 +20,7 @@
         "labelFontSize":16
       }  
     },
+    "resolve": {"scale": {"x": "independent"}},
     "spec": {
       "mark": "circle",
       "width": 400,
