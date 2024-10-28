@@ -5,8 +5,7 @@ import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
-import org.opensearch.client.RequestOptions;
-import org.opensearch.client.RestHighLevelClient;
+import org.opensearch.client.Client;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.qef.model.ClickthroughRate;
@@ -30,13 +29,13 @@ import static org.opensearch.qef.clickmodel.coec.CoecClickModel.INDEX_UBI_QUERIE
 
 public class OpenSearchHelper {
 
-    private final RestHighLevelClient client;
+    private final Client client;
     private final Gson gson = new Gson();
 
     // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
     private static final Map<String, String> userQueryCache = new HashMap<>();
 
-    public OpenSearchHelper(final RestHighLevelClient client) {
+    public OpenSearchHelper(final Client client) {
         this.client = client;
     }
 
@@ -46,7 +45,7 @@ public class OpenSearchHelper {
      * @return The user query.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
-    public String getUserQuery(final String queryId) throws IOException {
+    public String getUserQuery(final String queryId) throws Exception {
 
         // If it's in the cache just get it and return it.
         if(userQueryCache.containsKey(queryId)) {
@@ -66,7 +65,7 @@ public class OpenSearchHelper {
      * @param queryId The query ID.
      * @return A {@link UbiQuery} object for the given query ID.
      */
-    public UbiQuery getQueryFromQueryId(final String queryId) throws IOException {
+    public UbiQuery getQueryFromQueryId(final String queryId) throws Exception {
 
         final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
@@ -80,7 +79,7 @@ public class OpenSearchHelper {
         final String[] indexes = {INDEX_UBI_QUERIES};
 
         final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
-        final SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+        final SearchResponse response = client.search(searchRequest).get();
 
         // Will only be a single result.
         final SearchHit hit = response.getHits().getHits()[0];
@@ -89,7 +88,7 @@ public class OpenSearchHelper {
 
     }
 
-    public int getCountOfQueriesForUserQueryHavingResultInRankR(final String userQuery, final String objectId, final int rank) throws IOException {
+    public int getCountOfQueriesForUserQueryHavingResultInRankR(final String userQuery, final String objectId, final int rank) throws Exception {
 
         int countOfTimesShownAtRank = 0;
 
@@ -102,7 +101,7 @@ public class OpenSearchHelper {
         final String[] indexes = {INDEX_UBI_QUERIES};
 
         final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
-        final SearchResponse response = client.search(searchRequest, RequestOptions.DEFAULT);
+        final SearchResponse response = client.search(searchRequest).get();
 
         for(final SearchHit searchHit : response.getHits().getHits()) {
 
@@ -123,7 +122,7 @@ public class OpenSearchHelper {
      * @param rankAggregatedClickThrough A map of position to clickthrough values.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
-    public void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws IOException {
+    public void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws Exception {
 
         if(!rankAggregatedClickThrough.isEmpty()) {
 
@@ -143,7 +142,7 @@ public class OpenSearchHelper {
 
             }
 
-            client.bulk(request, RequestOptions.DEFAULT);
+            client.bulk(request).get();
 
         }
 
@@ -154,7 +153,7 @@ public class OpenSearchHelper {
      * @param clickthroughRates A map of query IDs to a collection of {@link ClickthroughRate} objects.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
-    public void indexClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) throws IOException {
+    public void indexClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         if(!clickthroughRates.isEmpty()) {
 
@@ -180,7 +179,7 @@ public class OpenSearchHelper {
 
             }
 
-            client.bulk(request, RequestOptions.DEFAULT);
+            client.bulk(request).get();
 
         }
 
@@ -191,7 +190,7 @@ public class OpenSearchHelper {
      * @param judgments A collection of {@link Judgment judgments}.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
-    public void indexJudgments(final Collection<Judgment> judgments) throws IOException {
+    public void indexJudgments(final Collection<Judgment> judgments) throws Exception {
 
         if(!judgments.isEmpty()) {
 
@@ -213,7 +212,7 @@ public class OpenSearchHelper {
 
             }
 
-            client.bulk(request, RequestOptions.DEFAULT);
+            client.bulk(request).get();
 
         }
 

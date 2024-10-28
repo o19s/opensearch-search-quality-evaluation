@@ -7,9 +7,8 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.action.search.SearchScrollRequest;
-import org.opensearch.client.RequestOptions;
+import org.opensearch.client.Client;
 import org.opensearch.client.Requests;
-import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
@@ -53,8 +52,8 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     private final OpenSearchHelper openSearchHelper;
 
     private final UserQueryHash userQueryHash = new UserQueryHash();
-    private final Gson gson = new Gson();
-    private final RestHighLevelClient client;
+    //private final RestHighLevelClient client;
+    private final Client client;
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
 
@@ -62,12 +61,12 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         this.parameters = parameters;
         this.openSearchHelper = openSearchHelper;
-        this.client = parameters.getRestHighLevelClient();
+        this.client = parameters.getClient();
 
     }
 
     @Override
-    public Collection<Judgment> calculateJudgments() throws IOException {
+    public Collection<Judgment> calculateJudgments() throws Exception {
 
         final int maxRank = parameters.getMaxRank();
 
@@ -90,7 +89,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     }
 
     public Collection<Judgment> calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
-                                               final Map<String, Set<ClickthroughRate>> clickthroughRates) throws IOException {
+                                               final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         // Calculate the COEC.
         // Numerator is the total number of clicks received by a query/result pair.
@@ -159,7 +158,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
      * @return A map of user_query to the clickthrough rate for each query result.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    private Map<String, Set<ClickthroughRate>> getClickthroughRate(final int maxRank) throws IOException {
+    private Map<String, Set<ClickthroughRate>> getClickthroughRate(final int maxRank) throws Exception {
 
         // For each query:
         // - Get each document returned in that query (in the QueryResponse object).
@@ -204,7 +203,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 .source(searchSourceBuilder)
                 .scroll(scroll);
 
-        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        SearchResponse searchResponse = client.search(searchRequest).get();
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
 
@@ -243,7 +242,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
             final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
             scrollRequest.scroll(scroll);
 
-            searchResponse = client.scroll(scrollRequest, RequestOptions.DEFAULT);
+            searchResponse = client.searchScroll(scrollRequest).get();
             scrollId = searchResponse.getScrollId();
 
             searchHits = searchResponse.getHits().getHits();
@@ -263,7 +262,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
      * @return A map of positions to clickthrough rates.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    public Map<Integer, Double> getRankAggregatedClickThrough() throws IOException {
+    public Map<Integer, Double> getRankAggregatedClickThrough() throws Exception {
 
         final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
 
@@ -282,7 +281,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         searchSourceBuilder.size(100);
 
         final SearchRequest searchRequest = new SearchRequest(INDEX_UBI_EVENTS).source(searchSourceBuilder);
-        final SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        final SearchResponse searchResponse = client.search(searchRequest).get();
 
         final Map<Integer, Double> clickCounts = new HashMap<>();
         final Map<Integer, Double> viewCounts = new HashMap<>();

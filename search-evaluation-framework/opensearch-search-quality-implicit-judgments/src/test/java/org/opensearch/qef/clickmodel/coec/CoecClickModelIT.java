@@ -23,7 +23,7 @@ public class CoecClickModelIT {
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModelIT.class.getName());
 
     @Test
-    public void calculateJudgmentForDoc1() throws IOException {
+    public void calculateJudgmentForDoc1() throws Exception {
 
         final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
         final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);

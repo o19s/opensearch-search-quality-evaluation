@@ -3,6 +3,7 @@ package org.opensearch.qef;
 import org.apache.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.client.OpenSearchClient;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
@@ -22,8 +23,11 @@ public class App {
 
     public static void main(String[] args) throws Exception {
 
-        final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
-        final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
+        final HttpHost host = new HttpHost("http", 9200, "localhost");
+        final OpenSearchTransport transport = builder.build();
+        OpenSearchClient client = new OpenSearchClient(transport);
+
+        final ApacheHttpClient5TransportBuilder builder = ApacheHttpClient5TransportBuilder.builder(host);
 
         final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
 

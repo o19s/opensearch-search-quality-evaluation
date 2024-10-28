@@ -116,13 +116,13 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     LOGGER.info("Message from inside the job.");
 
                     // TODO: Change to low-level client instead?
-                    final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
-                    final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
-                    final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
+                   // final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
+                   // final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
+                    final OpenSearchHelper openSearchHelper = new OpenSearchHelper(client);
 
 
 
-                    final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, true, 20);
+                    final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(client, true, 20);
                     final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
                     final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
 
