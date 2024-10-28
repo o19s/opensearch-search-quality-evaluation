@@ -165,9 +165,36 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         // - Get each document returned in that query (in the QueryResponse object).
         // - Calculate the click-through rate for the document. (clicks/impressions)
 
-        // TODO: Only consider events that are VIEW or CLICK.
+        // TODO: Use maxRank in place of the hardcoded 20.
+        // TODO: Allow for a time period and for a specific application.
 
-        final String query = "{\"match_all\":{}}";
+        final String query = """
+              {
+                "bool": {
+                  "should": [
+                    {
+                      "term": {
+                        "action_name": "click"
+                      }
+                    },
+                    {
+                      "term": {
+                        "action_name": "view"
+                      }
+                    }
+                  ],
+                  "must": [
+                    {
+                      "range": {
+                        "event_attributes.position.index": {
+                          "lte": 20
+                        }
+                      }
+                    }
+                  ]
+                }
+              }""";
+
         final BoolQueryBuilder queryBuilder = new BoolQueryBuilder().must(new WrapperQueryBuilder(query));
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(1000);
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
@@ -190,34 +217,26 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 final Gson gson = new Gson();
                 final UbiEvent ubiEvent = gson.fromJson(hit.getSourceAsString(), UbiEvent.class);
 
-                if(ubiEvent.getEventAttributes() != null && ubiEvent.getEventAttributes().getPosition() != null) {
+                // We need to the hash of the query_id because two users can both search
+                // for "computer" and those searches will have different query IDs, but they are the same search.
+                final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
+                // LOGGER.debug("user_query = {}", userQuery);
 
-                    if (ubiEvent.getEventAttributes().getPosition().getIndex() <= maxRank) {
+                // Get the clicks for this queryId from the map, or an empty list if this is a new query.
+                final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
 
-                        // We need to the hash of the query_id because two users can both search
-                        // for "computer" and those searches will have different query IDs, but they are the same search.
-                        final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
-                        // LOGGER.debug("user_query = {}", userQuery);
+                // Get the ClickthroughRate object for the object that was interacted with.
+                final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
 
-                        // Get the clicks for this queryId from the map, or an empty list if this is a new query.
-                        final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
-
-                        // Get the ClickthroughRate object for the object that was interacted with.
-                        final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
-
-                        if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
-                            clickthroughRate.logClick();
-                        } else {
-                            clickthroughRate.logEvent();
-                        }
-
-                        clickthroughRates.add(clickthroughRate);
-                        queriesToClickthroughRates.put(userQuery, clickthroughRates);
-                        // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
-
-                    }
-
+                if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
+                    clickthroughRate.logClick();
+                } else {
+                    clickthroughRate.logEvent();
                 }
+
+                clickthroughRates.add(clickthroughRate);
+                queriesToClickthroughRates.put(userQuery, clickthroughRates);
+                // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
 
             }
 
