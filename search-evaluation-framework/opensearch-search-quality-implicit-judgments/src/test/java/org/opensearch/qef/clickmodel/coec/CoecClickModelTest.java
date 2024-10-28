@@ -98,7 +98,7 @@ public class CoecClickModelTest {
         rankAggregatedClickThrough.put(3, 0.075);
 
         final Set<ClickthroughRate> ctrs = new HashSet<>();
-        ctrs.add(new ClickthroughRate("object_id_2", 30, 240));
+        ctrs.add(new ClickthroughRate("object_id_3", 30, 240));
 
         final Map<String, Set<ClickthroughRate>> clickthroughRates = new HashMap<>();
         clickthroughRates.put("computer", ctrs);

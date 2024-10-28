@@ -120,6 +120,8 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
                     final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
 
+
+
                     final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, true, 20);
                     final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
                     final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
