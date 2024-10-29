@@ -30,6 +30,22 @@ parser.add_argument('--open-search-url', help='Open Search URL', default="http:/
 
 args = parser.parse_args()
 
+
+def sampling_weight(df):
+    """
+    Compute sampling weights in order to make average rating 1.0.
+
+    The sampling weights oversample the zero rating examples in order to bring the average to 1.0.
+    This helps making the final empirical ratings to be close to the original ratings under COEC.
+    """
+    sum_non_z = df[df.rating>0.0].rating.sum()
+    num_z = (df.rating==0.0).sum()
+    num_non_z = ((df.rating>0.0).sum())
+    alpha = (sum_non_z - num_non_z) / num_z
+    weights = np.where(df.rating>0.0, 1, alpha)
+    return weights
+
+
 def load_esci(esci_path):
     console.print("[bold cyan]Loading ESCI dataset[/bold cyan]")
     df_examples = pd.read_parquet(esci_path + '/shopping_queries_dataset_examples.parquet')
@@ -42,6 +58,7 @@ def load_esci(esci_path):
     score_mapping = {"E": 1.5, "S": 1.0, "C": 0.5, "I": 0.0}
     console.print("Mapping used to obtain numerical rating:", score_mapping)
     df_examples["rating"] = df_examples.esci_label.apply(lambda x: score_mapping[x])
+    df_examples["weights"] = sampling_weight(df_examples)
 
     return df_examples
 
@@ -96,9 +113,11 @@ def make_top_queries(gen_config, df_examples):
 
 
 def make_query_sampler(gen_config, top_queries, query, df_g):
-    dfn = df_g.sort_values("ranking", ascending=False)
-    a = 100 * dfn.rating * gen_config.click_rates + 1
-    b = 100 - a + 99
+    # dfn = df_g.sort_values("ranking", ascending=False)
+    # sorting is disabled to avoid increasing ctr at top positions (we want the ratings as close to the originals)
+    dfn = df_g
+    a = 1000 * dfn.rating * gen_config.click_rates + 0.5
+    b = 1000 - a + 49.5
     dfn["p"] = np.random.beta(a, b) # use beta to make 0 rating results have sometimes a click
     # dfn["p"] = dfn.rating * gen_config.click_rates
     dfn["position"] = np.arange(dfn.p.size)
@@ -123,9 +142,9 @@ def make_result_sample_per_query(gen_config, top_queries, df_examples):
      - exp_rating: actual expected rating after sampling (after taking into account result ranking)
     """
     judgments = df_examples[df_examples["query"].isin(top_queries["query"].values)]
-    judgments = judgments[["query", "product_id", "rating"]].groupby(["query", "product_id"]).mean().reset_index()
+    judgments = judgments[["query", "product_id", "rating", "weights"]].groupby(["query", "product_id"]).mean().reset_index()
     judgments["ranking"] = judgments.rating + np.random.uniform(-3, 3, judgments.rating.size)
-    judgments = judgments.groupby("query").sample(gen_config.num_search_results)
+    judgments = judgments.groupby("query").sample(gen_config.num_search_results, weights="weights")
     
     judg_dict = {}
     for q, df_g in judgments.groupby("query"):
@@ -307,20 +326,23 @@ def simulate_events(gen_config, top_queries, result_sample_per_query):
     
     return queries, events
 
+def main(args):
+    esci_df = load_esci(args.esci_path)
+    gen_config = create_gen_config(args)
+    top_queries, judg_dict = prepare_data_generation(gen_config, esci_df)
 
-esci_df = load_esci(args.esci_path)
-gen_config = create_gen_config(args)
-top_queries, judg_dict = prepare_data_generation(gen_config, esci_df)
+    if not args.generate_csv and not args.generate_open_search:
+        console.print("[red bold]You have to specify either --generate-csv or --generate-open-search")
+        return
 
-if not args.generate_csv and not args.generate_open_search:
-    console.print("[red bold]You have to specify either --generate-csv or --generate-open-search")
+    queries, events = simulate_events(gen_config, top_queries, judg_dict)
 
-queries, events = simulate_events(gen_config, top_queries, judg_dict)
+    if args.generate_csv:
+        console.print("Saving events to [bold]ubi_events.csv[/bold]")
+        events.to_csv("ubi_events.csv", index=False)
+        console.print("Saving queries to [bold]ubi_queries.csv[/bold]")
+        queries.to_csv("ubi_queries.csv", index=False)
+    elif args.generate_open_search:
+        populate_open_search(args, queries, events)
 
-if args.generate_csv:
-    console.print("Saving events to [bold]ubi_events.csv[/bold]")
-    events.to_csv("ubi_events.csv", index=False)
-    console.print("Saving queries to [bold]ubi_queries.csv[/bold]")
-    queries.to_csv("ubi_queries.csv", index=False)
-elif args.generate_open_search:
-    populate_open_search(args, queries, events)
+main(args)
