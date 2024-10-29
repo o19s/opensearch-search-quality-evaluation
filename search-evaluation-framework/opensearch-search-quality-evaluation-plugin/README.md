@@ -38,5 +38,5 @@ curl -s -X POST "http://localhost:9200/_plugins/search_quality_eval/judgments?id
 See the created job:
 
 ```
-curl -s "http://localhost:9200/.scheduler_search_quality_eval/_search"
+curl -s http://localhost:9200/.scheduler_search_quality_eval/_search
 ```

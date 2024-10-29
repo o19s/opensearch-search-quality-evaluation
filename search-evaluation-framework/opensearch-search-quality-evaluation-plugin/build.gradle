@@ -53,10 +53,10 @@ repositories {
 
 dependencies {
     implementation project(':opensearch-search-quality-implicit-judgments')
-    compileOnly "org.opensearch.client:opensearch-rest-high-level-client:${opensearchVersion}"
+    runtimeOnly "org.opensearch.client:opensearch-rest-high-level-client:${opensearchVersion}"
     runtimeOnly "org.apache.logging.log4j:log4j-core:${versions.log4j}"
-    compileOnly "org.opensearch:opensearch-job-scheduler:2.16.0.0"
-    compileOnly "org.opensearch:opensearch-job-scheduler-spi:2.16.0.0"
+    compileOnly "org.opensearch:opensearch-job-scheduler:${opensearchVersion}.0"
+    compileOnly "org.opensearch:opensearch-job-scheduler-spi:${opensearchVersion}.0"
     compileOnly "com.fasterxml.jackson.core:jackson-annotations:${versions.jackson}"
     compileOnly "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_databind}"
     compileOnly "org.apache.httpcomponents:httpcore:${versions.httpcore}"

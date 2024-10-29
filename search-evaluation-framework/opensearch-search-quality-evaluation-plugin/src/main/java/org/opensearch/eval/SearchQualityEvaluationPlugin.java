@@ -65,6 +65,7 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
             final Supplier<RepositoriesService> repositoriesServiceSupplier
     ) {
 
+        LOGGER.info("Creating search evaluation framework components");
         final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
         jobRunner.setClusterService(clusterService);
         jobRunner.setThreadPool(threadPool);

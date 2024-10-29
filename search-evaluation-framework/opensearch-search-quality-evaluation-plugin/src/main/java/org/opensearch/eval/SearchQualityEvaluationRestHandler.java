@@ -110,12 +110,11 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
         } else if (request.method().equals(RestRequest.Method.DELETE)) {
 
-            // delete job parameter doc from index
             final String id = request.param("id");
             final DeleteRequest deleteRequest = new DeleteRequest().index(SearchQualityEvaluationPlugin.SCHEDULED_JOBS_INDEX_NAME).id(id);
 
             return restChannel -> {
-                client.delete(deleteRequest, new ActionListener<DeleteResponse>() {
+                client.delete(deleteRequest, new ActionListener<>() {
                     @Override
                     public void onResponse(final DeleteResponse deleteResponse) {
                         restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Job deleted."));

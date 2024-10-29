@@ -134,8 +134,8 @@ public class CoecClickModelIT {
 
         final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
 
-        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, true, 20);
-        final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
+        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, 20);
+        final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters);
 
         final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
         Judgment.showJudgments(judgments);

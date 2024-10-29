@@ -58,10 +58,10 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
 
-    public CoecClickModel(final CoecClickModelParameters parameters, final OpenSearchHelper openSearchHelper) {
+    public CoecClickModel(final CoecClickModelParameters parameters) {
 
         this.parameters = parameters;
-        this.openSearchHelper = openSearchHelper;
+        this.openSearchHelper = new OpenSearchHelper(parameters.getRestHighLevelClient());
         this.client = parameters.getRestHighLevelClient();
 
     }
@@ -214,7 +214,6 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
             for (final SearchHit hit : searchHits) {
 
-                final Gson gson = new Gson();
                 final UbiEvent ubiEvent = gson.fromJson(hit.getSourceAsString(), UbiEvent.class);
 
                 // We need to the hash of the query_id because two users can both search
