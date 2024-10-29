@@ -15,6 +15,9 @@ repositories {
     maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
+sourceCompatibility = 17
+targetCompatibility = 17
+
 test {
     useJUnitPlatform()
 }

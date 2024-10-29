@@ -26,7 +26,6 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
     public static final String ENABLED_TIME_FILED_READABLE = "enabled_time_field";
     public static final String LOCK_DURATION_SECONDS = "lock_duration_seconds";
     public static final String JITTER = "jitter";
-    public static final String INDEX_TO_WATCH = "index_to_watch";
 
     // Properties from ScheduledJobParameter.
     private String jobName;
@@ -95,10 +94,6 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
         return jitter;
     }
 
-    public String getIndexToWatch() {
-        return this.indexToWatch;
-    }
-
     public void setJobName(String jobName) {
         this.jobName = jobName;
     }
@@ -139,8 +134,7 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
         builder
             .field(NAME_FIELD, this.jobName)
             .field(ENABLED_FILED, this.enabled)
-            .field(SCHEDULE_FIELD, this.schedule)
-            .field(INDEX_TO_WATCH, this.indexToWatch);
+            .field(SCHEDULE_FIELD, this.schedule);
 
         if (this.enabledTime != null) {
             builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());

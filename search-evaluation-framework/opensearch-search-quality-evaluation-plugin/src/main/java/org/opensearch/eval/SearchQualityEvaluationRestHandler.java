@@ -56,7 +56,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
         if (request.method().equals(RestRequest.Method.POST)) {
 
-            // compose SampleJobParameter object from request
+            // Get the job parameters from the request.
             final String id = request.param("id");
             final String indexName = request.param("index");
             final String jobName = request.param("job_name");
@@ -73,7 +73,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             final SearchQualityEvaluationJobParameter jobParameter = new SearchQualityEvaluationJobParameter(
                 jobName,
                 indexName,
-                new IntervalSchedule(Instant.now(), Integer.parseInt(interval), ChronoUnit.MINUTES),
+                new IntervalSchedule(Instant.ofEpochMilli(1730171983000L), Integer.parseInt(interval), ChronoUnit.MINUTES),
                 lockDurationSeconds,
                 jitter
             );
@@ -94,6 +94,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                                 RestStatus.OK,
                                 indexResponse.toXContent(JsonXContent.contentBuilder(), null)
                             );
+                            LOGGER.info("Created implicit judgments schedule.");
                             restChannel.sendResponse(restResponse);
                         } catch (IOException e) {
                             restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, e.getMessage()));

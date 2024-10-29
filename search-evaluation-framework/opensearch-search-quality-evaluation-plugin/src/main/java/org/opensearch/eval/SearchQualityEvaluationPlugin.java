@@ -48,11 +48,7 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationPlugin.class);
 
-    public static final String SCHEDULED_JOBS_INDEX_NAME = "scheduler_search_quality_eval";
-
-    private ClusterService clusterService;
-    private ThreadPool threadPool;
-    private Client client;
+    public static final String SCHEDULED_JOBS_INDEX_NAME = ".scheduler_search_quality_eval";
 
     @Override
     public Collection<Object> createComponents(
@@ -72,11 +68,6 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
         final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
         jobRunner.setClusterService(clusterService);
         jobRunner.setThreadPool(threadPool);
-        jobRunner.setClient(client);
-
-//        this.clusterService = clusterService;
-//        this.threadPool = threadPool;
-//        this.client = client;
 
         return Collections.emptyList();
 
@@ -84,19 +75,18 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     @Override
     public String getJobType() {
-        LOGGER.info("Getting job type.");
         return "scheduler_search_quality_eval";
     }
 
     @Override
     public String getJobIndex() {
+        LOGGER.info("Getting job index name");
         return SCHEDULED_JOBS_INDEX_NAME;
     }
 
     @Override
     public ScheduledJobRunner getJobRunner() {
         LOGGER.info("Creating job runner");
-        //return new SearchQualityEvaluationJobRunner(clusterService, threadPool, client);
         return SearchQualityEvaluationJobRunner.getJobRunnerInstance();
     }
 
@@ -131,9 +121,6 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
                         break;
                     case SearchQualityEvaluationJobParameter.SCHEDULE_FIELD:
                         jobParameter.setSchedule(ScheduleParser.parse(parser));
-                        break;
-                    case SearchQualityEvaluationJobParameter.INDEX_TO_WATCH:
-                        jobParameter.setIndexToWatch(parser.text());
                         break;
                     case SearchQualityEvaluationJobParameter.LOCK_DURATION_SECONDS:
                         jobParameter.setLockDurationSeconds(parser.longValue());

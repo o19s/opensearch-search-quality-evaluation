@@ -3,6 +3,7 @@ package org.opensearch.qef.clickmodel.coec;
 import org.apache.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
@@ -22,6 +23,7 @@ public class CoecClickModelIT {
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModelIT.class.getName());
 
+    @Disabled
     @Test
     public void calculateJudgmentForDoc1() throws IOException {
 

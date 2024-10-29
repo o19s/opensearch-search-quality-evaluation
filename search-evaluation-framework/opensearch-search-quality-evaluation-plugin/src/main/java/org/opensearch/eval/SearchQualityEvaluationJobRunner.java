@@ -11,14 +11,10 @@ package org.opensearch.eval;
 import org.apache.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.support.WriteRequest;
-import org.opensearch.client.Client;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.RestClientBuilder;
 import org.opensearch.client.RestHighLevelClient;
 import org.opensearch.cluster.service.ClusterService;
-import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
@@ -57,17 +53,10 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
     private ClusterService clusterService;
     private ThreadPool threadPool;
-    private Client client;
 
     private SearchQualityEvaluationJobRunner() {
 
     }
-
-//    public SearchQualityEvaluationJobRunner(ClusterService clusterService, ThreadPool threadPool, Client client) {
-//        this.clusterService = clusterService;
-//        this.threadPool = threadPool;
-//        this.client = client;
-//    }
 
     public void setClusterService(ClusterService clusterService) {
         this.clusterService = clusterService;
@@ -75,10 +64,6 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
     public void setThreadPool(ThreadPool threadPool) {
         this.threadPool = threadPool;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
     }
 
     @Override
@@ -119,8 +104,6 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     final RestClientBuilder builder = RestClient.builder(new HttpHost("localhost", 9200, "http"));
                     final RestHighLevelClient restHighLevelClient = new RestHighLevelClient(builder);
                     final OpenSearchHelper openSearchHelper = new OpenSearchHelper(restHighLevelClient);
-
-
 
                     final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(restHighLevelClient, true, 20);
                     final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters, openSearchHelper);
