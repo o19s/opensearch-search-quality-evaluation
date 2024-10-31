@@ -59,12 +59,14 @@ def load_esci(esci_dataset_path):
     console.print("Mapping used to obtain numerical rating:", score_mapping)
     df_examples["rating"] = df_examples.esci_label.apply(lambda x: score_mapping[x])
     df_examples["weights"] = sampling_weight(df_examples)
+    df_examples = df_examples.rename(columns={"esci_label": "original_label"})
 
-    return df_examples
+    return df_examples[["query", "product_id", "rating", "weights", "original_label"]]
 
 
 @dataclass
 class GenConfig:
+    application: str
     num_search_results: int
     num_unique_queries: int
     num_query_events: int
@@ -80,6 +82,7 @@ class GenConfig:
 
 def create_gen_config(args):
     gen_config = GenConfig(
+        application="esci_ubi_sample",
         num_search_results=args.num_search_results,
         num_unique_queries=args.num_unique_queries,
         num_query_events=args.num_query_events,
@@ -104,8 +107,8 @@ def make_top_queries(gen_config, df_examples):
     
     The sampling probability is naive, it's the normalized number of judgments
     """
-    df_q_agg = df_examples[["query", "esci_label"]].groupby("query").count().reset_index()
-    df_q_agg = df_q_agg.rename(columns={"esci_label": "num_judgments"})
+    df_q_agg = df_examples[["query", "original_label"]].groupby("query").count().reset_index()
+    df_q_agg = df_q_agg.rename(columns={"original_label": "num_judgments"})
     df_q_agg = df_q_agg.sort_values("num_judgments", ascending=False)
     top_queries = df_q_agg.head(gen_config.num_unique_queries).copy()
     top_queries["p"] = top_queries.num_judgments / top_queries.num_judgments.sum()
@@ -118,9 +121,9 @@ def make_query_sampler(gen_config, top_queries, query, df_g):
     dfn = df_g
     a = 1000 * dfn.rating * gen_config.click_rates + 0.5
     b = 1000 - a + 49.5
-    dfn["p"] = np.random.beta(a, b) # use beta to make 0 rating results have sometimes a click
+    dfn["p_click"] = np.random.beta(a, b) # use beta to make 0 rating results have sometimes a click
     # dfn["p"] = dfn.rating * gen_config.click_rates
-    dfn["position"] = np.arange(dfn.p.size)
+    dfn["position"] = np.arange(dfn.shape[0])
     dfn["p_query"] = top_queries[top_queries["query"]==query].p.values[0]
     return dfn.reset_index(drop=True)
 
@@ -143,7 +146,7 @@ def make_result_sample_per_query(gen_config, top_queries, df_examples):
     """
     judgments = df_examples[df_examples["query"].isin(top_queries["query"].values)]
     judgments = judgments[["query", "product_id", "rating", "weights"]].groupby(["query", "product_id"]).mean().reset_index()
-    judgments["ranking"] = judgments.rating + np.random.uniform(-3, 3, judgments.rating.size)
+    judgments["ranking"] = judgments.rating + np.random.uniform(-3, 3, judgments.shape[0])
     judgments = judgments.groupby("query").sample(gen_config.num_search_results, weights="weights")
     
     judg_dict = {}
@@ -155,7 +158,7 @@ def make_result_sample_per_query(gen_config, top_queries, df_examples):
     # Now update the expected rating based on the achieved expected CTR
     for q in judg_dict.keys():
         q_df = judg_dict[q]
-        q_df["exp_rating"] = q_df["p"] / exp_ctr
+        q_df["exp_rating"] = q_df["p_click"] / exp_ctr
         judg_dict[q] = q_df
         
     return judg_dict
@@ -165,7 +168,7 @@ def compute_exp_ctr_per_pos(gen_config, result_sample_per_query):
     """Compute expected CTR per rank"""
     ref_judg = pd.concat([df for _, df in result_sample_per_query.items()])
     tmp_df = ref_judg
-    tmp_df["wp"] = tmp_df.p * tmp_df.p_query
+    tmp_df["wp"] = tmp_df.p_click * tmp_df.p_query
     tmp_df = tmp_df[["position", "wp", "p_query"]].groupby("position").sum()
     exp_ctr = tmp_df.wp / tmp_df.p_query
     return exp_ctr
@@ -186,62 +189,40 @@ def prepare_data_generation(gen_config, esci_df):
 
     console.print("Expected judgment under COEC for top 5 documents of top 3 queries:")
     for i in range(3):
-        console.print(judg_dict[top_queries.iloc[i]["query"]][["query", "product_id", "position", "rating", "exp_rating"]].head(5))
+        console.print(judg_dict[top_queries.iloc[i]["query"]][["query", "product_id", "position", "rating", "p_click", "exp_rating"]].head(5))
 
     return top_queries, judg_dict
 
 def make_query_event(gen_config, row):
-    query = {
-        "from": 0,
-        "size": gen_config.num_search_results,
-        "query": {
-            "match": {
-                "short_description": row["user_query"]
-            }
-        },
-        # "ext": {
-        #     "ubi": {
-        #         "client_id": row["client_id"],
-        #         "query_id": row["query_id"],
-        #         "user_query": row["user_query"],
-        #         "object_id_field": row["object_id_field"],
-        #     }
-        # }
-    }
     response_id = str(uuid.uuid4())
     query_event = {
-        "timestamp": int(row["datetime"].timestamp() * 1000),
-        "queryId": row["query_id"],
-        "userQuery": row["user_query"],
-        "query": json.dumps(query),
-        "queryResponse": {
-            "queryId": row["query_id"],
-            "queryResponseId": response_id,
-        },
-        "queryAttributes": {},
-        "clientId": row["client_id"],
+        "application": gen_config.application,
+        "query_id": row["query_id"],
+        "client_id": row["client_id"],
+        "user_query": row["user_query"],
+        "query_attributes": {},
+        "timestamp": row["timestamp"].isoformat(),
     }
     return query_event
 
 def make_ubi_event(gen_config, row):
     ubi_event = {
-        "application": "esci_ubi_sample",
+        "application": gen_config.application,
         "action_name": row["action_name"],
-        "client_id": row["client_id"],
         "query_id": row["query_id"],
+        "session_id": row["session_id"],
+        "client_id": row["client_id"],
+        "timestamp": row["timestamp"].isoformat(),
         "message_type": None,
         "message": None,
-        "timestamp": int(row["datetime"].timestamp() * 1000),
         "event_attributes": {
             "object": {
-                "object_id_field": row["object_id_field"],
                 "object_id": row["object_id"],
-                "description": "",
+                "object_id_field": row["object_id_field"],
             },
             "position": {
                 "index": row["position"],
             },
-            "session_id": row["session_id"],
         }
     }
     return ubi_event
@@ -288,7 +269,7 @@ def simulate_events(gen_config, top_queries, result_sample_per_query):
         # Generation of Query and Impressions
         q = np.random.choice(top_queries["query"], p=top_queries["p"])
         judg_df = result_sample_per_query[q].copy()
-        click_event = np.random.binomial(n=1, p=judg_df.p)
+        click_event = np.random.binomial(n=1, p=judg_df.p_click)
         judg_df = judg_df[["product_id", "position"]]
         judg_df = judg_df.rename(columns={"product_id": "object_id"})
         judg_df["object_id_field"] = "product_id"
@@ -298,20 +279,21 @@ def simulate_events(gen_config, top_queries, result_sample_per_query):
         session_id = str(uuid.uuid4())
 
         queries.append(pd.DataFrame({
+            "application": [gen_config.application],
             "query_id": [query_id],
             "client_id": [client_id],
             "user_query": [q],
-            "size": [judg_df.shape[0]],
             "object_id_field": "product_id",
-            "datetime": current_time,
+            "timestamp": current_time,
         }))
 
-        judg_df["query_id"] = query_id
-        judg_df["client_id"] = client_id
-        judg_df["session_id"] = session_id
-        judg_df["datetime"] = current_time
-        judg_df["datetime"] = judg_df["datetime"].values.astype("datetime64[ns]")
+        judg_df["application"] = gen_config.application
         judg_df["action_name"] = "view"
+        judg_df["query_id"] = query_id
+        judg_df["session_id"] = session_id
+        judg_df["client_id"] = client_id
+        judg_df["timestamp"] = current_time
+        judg_df["timestamp"] = judg_df["timestamp"].values.astype("datetime64[ns]")
 
         events.append(judg_df)
 
@@ -322,7 +304,7 @@ def simulate_events(gen_config, top_queries, result_sample_per_query):
         time_deltas = np.random.exponential(gen_config.avg_time_between_clicks.seconds, clicks.shape[0])
         time_deltas = np.cumsum(time_deltas)
         time_deltas = pd.to_timedelta(time_deltas, unit='s')
-        clicks["datetime"] = clicks.datetime + time_deltas
+        clicks["timestamp"] = clicks.timestamp + time_deltas
 
         events.append(clicks)
 
@@ -352,6 +334,6 @@ def main(args):
     if args.generate_csv:
         save_to_csv(gen_config, event_generator)
     elif args.generate_open_search:
-        populate_open_search(args, event_generator)
+        populate_open_search(gen_config, event_generator)
 
 main(args)

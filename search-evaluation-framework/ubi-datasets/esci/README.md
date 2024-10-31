@@ -9,7 +9,12 @@ At the moment it supports the Amazon ESCI dataset as an input.
 
 ## Usage
 
-TODO: Usage instructions
+Generate query, view and click events for the Amazon ESCI dataset for the top 1000 queries, altogether
+generate 100k query events and populate into OpenSearch.
+
+```
+python generate_data.py --esci-dataset ../../../../esci-data/shopping_queries_dataset --num-unique-queries 1000 --num-query-events 100000 --generate-open-search
+```
 
 ## Goal and design choices
 
