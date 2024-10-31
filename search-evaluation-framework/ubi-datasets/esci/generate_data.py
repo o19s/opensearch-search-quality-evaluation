@@ -17,13 +17,13 @@ from tqdm import trange, tqdm
 console = Console()
 
 parser = argparse.ArgumentParser(description='Description of your program')
-parser.add_argument('--esci-path', help='Path to ESCI dataset', default="../../../../esci-data/shopping_queries_dataset")
-parser.add_argument('--num-search-results', help='Maximum number of results per query', default=5, action="store")
-parser.add_argument('--num-unique-queries', help='Total number of unique queries', default=200, action="store")
-parser.add_argument('--num-query-events', help='Total number of query events', default=1000, action="store")
-parser.add_argument('--time-period-days', help='Length of interval in which queries are generated', default=7, action="store")
+parser.add_argument('--esci-dataset-path', help='Path to ESCI dataset', required=True)
+parser.add_argument('--num-search-results', help='Maximum number of results per query', default=5, type=int)
+parser.add_argument('--num-unique-queries', help='Total number of unique queries', default=200, type=int)
+parser.add_argument('--num-query-events', help='Total number of query events', default=1000, type=int)
+parser.add_argument('--time-period-days', help='Length of interval in which queries are generated', default=7, type=int)
 parser.add_argument('--datetime-start', help='Date and time of first query event', default="2024/06/01", action="store")
-parser.add_argument('--seconds-between-clicks', help='Average seconds between clicks', default=1.0, action="store")
+parser.add_argument('--seconds-between-clicks', help='Average seconds between clicks', default=1.0, type=float)
 parser.add_argument('--generate-csv', help='Generate datasets and save in CSVs', default=False, action="store_true")
 parser.add_argument('--generate-open-search', help='Generate datasets and save in Open Search', default=False, action="store_true")
 parser.add_argument('--open-search-url', help='Open Search URL', default="http://localhost:9200", action="store")
@@ -46,9 +46,9 @@ def sampling_weight(df):
     return weights
 
 
-def load_esci(esci_path):
+def load_esci(esci_dataset_path):
     console.print("[bold cyan]Loading ESCI dataset[/bold cyan]")
-    df_examples = pd.read_parquet(esci_path + '/shopping_queries_dataset_examples.parquet')
+    df_examples = pd.read_parquet(esci_dataset_path + '/shopping_queries_dataset_examples.parquet')
     df_examples = df_examples[df_examples.product_locale=="us"]
 
     console.print("Number of unique queries:", df_examples["query"].unique().size)
@@ -246,27 +246,32 @@ def make_ubi_event(gen_config, row):
     }
     return ubi_event
 
-def populate_open_search(gen_config, queries, events):
+def save_to_csv(gen_config, event_generator):
+    console.print("Saving queries and events to [bold]ubi_queries.csv[/bold] and [bold]ubi_events.csv[/bold]")
+    first = True
+    for queries, events in tqdm(event_generator, total=gen_config.num_query_events/1000, desc="Generating queries in units of 1000"):
+        kwargs = {} if first else {"mode": "a", "header": False}
+        events.to_csv("ubi_events.csv", index=False, **kwargs)
+        queries.to_csv("ubi_queries.csv", index=False, **kwargs)
+        first = False
+
+def populate_open_search(gen_config, event_generator):
     console.print("[bold cyan]Indexing data into Open Search[/bold cyan]")
     client = OpenSearch(gen_config.open_search_url, use_ssl=False)
 
-    for _, row in tqdm(queries.iterrows(), desc="Indexing queries", total=queries.shape[0]):
-        event_id = str(uuid.uuid4())
-        response = client.index(
-            body = make_query_event(gen_config, row),
-            index = "ubi_queries",
-            id = event_id,
-            refresh = True
-        )
+    for queries, events in tqdm(event_generator, total=gen_config.num_query_events/1000, desc="Indexing queries in units of 1000"):
+        data = []
+        for _, row in queries.iterrows():
+            event_id = str(uuid.uuid4())
+            data.append({"index": {"_index": "ubi_queries", "_id": event_id}})
+            data.append(make_query_event(gen_config, row))
 
-    for _, row in tqdm(events.iterrows(), desc="Indexing events", total=events.shape[0]):
-        event_id = str(uuid.uuid4())
-        response = client.index(
-            body = make_ubi_event(gen_config, row),
-            index = "ubi_events",
-            id = event_id,
-            refresh = True
-        )
+        for _, row in events.iterrows():
+            event_id = str(uuid.uuid4())
+            data.append({"index": {"_index": "ubi_events", "_id": event_id}})
+            data.append(make_ubi_event(gen_config, row))
+        
+        client.bulk(body=data)
 
 
 def simulate_events(gen_config, top_queries, result_sample_per_query):
@@ -276,7 +281,7 @@ def simulate_events(gen_config, top_queries, result_sample_per_query):
     events = []
     queries = []
 
-    for i in trange(gen_config.num_query_events, desc="generating query events"):
+    for i in range(gen_config.num_query_events):
         new_delta = np.random.exponential(gen_config.get_avg_time_between_queries().seconds)
         current_time = current_time + timedelta(seconds=new_delta)
 
@@ -321,13 +326,20 @@ def simulate_events(gen_config, top_queries, result_sample_per_query):
 
         events.append(clicks)
 
+        if i % 1000 == 0 and i > 0:
+            events = pd.concat(events)
+            queries = pd.concat(queries)
+            yield queries, events
+            events = []
+            queries = []
+
     events = pd.concat(events)
     queries = pd.concat(queries)
     
-    return queries, events
+    yield queries, events
 
 def main(args):
-    esci_df = load_esci(args.esci_path)
+    esci_df = load_esci(args.esci_dataset_path)
     gen_config = create_gen_config(args)
     top_queries, judg_dict = prepare_data_generation(gen_config, esci_df)
 
@@ -335,14 +347,11 @@ def main(args):
         console.print("[red bold]You have to specify either --generate-csv or --generate-open-search")
         return
 
-    queries, events = simulate_events(gen_config, top_queries, judg_dict)
+    event_generator = simulate_events(gen_config, top_queries, judg_dict)
 
     if args.generate_csv:
-        console.print("Saving events to [bold]ubi_events.csv[/bold]")
-        events.to_csv("ubi_events.csv", index=False)
-        console.print("Saving queries to [bold]ubi_queries.csv[/bold]")
-        queries.to_csv("ubi_queries.csv", index=False)
+        save_to_csv(gen_config, event_generator)
     elif args.generate_open_search:
-        populate_open_search(args, queries, events)
+        populate_open_search(args, event_generator)
 
 main(args)
