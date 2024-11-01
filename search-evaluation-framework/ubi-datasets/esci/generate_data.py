@@ -25,6 +25,7 @@ parser.add_argument('--time-period-days', help='Length of interval in which quer
 parser.add_argument('--datetime-start', help='Date and time of first query event', default="2024/06/01", action="store")
 parser.add_argument('--seconds-between-clicks', help='Average seconds between clicks', default=1.0, type=float)
 parser.add_argument('--generate-csv', help='Generate datasets and save in CSVs', default=False, action="store_true")
+parser.add_argument('--generate-ndjson', help='Generate datasets and save in ndjson files', default=False, action="store_true")
 parser.add_argument('--generate-open-search', help='Generate datasets and save in Open Search', default=False, action="store_true")
 parser.add_argument('--open-search-url', help='Open Search URL', default="http://localhost:9200", action="store")
 
@@ -116,13 +117,10 @@ def make_top_queries(gen_config, df_examples):
 
 
 def make_query_sampler(gen_config, top_queries, query, df_g):
-    # dfn = df_g.sort_values("ranking", ascending=False)
-    # sorting is disabled to avoid increasing ctr at top positions (we want the ratings as close to the originals)
     dfn = df_g
     a = 1000 * dfn.rating * gen_config.click_rates + 0.5
     b = 1000 - a + 49.5
     dfn["p_click"] = np.random.beta(a, b) # use beta to make 0 rating results have sometimes a click
-    # dfn["p"] = dfn.rating * gen_config.click_rates
     dfn["position"] = np.arange(dfn.shape[0])
     dfn["p_query"] = top_queries[top_queries["query"]==query].p.values[0]
     return dfn.reset_index(drop=True)
@@ -146,7 +144,6 @@ def make_result_sample_per_query(gen_config, top_queries, df_examples):
     """
     judgments = df_examples[df_examples["query"].isin(top_queries["query"].values)]
     judgments = judgments[["query", "product_id", "rating", "weights"]].groupby(["query", "product_id"]).mean().reset_index()
-    judgments["ranking"] = judgments.rating + np.random.uniform(-3, 3, judgments.shape[0])
     judgments = judgments.groupby("query").sample(gen_config.num_search_results, weights="weights")
     
     judg_dict = {}
@@ -236,23 +233,32 @@ def save_to_csv(gen_config, event_generator):
         queries.to_csv("ubi_queries.csv", index=False, **kwargs)
         first = False
 
+def save_to_ndjson(gen_config, event_generator):
+    console.print("Saving queries and events to [bold]ubi_queries_events.ndjson[/bold]")
+    with open("ubi_queries_events.ndjson", "w") as f:
+        for queries, events in tqdm(event_generator, total=gen_config.num_query_events/1000, desc="Generating queries in units of 1000"):
+            for d in convert_to_ndjson(gen_config, queries, events):
+                f.write(json.dumps(d) + "\n")
+
+def convert_to_ndjson(gen_config, queries, events):
+    data = []
+    for _, row in queries.iterrows():
+        event_id = str(uuid.uuid4())
+        data.append({"index": {"_index": "ubi_queries", "_id": event_id}})
+        data.append(make_query_event(gen_config, row))
+
+    for _, row in events.iterrows():
+        event_id = str(uuid.uuid4())
+        data.append({"index": {"_index": "ubi_events", "_id": event_id}})
+        data.append(make_ubi_event(gen_config, row))
+    return data
+
 def populate_open_search(gen_config, event_generator):
     console.print("[bold cyan]Indexing data into Open Search[/bold cyan]")
     client = OpenSearch(gen_config.open_search_url, use_ssl=False)
 
     for queries, events in tqdm(event_generator, total=gen_config.num_query_events/1000, desc="Indexing queries in units of 1000"):
-        data = []
-        for _, row in queries.iterrows():
-            event_id = str(uuid.uuid4())
-            data.append({"index": {"_index": "ubi_queries", "_id": event_id}})
-            data.append(make_query_event(gen_config, row))
-
-        for _, row in events.iterrows():
-            event_id = str(uuid.uuid4())
-            data.append({"index": {"_index": "ubi_events", "_id": event_id}})
-            data.append(make_ubi_event(gen_config, row))
-        
-        client.bulk(body=data)
+        client.bulk(body=convert_to_ndjson(gen_config, queries, events))
 
 
 def simulate_events(gen_config, top_queries, result_sample_per_query):
@@ -325,14 +331,16 @@ def main(args):
     gen_config = create_gen_config(args)
     top_queries, judg_dict = prepare_data_generation(gen_config, esci_df)
 
-    if not args.generate_csv and not args.generate_open_search:
-        console.print("[red bold]You have to specify either --generate-csv or --generate-open-search")
+    if not args.generate_csv and not args.generate_open_search and not args.generate_ndjson:
+        console.print("[red bold]You have to specify either --generate-csv, --generate-ndjson or --generate-open-search")
         return
 
     event_generator = simulate_events(gen_config, top_queries, judg_dict)
 
     if args.generate_csv:
         save_to_csv(gen_config, event_generator)
+    if args.generate_ndjson:
+        save_to_ndjson(gen_config, event_generator)
     elif args.generate_open_search:
         populate_open_search(gen_config, event_generator)
 
