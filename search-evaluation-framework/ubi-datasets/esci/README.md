@@ -16,6 +16,24 @@ generate 100k query events and populate into OpenSearch.
 python generate_data.py --esci-dataset ../../../../esci-data/shopping_queries_dataset --num-unique-queries 1000 --num-query-events 100000 --generate-open-search
 ```
 
+Alternatively you can save the generated events into an ndjson file for later ingestion through the bulk endpoint:
+
+```
+python generate_data.py --esci-dataset ../../../../esci-data/shopping_queries_dataset --num-unique-queries 1000 --num-query-events 100000 --generate-ndjson
+```
+
+## Interpreting the output
+
+### Expected CTR per rank
+This is the CTR per rank that is expected from the generated events.
+This quantity is relevant for the calculation of COEC.
+
+### Expected judgment under COEC for 5 documents over top 3 queries
+Here the script shows the documents that it has selected as the top 5 search results for the top 3 queries.
+The `p_click` column shows the click probability with which clicks are generated.
+The script attempts to have the expected COEC score, that is `p_click` divided by the CTR at that rank,
+to be the same as the original rating (column `rating`), but this does not always work.
+
 ## Goal and design choices
 
 The goal of the script is to generate events that can be used for judgment
