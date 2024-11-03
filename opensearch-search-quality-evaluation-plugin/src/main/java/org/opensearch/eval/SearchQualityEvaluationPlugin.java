@@ -69,6 +69,7 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
         final SearchQualityEvaluationJobRunner jobRunner = SearchQualityEvaluationJobRunner.getJobRunnerInstance();
         jobRunner.setClusterService(clusterService);
         jobRunner.setThreadPool(threadPool);
+        jobRunner.setClient(client);
 
         return Collections.emptyList();
 

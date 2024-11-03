@@ -10,15 +10,16 @@ package org.opensearch.eval;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
 import org.opensearch.core.action.ActionListener;
+import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
+import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.utils.LockService;
-import org.opensearch.qef.clickmodel.coec.CoecClickModel;
-import org.opensearch.qef.clickmodel.coec.CoecClickModelParameters;
-import org.opensearch.qef.model.Judgment;
 import org.opensearch.threadpool.ThreadPool;
 
 import java.util.Collection;
@@ -48,6 +49,7 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
     private ClusterService clusterService;
     private ThreadPool threadPool;
+    private Client client;
 
     private SearchQualityEvaluationJobRunner() {
 
@@ -59,6 +61,10 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
     public void setThreadPool(ThreadPool threadPool) {
         this.threadPool = threadPool;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
     }
 
     @Override
@@ -96,7 +102,7 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     LOGGER.info("Message from inside the job.");
 
                     final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, 20);
-                    final CoecClickModel coecClickModel = new CoecClickModel(coecClickModelParameters);
+                    final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);
                     final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
 
                     lockService.release(
