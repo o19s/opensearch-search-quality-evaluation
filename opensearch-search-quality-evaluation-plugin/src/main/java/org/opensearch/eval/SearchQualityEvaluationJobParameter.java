@@ -27,6 +27,10 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
     public static final String LOCK_DURATION_SECONDS = "lock_duration_seconds";
     public static final String JITTER = "jitter";
 
+    // Custom properties.
+    public static final String CLICK_MODEL = "click_model";
+    public static final String MAX_RANK = "max_rank";
+
     // Properties from ScheduledJobParameter.
     private String jobName;
     private Instant lastUpdateTime;
@@ -36,15 +40,17 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
     private Long lockDurationSeconds;
     private Double jitter;
 
-    // Custom properties for this job.
-    private String indexToWatch;
+    // Custom properties.
+    private String clickModel;
+    private int maxRank;
 
     public SearchQualityEvaluationJobParameter() {
 
     }
 
-    public SearchQualityEvaluationJobParameter(final String name, final String indexToWatch, final Schedule schedule,
-                                               final Long lockDurationSeconds, final Double jitter) {
+    public SearchQualityEvaluationJobParameter(final String name, final Schedule schedule,
+                                               final Long lockDurationSeconds, final Double jitter,
+                                               final String clickModel, final int maxRank) {
         this.jobName = name;
         this.schedule = schedule;
         this.enabled = true;
@@ -55,7 +61,43 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
         this.enabledTime = now;
         this.lastUpdateTime = now;
 
-        this.indexToWatch = indexToWatch;
+        // Custom properties.
+        this.clickModel = clickModel;
+        this.maxRank = maxRank;
+
+    }
+
+    @Override
+    public XContentBuilder toXContent(final XContentBuilder builder, final Params params) throws IOException {
+
+        builder.startObject();
+
+        builder
+                .field(NAME_FIELD, this.jobName)
+                .field(ENABLED_FILED, this.enabled)
+                .field(SCHEDULE_FIELD, this.schedule)
+                .field(CLICK_MODEL, this.clickModel)
+                .field(MAX_RANK, this.maxRank);
+
+        if (this.enabledTime != null) {
+            builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());
+        }
+
+        if (this.lastUpdateTime != null) {
+            builder.timeField(LAST_UPDATE_TIME_FIELD, LAST_UPDATE_TIME_FIELD_READABLE, this.lastUpdateTime.toEpochMilli());
+        }
+
+        if (this.lockDurationSeconds != null) {
+            builder.field(LOCK_DURATION_SECONDS, this.lockDurationSeconds);
+        }
+
+        if (this.jitter != null) {
+            builder.field(JITTER, this.jitter);
+        }
+
+        builder.endObject();
+
+        return builder;
 
     }
 
@@ -114,10 +156,6 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
         this.schedule = schedule;
     }
 
-    public void setIndexToWatch(String indexToWatch) {
-        this.indexToWatch = indexToWatch;
-    }
-
     public void setLockDurationSeconds(Long lockDurationSeconds) {
         this.lockDurationSeconds = lockDurationSeconds;
     }
@@ -126,36 +164,20 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
         this.jitter = jitter;
     }
 
-    @Override
-    public XContentBuilder toXContent(final XContentBuilder builder, final Params params) throws IOException {
+    public String getClickModel() {
+        return clickModel;
+    }
 
-        builder.startObject();
+    public void setClickModel(String clickModel) {
+        this.clickModel = clickModel;
+    }
 
-        builder
-            .field(NAME_FIELD, this.jobName)
-            .field(ENABLED_FILED, this.enabled)
-            .field(SCHEDULE_FIELD, this.schedule);
+    public int getMaxRank() {
+        return maxRank;
+    }
 
-        if (this.enabledTime != null) {
-            builder.timeField(ENABLED_TIME_FILED, ENABLED_TIME_FILED_READABLE, this.enabledTime.toEpochMilli());
-        }
-
-        if (this.lastUpdateTime != null) {
-            builder.timeField(LAST_UPDATE_TIME_FIELD, LAST_UPDATE_TIME_FIELD_READABLE, this.lastUpdateTime.toEpochMilli());
-        }
-
-        if (this.lockDurationSeconds != null) {
-            builder.field(LOCK_DURATION_SECONDS, this.lockDurationSeconds);
-        }
-
-        if (this.jitter != null) {
-            builder.field(JITTER, this.jitter);
-        }
-
-        builder.endObject();
-
-        return builder;
-
+    public void setMaxRank(int maxRank) {
+        this.maxRank = maxRank;
     }
 
 }
