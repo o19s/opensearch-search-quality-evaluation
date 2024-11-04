@@ -23,6 +23,8 @@ import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -92,7 +94,7 @@ public class OpenSearchHelper {
         // Will only be a single result.
         final SearchHit hit = response.getHits().getHits()[0];
 
-        return gson.fromJson(hit.getSourceAsString(), UbiQuery.class);
+        return AccessController.doPrivileged((PrivilegedAction<UbiQuery>) () -> gson.fromJson(hit.getSourceAsString(), UbiQuery.class));
 
     }
 

@@ -8,6 +8,7 @@
  */
 package org.opensearch.eval;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.client.Client;
@@ -70,19 +71,17 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
     @Override
     public void runJob(final ScheduledJobParameter jobParameter, final JobExecutionContext context) {
 
-        LOGGER.info("Running custom job! = {}", jobParameter.getName());
-
-        if (!(jobParameter instanceof SearchQualityEvaluationJobParameter)) {
+        if(!(jobParameter instanceof SearchQualityEvaluationJobParameter)) {
             throw new IllegalStateException(
                 "Job parameter is not instance of SampleJobParameter, type: " + jobParameter.getClass().getCanonicalName()
             );
         }
 
-        if (this.clusterService == null) {
+        if(this.clusterService == null) {
             throw new IllegalStateException("ClusterService is not initialized.");
         }
 
-        if (this.threadPool == null) {
+        if(this.threadPool == null) {
             throw new IllegalStateException("ThreadPool is not initialized.");
         }
 
@@ -93,20 +92,28 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
             if (jobParameter.getLockDurationSeconds() != null) {
 
                 lockService.acquireLock(jobParameter, context, ActionListener.wrap(lock -> {
+
                     if (lock == null) {
                         return;
                     }
 
                     final SearchQualityEvaluationJobParameter searchQualityEvaluationJobParameter = (SearchQualityEvaluationJobParameter) jobParameter;
 
-                    LOGGER.info("Message from inside the job.");
+                    final long startTime = System.currentTimeMillis();
 
-                    final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, 20);
-                    final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);
-                    final Collection<Judgment> judgments = coecClickModel.calculateJudgments();
+                    if(StringUtils.equalsIgnoreCase(searchQualityEvaluationJobParameter.getClickModel(), "coec")) {
 
-                    lockService.release(
-                        lock,
+                        LOGGER.info("Beginning implicit judgment generation using clicks-over-expected-clicks.");
+                        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, searchQualityEvaluationJobParameter.getMaxRank());
+                        final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);
+
+                        coecClickModel.calculateJudgments();
+
+                    }
+
+                    LOGGER.info("Implicit judgment generation completed in {} ms", System.currentTimeMillis() - startTime);
+
+                    lockService.release(lock,
                         ActionListener.wrap(released -> LOGGER.info("Released lock for job {}", jobParameter.getName()), exception -> {
                             throw new IllegalStateException("Failed to release lock.");
                         })

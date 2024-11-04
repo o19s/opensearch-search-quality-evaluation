@@ -51,4 +51,5 @@ public class UbiEvent {
     public void setEventAttributes(EventAttributes eventAttributes) {
         this.eventAttributes = eventAttributes;
     }
+
 }
