@@ -48,7 +48,7 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationPlugin.class);
 
-    public static final String SCHEDULED_JOBS_INDEX_NAME = ".scheduler_search_quality_eval";
+    public static final String SCHEDULED_JOBS_INDEX_NAME = "search_quality_eval_scheduler";
 
     @Override
     public Collection<Object> createComponents(
@@ -97,8 +97,6 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
         return (parser, id, jobDocVersion) -> {
 
-            LOGGER.info("Getting job parser");
-
             final SearchQualityEvaluationJobParameter jobParameter = new SearchQualityEvaluationJobParameter();
             XContentParserUtils.ensureExpectedToken(XContentParser.Token.START_OBJECT, parser.nextToken(), parser);
 
@@ -129,6 +127,12 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
                         break;
                     case SearchQualityEvaluationJobParameter.JITTER:
                         jobParameter.setJitter(parser.doubleValue());
+                        break;
+                    case SearchQualityEvaluationJobParameter.CLICK_MODEL:
+                        jobParameter.setClickModel(parser.text());
+                        break;
+                    case SearchQualityEvaluationJobParameter.MAX_RANK:
+                        jobParameter.setMaxRank(parser.intValue());
                         break;
                     default:
                         XContentParserUtils.throwUnknownToken(parser.currentToken(), parser.getTokenLocation());

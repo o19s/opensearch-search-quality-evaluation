@@ -37,6 +37,8 @@ import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -74,29 +76,29 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     }
 
     @Override
-    public Collection<Judgment> calculateJudgments() throws Exception {
+    public void calculateJudgments() throws Exception {
 
         final int maxRank = parameters.getMaxRank();
 
         // Calculate and index the rank-aggregated click-through.
+        LOGGER.info("Beginning calculation of rank-aggregated click-through.");
         final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough();
         LOGGER.info("Rank-aggregated clickthrough positions: {}", rankAggregatedClickThrough.size());
         showRankAggregatedClickThrough(rankAggregatedClickThrough);
 
         // Calculate and index the click-through rate for query/doc pairs.
+        LOGGER.info("Beginning calculation of clickthrough rates.");
         final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate(maxRank);
         LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
         showClickthroughRates(clickthroughRates);
 
         // Generate and index the implicit judgments.
-        final Collection<Judgment> judgments = calculateCoec(rankAggregatedClickThrough, clickthroughRates);
-        LOGGER.info("Number of judgments: {}", judgments.size());
-
-        return judgments;
+        LOGGER.info("Beginning calculation of implicit judgments.");
+        calculateCoec(rankAggregatedClickThrough, clickthroughRates);
 
     }
 
-    public Collection<Judgment> calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
+    public void calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
                                               final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         // Calculate the COEC.
@@ -156,7 +158,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
             openSearchHelper.indexJudgments(judgments);
         }
 
-        return judgments;
+        LOGGER.info("Persisted number of judgments: {}", judgments.size());
 
     }
 
@@ -221,7 +223,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
             for (final SearchHit hit : searchHits) {
 
-                final UbiEvent ubiEvent = gson.fromJson(hit.getSourceAsString(), UbiEvent.class);
+                final UbiEvent ubiEvent = AccessController.doPrivileged((PrivilegedAction<UbiEvent>) () -> gson.fromJson(hit.getSourceAsString(), UbiEvent.class));
 
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but they are the same search.
