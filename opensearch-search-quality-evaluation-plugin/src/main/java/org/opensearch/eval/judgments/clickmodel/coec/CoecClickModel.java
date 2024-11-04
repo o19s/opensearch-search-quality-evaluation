@@ -76,7 +76,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
     }
 
     @Override
-    public void calculateJudgments() throws Exception {
+    public long calculateJudgments() throws Exception {
 
         final int maxRank = parameters.getMaxRank();
 
@@ -94,11 +94,11 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
         // Generate and index the implicit judgments.
         LOGGER.info("Beginning calculation of implicit judgments.");
-        calculateCoec(rankAggregatedClickThrough, clickthroughRates);
+        return calculateCoec(rankAggregatedClickThrough, clickthroughRates);
 
     }
 
-    public void calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
+    public long calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
                                               final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         // Calculate the COEC.
@@ -158,7 +158,9 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
             openSearchHelper.indexJudgments(judgments);
         }
 
-        LOGGER.info("Persisted number of judgments: {}", judgments.size());
+        LOGGER.debug("Persisted number of judgments: {}", judgments.size());
+
+        return judgments.size();
 
     }
 

@@ -31,8 +31,11 @@ import org.opensearch.rest.RestResponse;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
@@ -69,16 +72,39 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
             if (request.method().equals(RestRequest.Method.POST)) {
 
+                final long startTime = System.currentTimeMillis();
                 final String clickModel = request.param("click_model");
                 final int maxRank = Integer.parseInt(request.param("max_rank", "20"));
+                final long judgments;
 
                 if (StringUtils.equalsIgnoreCase(clickModel, "coec")) {
 
                     final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, maxRank);
                     final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);
 
+                    // TODO: Run this in a separate thread.
                     try {
-                        coecClickModel.calculateJudgments();
+                        judgments = coecClickModel.calculateJudgments();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    final long elapsedTime = System.currentTimeMillis() - startTime;
+
+                    final Map<String, Object> job = new HashMap<>();
+                    job.put("name", "manual_generation");
+                    job.put("click_model", clickModel);
+                    job.put("started", startTime);
+                    job.put("duration", elapsedTime);
+                    job.put("judgments", judgments);
+                    job.put("invocation", "on_demand");
+                    job.put("max_rank", maxRank);
+
+                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
+                            .id(UUID.randomUUID().toString()).source(job).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+                    try {
+                        client.index(indexRequest).get();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -86,9 +112,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Implicit judgment generation initiated."));
 
                 } else {
-
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "Invalid click_model."));
-
                 }
 
             } else {

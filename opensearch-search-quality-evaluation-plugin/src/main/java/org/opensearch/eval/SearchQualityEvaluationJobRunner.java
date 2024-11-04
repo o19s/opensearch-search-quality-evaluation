@@ -11,19 +11,23 @@ package org.opensearch.eval;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
+import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
-import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.jobscheduler.spi.JobExecutionContext;
 import org.opensearch.jobscheduler.spi.ScheduledJobParameter;
 import org.opensearch.jobscheduler.spi.ScheduledJobRunner;
 import org.opensearch.jobscheduler.spi.utils.LockService;
 import org.opensearch.threadpool.ThreadPool;
 
-import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
@@ -100,6 +104,7 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     final SearchQualityEvaluationJobParameter searchQualityEvaluationJobParameter = (SearchQualityEvaluationJobParameter) jobParameter;
 
                     final long startTime = System.currentTimeMillis();
+                    final long judgments;
 
                     if(StringUtils.equalsIgnoreCase(searchQualityEvaluationJobParameter.getClickModel(), "coec")) {
 
@@ -107,17 +112,31 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                         final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, searchQualityEvaluationJobParameter.getMaxRank());
                         final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);
 
-                        coecClickModel.calculateJudgments();
+                        judgments = coecClickModel.calculateJudgments();
+
+                    } else {
+
+                        // Invalid click model.
+                        throw new IllegalArgumentException("Invalid click model: " + searchQualityEvaluationJobParameter.getClickModel());
 
                     }
 
-                    LOGGER.info("Implicit judgment generation completed in {} ms", System.currentTimeMillis() - startTime);
+                    final long elapsedTime = System.currentTimeMillis() - startTime;
+                    LOGGER.info("Implicit judgment generation completed in {} ms", elapsedTime);
 
-                    lockService.release(lock,
-                        ActionListener.wrap(released -> LOGGER.info("Released lock for job {}", jobParameter.getName()), exception -> {
-                            throw new IllegalStateException("Failed to release lock.");
-                        })
-                    );
+                    final Map<String, Object> job = new HashMap<>();
+                    job.put("name", searchQualityEvaluationJobParameter.getName());
+                    job.put("click_model", searchQualityEvaluationJobParameter.getClickModel());
+                    job.put("started", startTime);
+                    job.put("duration", elapsedTime);
+                    job.put("judgments", judgments);
+                    job.put("invocation", "scheduled");
+                    job.put("max_rank", searchQualityEvaluationJobParameter.getMaxRank());
+
+                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
+                            .id(UUID.randomUUID().toString()).source(job).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+                    client.index(indexRequest).get();
 
                 }, exception -> { throw new IllegalStateException("Failed to acquire lock."); }));
             }

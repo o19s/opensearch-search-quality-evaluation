@@ -13,6 +13,6 @@ public abstract class ClickModel<T extends ClickModelParameters> {
     public static final String INDEX_UBI_EVENTS = "ubi_events";
     public static final String INDEX_UBI_QUERIES = "ubi_queries";
 
-    public abstract void calculateJudgments() throws Exception;
+    public abstract long calculateJudgments() throws Exception;
 
 }
