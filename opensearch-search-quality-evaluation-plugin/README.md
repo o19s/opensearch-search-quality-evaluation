@@ -41,8 +41,20 @@ See the created job:
 curl -s http://localhost:9200/search_quality_eval_scheduler/_search
 ```
 
-See the judgments:
+To run an on-demand job without scheduling:
 
 ```
-curl -s http://localhost:9200/judgments/
+curl -X POST "http://localhost:9200/_plugins/search_quality_eval/judgments?click_model=coec&max_rank=20" | jq
+```
+
+To see the job runs:
+
+```
+curl -X POST "http://localhost:9200/search_quality_eval_completed_jobs/_search" | jq
+```
+
+See the first 10 judgments:
+
+```
+curl -s http://localhost:9200/judgments/_search | jq
 ```
