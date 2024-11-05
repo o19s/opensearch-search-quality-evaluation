@@ -32,13 +32,13 @@ opensearch search-quality-evaluation-plugin     2.17.1.0-SNAPSHOT
 To create a schedule to generate implicit judgments:
 
 ```
-curl -s -X POST "http://localhost:9200/_plugins/search_quality_eval/judgments?id=1&index=ubi&job_name=test2&interval=1"
+curl -s -X POST "http://localhost:9200/_plugins/search_quality_eval/schedule?id=1&click_model=coec&job_name=test&interval=60" | jq
 ```
 
 See the created job:
 
 ```
-curl -s http://localhost:9200/search_quality_eval_scheduler/_search
+curl -s http://localhost:9200/search_quality_eval_scheduled_jobs/_search | jq
 ```
 
 To run an on-demand job without scheduling:
