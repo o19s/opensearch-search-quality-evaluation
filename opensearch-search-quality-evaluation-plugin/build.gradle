@@ -15,8 +15,8 @@ opensearchplugin {
 
 ext {
     projectSubstitutions = [:]
-    licenseFile = rootProject.file('LICENSE')
-    noticeFile = rootProject.file('NOTICE')
+    licenseFile = rootProject.file('LICENSE.txt')
+    noticeFile = rootProject.file('NOTICE.txt')
 }
 
 group = 'org.opensearch'
