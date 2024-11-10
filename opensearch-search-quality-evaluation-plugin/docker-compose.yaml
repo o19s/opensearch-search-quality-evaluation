@@ -9,6 +9,8 @@ services:
       plugins.security.disabled: "true"
       logger.level: info
       OPENSEARCH_INITIAL_ADMIN_PASSWORD: SuperSecretPassword_123
+      http.max_content_length: 500mb
+      OPENSEARCH_JAVA_OPTS: "-Xms8192m -Xmx8192m"
     ulimits:
       memlock:
         soft: -1
