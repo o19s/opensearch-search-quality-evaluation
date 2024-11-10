@@ -22,9 +22,6 @@ ext {
 group = 'org.opensearch'
 version = "${evalVersion}"
 
-sourceCompatibility = 17
-targetCompatibility = 17
-
 // disabling some unnecessary validations for this plugin
 testingConventions.enabled = false
 forbiddenApis.ignoreFailures = true

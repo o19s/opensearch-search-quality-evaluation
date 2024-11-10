@@ -179,32 +179,59 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         // TODO: Use maxRank in place of the hardcoded 20.
         // TODO: Allow for a time period and for a specific application.
 
-        final String query = """
-              {
-                "bool": {
-                  "should": [
-                    {
-                      "term": {
-                        "action_name": "click"
-                      }
-                    },
-                    {
-                      "term": {
-                        "action_name": "view"
-                      }
-                    }
-                  ],
-                  "must": [
-                    {
-                      "range": {
-                        "event_attributes.position.index": {
-                          "lte": 20
-                        }
-                      }
-                    }
-                  ]
-                }
-              }""";
+        /**
+         * {
+         *                 "bool": {
+         *                   "should": [
+         *                     {
+         *                       "term": {
+         *                         "action_name": "click"
+         *                       }
+         *                     },
+         *                     {
+         *                       "term": {
+         *                         "action_name": "view"
+         *                       }
+         *                     }
+         *                   ],
+         *                   "must": [
+         *                     {
+         *                       "range": {
+         *                         "event_attributes.position.index": {
+         *                           "lte": 20
+         *                         }
+         *                       }
+         *                     }
+         *                   ]
+         *                 }
+         *               }
+         */
+
+        final String query = "{\n" +
+                "                \"bool\": {\n" +
+                "                  \"should\": [\n" +
+                "                    {\n" +
+                "                      \"term\": {\n" +
+                "                        \"action_name\": \"click\"\n" +
+                "                      }\n" +
+                "                    },\n" +
+                "                    {\n" +
+                "                      \"term\": {\n" +
+                "                        \"action_name\": \"view\"\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  ],\n" +
+                "                  \"must\": [\n" +
+                "                    {\n" +
+                "                      \"range\": {\n" +
+                "                        \"event_attributes.position.index\": {\n" +
+                "                          \"lte\": 20\n" +
+                "                        }\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  ]\n" +
+                "                }\n" +
+                "              }";
 
         final BoolQueryBuilder queryBuilder = new BoolQueryBuilder().must(new WrapperQueryBuilder(query));
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(1000);
