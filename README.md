@@ -2,6 +2,8 @@
 
 This repository contains the search quality evaluation framework as described in the [RFC](https://github.com/opensearch-project/OpenSearch/issues/15354).
 
+Note: Some of the data files in this repository are tracked by `git lfs`.
+
 ## Repository Contents
 
 * `data` - The data directory contains scripts for creating random UBI queries and events for purposes of development and testing.
