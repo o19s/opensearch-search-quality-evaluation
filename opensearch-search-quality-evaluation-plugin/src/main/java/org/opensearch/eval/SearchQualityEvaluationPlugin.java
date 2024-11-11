@@ -50,6 +50,7 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     public static final String SCHEDULED_JOBS_INDEX_NAME = "search_quality_eval_scheduled_jobs";
     public static final String COMPLETED_JOBS_INDEX_NAME = "search_quality_eval_completed_jobs";
+    public static final String QUERY_SETS_INDEX_NAME = "search_quality_eval_query_sets";
 
     @Override
     public Collection<Object> createComponents(

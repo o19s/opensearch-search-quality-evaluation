@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
@@ -51,6 +50,15 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
      */
     public static final String IMPLICIT_JUDGMENTS_URL = "/_plugins/search_quality_eval/judgments";
 
+    /**
+     * URL for managing query sets.
+     */
+    public static final String QUERYSETS_MANAGEMENT_URL = "/_plugins/search_quality_eval/querysets";
+
+    /**
+     * URL for initiating query sets to run on-demand.
+     */
+    public static final String QUERYSETS_RUN_URL = "/_plugins/search_quality_eval/run";
 
     @Override
     public String getName() {
@@ -62,13 +70,72 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
         return List.of(
                 new Route(RestRequest.Method.POST, IMPLICIT_JUDGMENTS_URL),
                 new Route(RestRequest.Method.POST, SCHEDULING_URL),
-                new Route(RestRequest.Method.DELETE, SCHEDULING_URL));
+                new Route(RestRequest.Method.DELETE, SCHEDULING_URL),
+                new Route(RestRequest.Method.POST, QUERYSETS_MANAGEMENT_URL),
+                new Route(RestRequest.Method.POST, QUERYSETS_RUN_URL));
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
 
+        // Handle managing query sets.
         if(StringUtils.equalsIgnoreCase(request.path(), IMPLICIT_JUDGMENTS_URL)) {
+
+            // Creating a new query set by sampling the UBI queries.
+            if (request.method().equals(RestRequest.Method.POST)) {
+
+                final String name = request.param("name");
+                final String description = request.param("description");
+                final String sampling = request.param("sampling");
+
+                // If we are not sampling queries, the query sets should just be directly
+                // indexed into OpenSearch using the `ubi_querysets` index directly, i.e.
+                // curl -X PUT http://localhost:9200/ubi_querysets/_doc/1 {"query": "some user query"}
+
+                if (StringUtils.equalsIgnoreCase(sampling, "ppts")) {
+
+                    // TODO: Use the PPS sampling method - https://opensourceconnections.com/blog/2022/10/13/how-to-succeed-with-explicit-relevance-evaluation-using-probability-proportional-to-size-sampling/
+                    // queries =
+
+                    // Index the query set.
+                    final Map<String, Object> querySet = new HashMap<>();
+                    querySet.put("name", name);
+                    querySet.put("description", description);
+                    querySet.put("sampling", sampling);
+                    // querySet.put("queries", queries);
+
+                    final String querySetId = UUID.randomUUID().toString();
+
+                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME)
+                            .id(querySetId).source(querySet).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+                    try {
+                        client.index(indexRequest).get();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Query set " + querySetId + " created."));
+
+                } else {
+                    // Invalid sampling method.
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "Invalid sampling method."));
+                }
+
+            } else {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, request.method() + " is not allowed."));
+            }
+
+        // Handle running query sets.
+        } else if(StringUtils.equalsIgnoreCase(request.path(), QUERYSETS_RUN_URL)) {
+
+            final String name = request.param("name");
+            // TODO: Initiate the running of the query set.
+
+            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Query set " + name + " run initiated."));
+
+        // Handle the on-demand creation of implicit judgments.
+        } else if(StringUtils.equalsIgnoreCase(request.path(), IMPLICIT_JUDGMENTS_URL)) {
 
             if (request.method().equals(RestRequest.Method.POST)) {
 
@@ -116,11 +183,10 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 }
 
             } else {
-
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, request.method() + " is not allowed."));
-
             }
 
+        // Handle the scheduling of creating implicit judgments.
         } else if(StringUtils.equalsIgnoreCase(request.path(), SCHEDULING_URL)) {
 
             if (request.method().equals(RestRequest.Method.POST)) {
@@ -199,24 +265,23 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
                 };
 
+            // Delete a scheduled job to make implicit judgments.
             } else if (request.method().equals(RestRequest.Method.DELETE)) {
 
                 final String id = request.param("id");
                 final DeleteRequest deleteRequest = new DeleteRequest().index(SearchQualityEvaluationPlugin.SCHEDULED_JOBS_INDEX_NAME).id(id);
 
-                return restChannel -> {
-                    client.delete(deleteRequest, new ActionListener<>() {
-                        @Override
-                        public void onResponse(final DeleteResponse deleteResponse) {
-                            restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Scheduled job deleted."));
-                        }
+                return restChannel -> client.delete(deleteRequest, new ActionListener<>() {
+                    @Override
+                    public void onResponse(final DeleteResponse deleteResponse) {
+                        restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Scheduled job deleted."));
+                    }
 
-                        @Override
-                        public void onFailure(Exception e) {
-                            restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
-                        }
-                    });
-                };
+                    @Override
+                    public void onFailure(Exception e) {
+                        restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, e.getMessage()));
+                    }
+                });
 
             } else {
 
