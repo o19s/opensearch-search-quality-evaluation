@@ -15,6 +15,8 @@ import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.action.search.SearchResponse;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.xcontent.json.JsonXContent;
@@ -22,15 +24,18 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestResponse;
+import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,12 +58,12 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
     /**
      * URL for managing query sets.
      */
-    public static final String QUERYSETS_MANAGEMENT_URL = "/_plugins/search_quality_eval/querysets";
+    public static final String QUERYSET_MANAGEMENT_URL = "/_plugins/search_quality_eval/queryset";
 
     /**
      * URL for initiating query sets to run on-demand.
      */
-    public static final String QUERYSETS_RUN_URL = "/_plugins/search_quality_eval/run";
+    public static final String QUERYSET_RUN_URL = "/_plugins/search_quality_eval/run";
 
     @Override
     public String getName() {
@@ -71,38 +76,38 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 new Route(RestRequest.Method.POST, IMPLICIT_JUDGMENTS_URL),
                 new Route(RestRequest.Method.POST, SCHEDULING_URL),
                 new Route(RestRequest.Method.DELETE, SCHEDULING_URL),
-                new Route(RestRequest.Method.POST, QUERYSETS_MANAGEMENT_URL),
-                new Route(RestRequest.Method.POST, QUERYSETS_RUN_URL));
+                new Route(RestRequest.Method.POST, QUERYSET_MANAGEMENT_URL),
+                new Route(RestRequest.Method.POST, QUERYSET_RUN_URL));
     }
 
     @Override
     protected RestChannelConsumer prepareRequest(RestRequest request, NodeClient client) throws IOException {
 
         // Handle managing query sets.
-        if(StringUtils.equalsIgnoreCase(request.path(), IMPLICIT_JUDGMENTS_URL)) {
+        if(StringUtils.equalsIgnoreCase(request.path(), QUERYSET_MANAGEMENT_URL)) {
 
             // Creating a new query set by sampling the UBI queries.
             if (request.method().equals(RestRequest.Method.POST)) {
 
                 final String name = request.param("name");
                 final String description = request.param("description");
-                final String sampling = request.param("sampling");
+                final String sampling = request.param("sampling", "pptss");
 
                 // If we are not sampling queries, the query sets should just be directly
                 // indexed into OpenSearch using the `ubi_querysets` index directly, i.e.
                 // curl -X PUT http://localhost:9200/ubi_querysets/_doc/1 {"query": "some user query"}
 
-                if (StringUtils.equalsIgnoreCase(sampling, "ppts")) {
+                if (StringUtils.equalsIgnoreCase(sampling, "pptss")) {
 
-                    // TODO: Use the PPS sampling method - https://opensourceconnections.com/blog/2022/10/13/how-to-succeed-with-explicit-relevance-evaluation-using-probability-proportional-to-size-sampling/
-                    // queries =
+                    // TODO: Use the PPTSS sampling method - https://opensourceconnections.com/blog/2022/10/13/how-to-succeed-with-explicit-relevance-evaluation-using-probability-proportional-to-size-sampling/
+                    final Collection<String> queries = List.of("computer", "desk", "table", "battery");
 
                     // Index the query set.
                     final Map<String, Object> querySet = new HashMap<>();
                     querySet.put("name", name);
                     querySet.put("description", description);
                     querySet.put("sampling", sampling);
-                    // querySet.put("queries", queries);
+                    querySet.put("queries", queries);
 
                     final String querySetId = UUID.randomUUID().toString();
 
@@ -115,24 +120,51 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                         throw new RuntimeException(e);
                     }
 
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Query set " + querySetId + " created."));
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"query_set\": \"" + querySetId + "\"}"));
 
                 } else {
                     // Invalid sampling method.
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "Invalid sampling method."));
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid sampling method: " + sampling + "\"}"));
                 }
 
             } else {
-                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, request.method() + " is not allowed."));
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, "{\"error\": \"" + request.method() + " is not allowed.\"}"));
             }
 
         // Handle running query sets.
-        } else if(StringUtils.equalsIgnoreCase(request.path(), QUERYSETS_RUN_URL)) {
+        } else if(StringUtils.equalsIgnoreCase(request.path(), QUERYSET_RUN_URL)) {
 
-            final String name = request.param("name");
-            // TODO: Initiate the running of the query set.
+            final String id = request.param("id");
 
-            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Query set " + name + " run initiated."));
+            // Get the query set.
+            final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
+            getQuerySetSearchSourceBuilder.query(QueryBuilders.matchQuery("_id", id));
+
+            final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME);
+            getQuerySetSearchRequest.source(getQuerySetSearchSourceBuilder);
+
+            try {
+
+                final SearchResponse searchResponse = client.search(getQuerySetSearchRequest).get();
+
+                // The queries from the query set that will be run.
+                final Collection<String> queries = (Collection<String>) searchResponse.getHits().getAt(0).getSourceAsMap().get("queries");
+
+                // TODO: Initiate the running of the query set.
+                for(final String query : queries) {
+
+                    // TODO: What should this query be?
+                    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+                    searchSourceBuilder.query(QueryBuilders.matchQuery("_id", id));
+
+                }
+
+            } catch (Exception ex) {
+                LOGGER.error("Unable to retrieve query set with ID {}", id);
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
+            }
+
+            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Query set " + id + " run initiated.\"}"));
 
         // Handle the on-demand creation of implicit judgments.
         } else if(StringUtils.equalsIgnoreCase(request.path(), IMPLICIT_JUDGMENTS_URL)) {
@@ -140,7 +172,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             if (request.method().equals(RestRequest.Method.POST)) {
 
                 final long startTime = System.currentTimeMillis();
-                final String clickModel = request.param("click_model");
+                final String clickModel = request.param("click_model", "coec");
                 final int maxRank = Integer.parseInt(request.param("max_rank", "20"));
                 final long judgments;
 
@@ -176,14 +208,14 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                         throw new RuntimeException(e);
                     }
 
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Implicit judgment generation initiated."));
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Implicit judgment generation initiated.\"}"));
 
                 } else {
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "Invalid click_model."));
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid click model.\"}"));
                 }
 
             } else {
-                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, request.method() + " is not allowed."));
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, "{\"error\": \"" + request.method() + " is not allowed.\"}"));
             }
 
         // Handle the scheduling of creating implicit judgments.
@@ -274,7 +306,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 return restChannel -> client.delete(deleteRequest, new ActionListener<>() {
                     @Override
                     public void onResponse(final DeleteResponse deleteResponse) {
-                        restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "Scheduled job deleted."));
+                        restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Scheduled job deleted.\"}"));
                     }
 
                     @Override
@@ -284,14 +316,12 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 });
 
             } else {
-
-                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, request.method() + " is not allowed."));
-
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, "{\"error\": \"" + request.method() + " is not allowed.\"}"));
             }
 
         } else {
 
-            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.NOT_FOUND, request.path() + " is not found."));
+            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.NOT_FOUND, "{\"error\": \"" + request.path() + " was not found.\"}"));
 
         }
 

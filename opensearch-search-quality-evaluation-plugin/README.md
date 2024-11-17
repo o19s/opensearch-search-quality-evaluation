@@ -2,9 +2,19 @@
 
 This is an OpenSearch plugin built on the OpenSearch job scheduler plugin.
 
+## API Endpoints
+
+| Method | Endpoint                                | Description                                                                                                                            |
+|--------|-----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| `POST` | `/_plugins/search_quality_eval/queryset`  | Create a query set by sampling from the `ubi_queries` index. The `name`, `description`, and `sampling` method parameters are required. |
+| `POST` | `/_plugins/search_quality_eval/run`       | Initiate a run of a query set. The `name` of the query set is a required parameter.                                                    |
+| `POST` | `/_plugins/search_quality_eval/judgments` | Generate implicit judgments from UBI events and queries now.                                                                           |
+| `POST`  | `/_plugins/search_quality_eval/schedule`  | Create a scheduled job to generate implicit judgments.                                                                                 |
+
+
 ## Building
 
-Build the project from the top-level directory to build both projects.
+Build the project from the top-level directory to build all projects.
 
 ```
 cd ..
@@ -12,6 +22,8 @@ cd ..
 ```
 
 ## Running in Docker
+
+From this directory:
 
 ```
 docker compose build && docker compose up
