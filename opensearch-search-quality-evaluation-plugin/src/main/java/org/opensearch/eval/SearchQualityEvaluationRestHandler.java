@@ -30,6 +30,7 @@ import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestResponse;
+import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
@@ -37,8 +38,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
@@ -92,42 +95,69 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 final String name = request.param("name");
                 final String description = request.param("description");
                 final String sampling = request.param("sampling", "pptss");
+                final int maxQueries = Integer.parseInt(request.param("max_queries", "1000"));
 
-                // If we are not sampling queries, the query sets should just be directly
-                // indexed into OpenSearch using the `ubi_querysets` index directly, i.e.
-                // curl -X PUT http://localhost:9200/ubi_querysets/_doc/1 {"query": "some user query"}
+                // Create a query set by finding all the unique user_query terms.
+                if (StringUtils.equalsIgnoreCase(sampling, "none")) {
 
-                if (StringUtils.equalsIgnoreCase(sampling, "pptss")) {
+                    // If we are not sampling queries, the query sets should just be directly
+                    // indexed into OpenSearch using the `ubu_queries` index directly.
+
+                    try {
+
+                        // Get queries from the UBI queries index.
+                        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+                        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+                        searchSourceBuilder.from(0);
+                        searchSourceBuilder.size(maxQueries);
+
+                        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
+                        searchRequest.source(searchSourceBuilder);
+
+                        final SearchResponse searchResponse = client.search(searchRequest).get();
+
+                        LOGGER.info("Found {} user queries from the ubi_queries index.", searchResponse.getHits().getTotalHits().toString());
+
+                        final Set<String> queries = new HashSet<>();
+                        for(final SearchHit hit : searchResponse.getHits().getHits()) {
+                            final Map<String, Object> fields = hit.getSourceAsMap();
+                            queries.add(fields.get("user_query").toString());
+                        }
+
+                        LOGGER.info("Found {} user queries from the ubi_queries index.", queries.size());
+
+                        // Create the query set and return its ID.
+                        final String querySetId = indexQuerySet(client, name, description, sampling, queries);
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"query_set\": \"" + querySetId + "\"}"));
+
+                    } catch(Exception ex) {
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, "{\"error\": \"" + ex.getMessage() + "\"}"));
+                    }
+
+
+                // Create a query set by using PPTSS sampling.
+                } else if (StringUtils.equalsIgnoreCase(sampling, "pptss")) {
 
                     // TODO: Use the PPTSS sampling method - https://opensourceconnections.com/blog/2022/10/13/how-to-succeed-with-explicit-relevance-evaluation-using-probability-proportional-to-size-sampling/
                     final Collection<String> queries = List.of("computer", "desk", "table", "battery");
 
-                    // Index the query set.
-                    final Map<String, Object> querySet = new HashMap<>();
-                    querySet.put("name", name);
-                    querySet.put("description", description);
-                    querySet.put("sampling", sampling);
-                    querySet.put("queries", queries);
-
-                    final String querySetId = UUID.randomUUID().toString();
-
-                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME)
-                            .id(querySetId).source(querySet).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-
                     try {
-                        client.index(indexRequest).get();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+
+                        // Create the query set and return its ID.
+                        final String querySetId = indexQuerySet(client, name, description, sampling, queries);
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"query_set\": \"" + querySetId + "\"}"));
+
+                    } catch(Exception ex) {
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, "{\"error\": \"" + ex.getMessage() + "\"}"));
                     }
 
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"query_set\": \"" + querySetId + "\"}"));
-
                 } else {
-                    // Invalid sampling method.
+                    // An Invalid sampling method was provided in the request.
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid sampling method: " + sampling + "\"}"));
                 }
 
             } else {
+                // Invalid HTTP method for this endpoint.
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, "{\"error\": \"" + request.method() + " is not allowed.\"}"));
             }
 
@@ -324,6 +354,31 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.NOT_FOUND, "{\"error\": \"" + request.path() + " was not found.\"}"));
 
         }
+
+    }
+
+    /**
+     * Index the query set.
+     */
+    private String indexQuerySet(final NodeClient client, final String name, final String description, final String sampling, Collection<String> queries) throws Exception {
+
+        final Map<String, Object> querySet = new HashMap<>();
+        querySet.put("name", name);
+        querySet.put("description", description);
+        querySet.put("sampling", sampling);
+        querySet.put("queries", queries);
+        querySet.put("created_at", Instant.now().toEpochMilli());
+
+        final String querySetId = UUID.randomUUID().toString();
+
+        final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME)
+                .id(querySetId)
+                .source(querySet)
+                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+        client.index(indexRequest).get();
+
+        return querySetId;
 
     }
 

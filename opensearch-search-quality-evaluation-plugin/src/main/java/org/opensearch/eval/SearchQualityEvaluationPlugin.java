@@ -48,6 +48,8 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationPlugin.class);
 
+    public static final String UBI_QUERIES_INDEX_NAME = "ubi_queries";
+
     public static final String SCHEDULED_JOBS_INDEX_NAME = "search_quality_eval_scheduled_jobs";
     public static final String COMPLETED_JOBS_INDEX_NAME = "search_quality_eval_completed_jobs";
     public static final String QUERY_SETS_INDEX_NAME = "search_quality_eval_query_sets";
