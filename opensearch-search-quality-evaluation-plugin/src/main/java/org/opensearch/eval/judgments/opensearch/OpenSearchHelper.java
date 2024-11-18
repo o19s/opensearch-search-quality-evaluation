@@ -9,6 +9,8 @@
 package org.opensearch.eval.judgments.opensearch;
 
 import com.google.gson.Gson;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.search.SearchRequest;
@@ -25,9 +27,9 @@ import org.opensearch.search.builder.SearchSourceBuilder;
 import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -38,6 +40,8 @@ import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
 
 public class OpenSearchHelper {
+
+    private static final Logger LOGGER = LogManager.getLogger(OpenSearchHelper.class.getName());
 
     private final Client client;
     private final Gson gson = new Gson();
@@ -77,6 +81,8 @@ public class OpenSearchHelper {
      */
     public UbiQuery getQueryFromQueryId(final String queryId) throws Exception {
 
+        //LOGGER.info("Getting query from query ID {}", queryId);
+
         final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
 
@@ -94,13 +100,101 @@ public class OpenSearchHelper {
         // Will only be a single result.
         final SearchHit hit = response.getHits().getHits()[0];
 
+        //LOGGER.info("Retrieved query from query ID {}", queryId);
+
         return AccessController.doPrivileged((PrivilegedAction<UbiQuery>) () -> gson.fromJson(hit.getSourceAsString(), UbiQuery.class));
 
     }
 
-    public int getCountOfQueriesForUserQueryHavingResultInRankR(final String userQuery, final String objectId, final int rank) throws Exception {
+    private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 
-        int countOfTimesShownAtRank = 0;
+        final String query = "{\"match\": {\"user_query\": \"" + userQuery + "\" }}";
+        final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
+
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(qb);
+
+        final String[] indexes = {INDEX_UBI_QUERIES};
+
+        final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
+        final SearchResponse response = client.search(searchRequest).get();
+
+        final Collection<String> queryIds = new ArrayList<>();
+
+        for(final SearchHit hit : response.getHits().getHits()) {
+            final String queryId = hit.getSourceAsMap().get("query_id").toString();
+            queryIds.add(queryId);
+        }
+
+        return queryIds;
+
+    }
+
+    public long getCountOfQueriesForUserQueryHavingResultInRankR(final String userQuery, final String objectId, final int rank) throws Exception {
+
+        long countOfTimesShownAtRank = 0;
+
+        // Get all query IDs matching this user query.
+        final Collection<String> queryIds = getQueryIdsHavingUserQuery(userQuery);
+
+        // For each query ID, get the events with action_name = "view" having a match on objectId and rank (position).
+        for(final String queryId : queryIds) {
+
+            //LOGGER.info("userQuery = {}; queryId = {}; objectId = {}; rank = {}", userQuery, queryId, objectId, rank);
+
+            final String query = "{\n" +
+                    "    \"bool\": {\n" +
+                    "      \"must\": [\n" +
+                    "          {\n" +
+                    "            \"term\": {\n" +
+                    "              \"query_id\": \"" + queryId + "\"\n" +
+                    "            }\n" +
+                    "          },\n" +
+                    "          {\n" +
+                    "            \"term\": {\n" +
+                    "              \"action_name\": \"view\"\n" +
+                    "            }\n" +
+                    "          },\n" +
+                    "          {\n" +
+                    "            \"term\": {\n" +
+                    "              \"event_attributes.position.index\": \"" + rank + "\"\n" +
+                    "            }\n" +
+                    "          },\n" +
+                    "          {\n" +
+                    "            \"term\": {\n" +
+                    "              \"event_attributes.object.object_id\": \"" + objectId + "\"\n" +
+                    "            }\n" +
+                    "          }\n" +
+                    "        ]\n" +
+                    "      }\n" +
+                    "    }";
+
+            final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
+
+            final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(qb);
+
+            final String[] indexes = {INDEX_UBI_QUERIES};
+
+            final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
+            final SearchResponse response = client.search(searchRequest).get();
+
+            countOfTimesShownAtRank += response.getHits().getTotalHits().value;
+
+        }
+
+        //LOGGER.info("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
+
+        if(countOfTimesShownAtRank > 0) {
+            LOGGER.info("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
+        }
+
+        return countOfTimesShownAtRank;
+
+        /*
+
+        // This commented block was used to get the value using the ubi_queries index.
+        // We can now just use the ubi_events index.
 
         final String query = "{\"match\": {\"user_query\": \"" + userQuery + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
@@ -123,7 +217,7 @@ public class OpenSearchHelper {
 
         }
 
-        return countOfTimesShownAtRank;
+        */
 
     }
 

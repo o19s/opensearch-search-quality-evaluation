@@ -1,0 +1,151 @@
+DELETE ubi_events
+DELETE ubi_queries
+
+GET ubi_events/_mapping
+GET ubi_events/_search
+
+GET ubi_queries/_mapping
+GET ubi_queries/_search
+
+DELETE judgments
+GET judgments/_search
+
+
+PUT ubi_queries
+{
+  "mappings": {
+    "properties": {
+      "timestamp": { "type": "date", "format": "strict_date_time" },
+      "query_id": { "type": "keyword", "ignore_above": 100 },
+      "query": { "type": "text" },
+      "query_response_id": { "type": "keyword", "ignore_above": 100 },
+      "query_response_hit_ids": { "type": "keyword" },
+      "user_query": { "type": "keyword", "ignore_above": 256 },
+      "query_attributes": { "type": "flat_object" },
+      "client_id": { "type": "keyword", "ignore_above": 100 },
+      "application":  { "type":  "keyword", "ignore_above": 100 }
+    }
+  }
+}
+
+PUT ubi_events
+{
+"mappings": {
+  "properties": {
+    "application": { "type": "keyword", "ignore_above": 256 },
+    "action_name": { "type": "keyword", "ignore_above": 100 },
+    "client_id": { "type": "keyword", "ignore_above": 100 },
+    "query_id": { "type": "keyword", "ignore_above": 100 },
+    "message": { "type": "keyword", "ignore_above": 1024 },
+    "message_type": { "type": "keyword", "ignore_above": 100 },
+    "timestamp": {
+      "type": "date",
+      "format":"strict_date_time",
+      "ignore_malformed": true,
+      "doc_values": true
+    },
+    "event_attributes": {
+      "dynamic": true,
+      "properties": {
+        "position": {
+          "properties": {
+            "ordinal": { "type": "integer" },
+            "x": { "type": "integer" },
+            "y": { "type": "integer" },
+            "page_depth": { "type": "integer" },
+            "scroll_depth": { "type": "integer" },
+            "trail": { "type": "text",
+              "fields": { "keyword": { "type": "keyword", "ignore_above": 256 }
+              }
+            }
+          }
+        },
+        "object": {
+          "properties": {
+            "internal_id": { "type": "keyword" },
+            "object_id": { "type": "keyword", "ignore_above": 256 },
+            "object_id_field": { "type": "keyword", "ignore_above": 100 },
+            "name": { "type": "keyword", "ignore_above": 256 },
+            "description": { "type": "text",
+              "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+            },
+            "object_detail": { "type": "object" }
+          }
+        }
+      }
+    }
+  }
+  }
+}
+
+GET ubi_events/_search
+{
+  "query": {
+    "range": {
+      "event_attributes.position.index": {
+        "lte": 20
+      }
+    }
+  }
+}
+
+GET ubi_queries/_search
+{
+  "query": {
+    "term": {
+      "user_query": "batteries"
+    }
+  }
+}
+
+GET ubi_events/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+          {
+            "term": {
+              "query_id": "cdc01f67-0b24-4c96-bb56-a89234f4fb0c"
+            }
+          },
+          {
+            "term": {
+              "action_name": "click"
+            }
+          },
+          {
+            "term": {
+              "event_attributes.position.index": "0"
+            }
+          },
+          {
+            "term": {
+              "event_attributes.object.object_id": "B0797J3DWK"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
+GET ubi_events/_search
+{
+  "size": 0,
+  "aggs": {
+    "By_Action": {
+      "terms": {
+        "field": "action_name",
+        "size": 20
+      },
+      "aggs": {
+        "By_Position": {
+          "terms": {
+            "field": "event_attributes.position.index",
+            "size": 20
+          }
+        }
+      }
+    }
+  }
+}

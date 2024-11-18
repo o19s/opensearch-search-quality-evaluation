@@ -15,6 +15,11 @@ public class Position {
     @SerializedName("index")
     private int index;
 
+    @Override
+    public String toString() {
+        return String.valueOf(index);
+    }
+
     public int getIndex() {
         return index;
     }

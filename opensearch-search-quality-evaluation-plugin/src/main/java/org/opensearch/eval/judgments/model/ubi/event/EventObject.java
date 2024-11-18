@@ -18,6 +18,11 @@ public class EventObject {
     @SerializedName("object_id")
     private String objectId;
 
+    @Override
+    public String toString() {
+        return "[" + objectIdField + ", " + objectId + "]";
+    }
+
     public String getObjectId() {
         return objectId;
     }

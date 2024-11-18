@@ -1,1 +1,2 @@
 ubi_queries_events_1000.ndjson.bz2 filter=lfs diff=lfs merge=lfs -text
+ubi_queries_events.ndjson.bz2 filter=lfs diff=lfs merge=lfs -text

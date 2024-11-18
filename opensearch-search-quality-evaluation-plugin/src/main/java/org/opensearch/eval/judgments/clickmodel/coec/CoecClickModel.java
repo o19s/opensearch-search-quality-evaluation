@@ -124,7 +124,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 for(int r = 0; r < maxRank; r++) {
 
                     final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(r, 0.0);
-                    final int countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
+                    final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
 
 //                    System.out.println("rank = " + r);
 //                    System.out.println("\tmeanCtrAtRank = " + meanCtrAtRank);
@@ -179,7 +179,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         // TODO: Use maxRank in place of the hardcoded 20.
         // TODO: Allow for a time period and for a specific application.
 
-        /**
+        /*
          * {
          *                 "bool": {
          *                   "should": [
@@ -234,7 +234,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 "              }";
 
         final BoolQueryBuilder queryBuilder = new BoolQueryBuilder().must(new WrapperQueryBuilder(query));
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(1000);
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(500);
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
         final SearchRequest searchRequest = Requests
@@ -243,6 +243,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 .scroll(scroll);
 
         SearchResponse searchResponse = client.search(searchRequest).get();
+
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
 
@@ -253,6 +254,8 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
             for (final SearchHit hit : searchHits) {
 
                 final UbiEvent ubiEvent = AccessController.doPrivileged((PrivilegedAction<UbiEvent>) () -> gson.fromJson(hit.getSourceAsString(), UbiEvent.class));
+
+                //LOGGER.info("event: {}", ubiEvent.toString());
 
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but they are the same search.
@@ -280,7 +283,12 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
             final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
             scrollRequest.scroll(scroll);
 
+            //LOGGER.info("Doing scroll to next results");
+            // TODO: Getting a warning in the log that "QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour"
+            // https://github.com/opensearch-project/OpenSearch/blob/f105e4eb2ede1556b5dd3c743bea1ab9686ebccf/server/src/main/java/org/opensearch/wlm/QueryGroupTask.java#L73
             searchResponse = client.searchScroll(scrollRequest).get();
+            //LOGGER.info("Scroll complete.");
+
             scrollId = searchResponse.getScrollId();
 
             searchHits = searchResponse.getHits().getHits();
