@@ -20,7 +20,7 @@ import java.util.Map;
 public class UbiQuery {
 
     @SerializedName("timestamp")
-    private long timestamp;
+    private String timestamp;
 
     @SerializedName("query_id")
     private String queryId;
@@ -54,11 +54,11 @@ public class UbiQuery {
                 toHashCode();
     }
 
-    public long getTimestamp() {
+    public String getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(long timestamp) {
+    public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
     }
 
