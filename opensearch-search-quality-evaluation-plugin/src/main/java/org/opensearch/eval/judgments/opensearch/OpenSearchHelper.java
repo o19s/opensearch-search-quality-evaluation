@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.opensearch.eval.judgments.clickmodel.ClickModel.INDEX_UBI_EVENTS;
 import static org.opensearch.eval.judgments.clickmodel.ClickModel.INDEX_UBI_QUERIES;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_JUDGMENTS;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
@@ -169,15 +170,34 @@ public class OpenSearchHelper {
                     "      }\n" +
                     "    }";
 
+            //LOGGER.info(query);
+            //LOGGER.info("----------------------------------------------------");
+
             final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
 
             final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(qb);
+            searchSourceBuilder.trackTotalHits(true);
+            searchSourceBuilder.size(0);
 
-            final String[] indexes = {INDEX_UBI_QUERIES};
+            final String[] indexes = {INDEX_UBI_EVENTS};
 
             final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
             final SearchResponse response = client.search(searchRequest).get();
+
+            if(queryId.equals("a2151d8c-44b6-4af6-9993-39cd7798671b")) {
+                if(objectId.equals("B07R1J8TYC")) {
+                    if(rank == 4) {
+                        LOGGER.info("This is the one!");
+                        LOGGER.info("Hits = {}", response.getHits().getTotalHits().value);
+                        LOGGER.info(response.toString());
+                    }
+                }
+            }
+
+
+
+            //LOGGER.info("Query ID: {} --- Count of {} having {} at rank {} = {}", queryId, userQuery, objectId, rank, response.getHits().getTotalHits().value);
 
             countOfTimesShownAtRank += response.getHits().getTotalHits().value;
 
@@ -186,7 +206,7 @@ public class OpenSearchHelper {
         //LOGGER.info("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
 
         if(countOfTimesShownAtRank > 0) {
-            LOGGER.info("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
+            //LOGGER.info("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
         }
 
         return countOfTimesShownAtRank;

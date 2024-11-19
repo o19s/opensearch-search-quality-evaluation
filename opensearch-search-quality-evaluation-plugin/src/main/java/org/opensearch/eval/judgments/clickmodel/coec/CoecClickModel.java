@@ -234,7 +234,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 "              }";
 
         final BoolQueryBuilder queryBuilder = new BoolQueryBuilder().must(new WrapperQueryBuilder(query));
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(500);
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(1000);
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
         final SearchRequest searchRequest = Requests
@@ -269,8 +269,10 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
 
                 if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
+                    //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
                     clickthroughRate.logClick();
                 } else {
+                    //LOGGER.info("Logging a VIEW on " + ubiEvent.getEventAttributes().getObject().getObjectId());
                     clickthroughRate.logEvent();
                 }
 
@@ -285,6 +287,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
             //LOGGER.info("Doing scroll to next results");
             // TODO: Getting a warning in the log that "QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour"
+            // I don't remember seeing this prior to 2.18.0 but it's possible I just didn't see it.
             // https://github.com/opensearch-project/OpenSearch/blob/f105e4eb2ede1556b5dd3c743bea1ab9686ebccf/server/src/main/java/org/opensearch/wlm/QueryGroupTask.java#L73
             searchResponse = client.searchScroll(scrollRequest).get();
             //LOGGER.info("Scroll complete.");
