@@ -185,17 +185,15 @@ public class OpenSearchHelper {
             final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
             final SearchResponse response = client.search(searchRequest).get();
 
-            if(queryId.equals("a2151d8c-44b6-4af6-9993-39cd7798671b")) {
-                if(objectId.equals("B07R1J8TYC")) {
-                    if(rank == 4) {
-                        LOGGER.info("This is the one!");
-                        LOGGER.info("Hits = {}", response.getHits().getTotalHits().value);
-                        LOGGER.info(response.toString());
-                    }
-                }
-            }
-
-
+//            if(queryId.equals("a2151d8c-44b6-4af6-9993-39cd7798671b")) {
+//                if(objectId.equals("B07R1J8TYC")) {
+//                    if(rank == 4) {
+//                        LOGGER.info("This is the one!");
+//                        LOGGER.info("Hits = {}", response.getHits().getTotalHits().value);
+//                        LOGGER.info(response.toString());
+//                    }
+//                }
+//            }
 
             //LOGGER.info("Query ID: {} --- Count of {} having {} at rank {} = {}", queryId, userQuery, objectId, rank, response.getHits().getTotalHits().value);
 
