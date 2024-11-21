@@ -10,6 +10,9 @@ package org.opensearch.eval.judgments.model.ubi.event;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * A position represents the location of a search result in an event.
+ */
 public class Position {
 
     @SerializedName("index")
@@ -20,10 +23,18 @@ public class Position {
         return String.valueOf(index);
     }
 
+    /**
+     * Gets the index of the position.
+     * @return The index of the position.
+     */
     public int getIndex() {
         return index;
     }
 
+    /**
+     * Sets the index of the position.
+     * @param index The index of the position.
+     */
     public void setIndex(int index) {
         this.index = index;
     }

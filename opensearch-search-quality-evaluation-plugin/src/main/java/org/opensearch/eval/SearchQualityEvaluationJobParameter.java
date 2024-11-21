@@ -17,9 +17,24 @@ import java.time.Instant;
 
 public class SearchQualityEvaluationJobParameter implements ScheduledJobParameter {
 
+    /**
+     * The name of the parameter for providing a name for the scheduled job.
+     */
     public static final String NAME_FIELD = "name";
+
+    /**
+     * The name of the parameter for creating a job as enabled or disabled.
+     */
     public static final String ENABLED_FILED = "enabled";
+
+    /**
+     * The name of the parameter for specifying when the job was last updated.
+     */
     public static final String LAST_UPDATE_TIME_FIELD = "last_update_time";
+
+    /**
+     * The name of the parameter for specifying a readable time for when the job was last updated.
+     */
     public static final String LAST_UPDATE_TIME_FIELD_READABLE = "last_update_time_field";
     public static final String SCHEDULE_FIELD = "schedule";
     public static final String ENABLED_TIME_FILED = "enabled_time";
@@ -27,8 +42,14 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
     public static final String LOCK_DURATION_SECONDS = "lock_duration_seconds";
     public static final String JITTER = "jitter";
 
-    // Custom properties.
+    /**
+     * The name of the parameter that allows for specifying the type of click model to use.
+     */
     public static final String CLICK_MODEL = "click_model";
+
+    /**
+     * The name of the parameter that allows for setting a max rank value to use during judgment generation.
+     */
     public static final String MAX_RANK = "max_rank";
 
     // Properties from ScheduledJobParameter.
@@ -136,46 +157,90 @@ public class SearchQualityEvaluationJobParameter implements ScheduledJobParamete
         return jitter;
     }
 
+    /**
+     * Sets the name of the job.
+     * @param jobName The name of the job.
+     */
     public void setJobName(String jobName) {
         this.jobName = jobName;
     }
 
+    /**
+     * Sets when the job was last updated.
+     * @param lastUpdateTime An {@link Instant} of when the job was last updated.
+     */
     public void setLastUpdateTime(Instant lastUpdateTime) {
         this.lastUpdateTime = lastUpdateTime;
     }
 
+    /**
+     * Sets when the job was enabled.
+     * @param enabledTime An {@link Instant} of when the job was enabled.
+     */
     public void setEnabledTime(Instant enabledTime) {
         this.enabledTime = enabledTime;
     }
 
+    /**
+     * Sets whether the job is enabled.
+     * @param enabled A boolean representing whether the job is enabled.
+     */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
 
+    /**
+     * Sets the schedule for the job.
+     * @param schedule A {@link Schedule} for the job.
+     */
     public void setSchedule(Schedule schedule) {
         this.schedule = schedule;
     }
 
+    /**
+     * Sets the lock duration for the cluster when running the job.
+     * @param lockDurationSeconds The lock duration in seconds.
+     */
     public void setLockDurationSeconds(Long lockDurationSeconds) {
         this.lockDurationSeconds = lockDurationSeconds;
     }
 
+    /**
+     * Sets the jitter for the job.
+     * @param jitter The jitter for the job.
+     */
     public void setJitter(Double jitter) {
         this.jitter = jitter;
     }
 
+    /**
+     * Gets the type of click model to use for implicit judgment generation.
+     * @return The type of click model to use for implicit judgment generation.
+     */
     public String getClickModel() {
         return clickModel;
     }
 
+    /**
+     * Sets the click model type to use for implicit judgment generation.
+     * @param clickModel The click model type to use for implicit judgment generation.
+     */
     public void setClickModel(String clickModel) {
         this.clickModel = clickModel;
     }
 
+    /**
+     * Gets the max rank to use when generating implicit judgments.
+     * @return The max rank to use when generating implicit judgments.
+     */
     public int getMaxRank() {
         return maxRank;
     }
 
+    /**
+     * Sets the max rank to use when generating implicit judgments.
+     * @param maxRank The max rank to use when generating implicit judgments.
+     */
     public void setMaxRank(int maxRank) {
         this.maxRank = maxRank;
     }
