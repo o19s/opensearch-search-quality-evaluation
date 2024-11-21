@@ -8,18 +8,27 @@
  */
 package org.opensearch.eval.judgments.util;
 
+import org.opensearch.eval.judgments.model.UserQueryHash;
+
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserQueryHash {
+/**
+ * Facilitates the hashing of user queries.
+ */
+public class IncrementalUserQueryHash implements UserQueryHash {
 
     private final Map<String, Integer> userQueries;
     private int count = 1;
 
-    public UserQueryHash() {
+    /**
+     * Creates a new instance of this class.
+     */
+    public IncrementalUserQueryHash() {
         this.userQueries = new HashMap<>();
     }
 
+    @Override
     public int getHash(String userQuery) {
 
         final int hash;

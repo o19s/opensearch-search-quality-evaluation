@@ -350,9 +350,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             }
 
         } else {
-
             return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.NOT_FOUND, "{\"error\": \"" + request.path() + " was not found.\"}"));
-
         }
 
     }

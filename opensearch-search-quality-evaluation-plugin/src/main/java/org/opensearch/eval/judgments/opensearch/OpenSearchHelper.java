@@ -34,8 +34,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.opensearch.eval.judgments.clickmodel.ClickModel.INDEX_UBI_EVENTS;
-import static org.opensearch.eval.judgments.clickmodel.ClickModel.INDEX_UBI_QUERIES;
+import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME;
+import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_JUDGMENTS;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
@@ -79,6 +79,7 @@ public class OpenSearchHelper {
      * Gets the query object for a given query ID.
      * @param queryId The query ID.
      * @return A {@link UbiQuery} object for the given query ID.
+     * @throws Exception Thrown if the query cannot be retrieved.
      */
     public UbiQuery getQueryFromQueryId(final String queryId) throws Exception {
 
@@ -93,7 +94,7 @@ public class OpenSearchHelper {
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(1);
 
-        final String[] indexes = {INDEX_UBI_QUERIES};
+        final String[] indexes = {UBI_QUERIES_INDEX_NAME};
 
         final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
         final SearchResponse response = client.search(searchRequest).get();
@@ -115,7 +116,7 @@ public class OpenSearchHelper {
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(qb);
 
-        final String[] indexes = {INDEX_UBI_QUERIES};
+        final String[] indexes = {UBI_QUERIES_INDEX_NAME};
 
         final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
         final SearchResponse response = client.search(searchRequest).get();
@@ -180,7 +181,7 @@ public class OpenSearchHelper {
             searchSourceBuilder.trackTotalHits(true);
             searchSourceBuilder.size(0);
 
-            final String[] indexes = {INDEX_UBI_EVENTS};
+            final String[] indexes = {UBI_EVENTS_INDEX_NAME};
 
             final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
             final SearchResponse response = client.search(searchRequest).get();

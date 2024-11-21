@@ -18,13 +18,14 @@ import org.opensearch.action.search.SearchScrollRequest;
 import org.opensearch.client.Client;
 import org.opensearch.client.Requests;
 import org.opensearch.common.unit.TimeValue;
+import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.judgments.model.ubi.event.UbiEvent;
 import org.opensearch.eval.judgments.opensearch.OpenSearchHelper;
 import org.opensearch.eval.judgments.util.MathUtils;
-import org.opensearch.eval.judgments.util.UserQueryHash;
+import org.opensearch.eval.judgments.util.IncrementalUserQueryHash;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
@@ -46,7 +47,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
+public class CoecClickModel extends ClickModel {
 
     // OpenSearch indexes.
     public static final String INDEX_RANK_AGGREGATED_CTR = "rank_aggregated_ctr";
@@ -61,7 +62,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
 
     private final OpenSearchHelper openSearchHelper;
 
-    private final UserQueryHash userQueryHash = new UserQueryHash();
+    private final IncrementalUserQueryHash incrementalUserQueryHash = new IncrementalUserQueryHash();
     private final Gson gson = new Gson();
     private final Client client;
 
@@ -144,7 +145,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
                 final double judgment = totalNumberClicksForQueryResult / denominatorSum;
 
                 // Hash the user query to get a query ID.
-                final int queryId = userQueryHash.getHash(userQuery);
+                final int queryId = incrementalUserQueryHash.getHash(userQuery);
 
                 // Add the judgment to the list.
                 // TODO: What to do for query ID when the values are per user_query instead?
@@ -238,7 +239,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
         final SearchRequest searchRequest = Requests
-                .searchRequest(INDEX_UBI_EVENTS)
+                .searchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME)
                 .source(searchSourceBuilder)
                 .scroll(scroll);
 
@@ -329,7 +330,7 @@ public class CoecClickModel extends ClickModel<CoecClickModelParameters> {
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(100);
 
-        final SearchRequest searchRequest = new SearchRequest(INDEX_UBI_EVENTS).source(searchSourceBuilder);
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
         final Map<Integer, Double> clickCounts = new HashMap<>();

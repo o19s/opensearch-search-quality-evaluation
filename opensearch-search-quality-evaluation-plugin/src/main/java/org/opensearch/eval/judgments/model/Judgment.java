@@ -28,6 +28,13 @@ public class Judgment {
     private final String document;
     private final double judgment;
 
+    /**
+     * Creates a new judgment.
+     * @param queryId The query ID for the judgment.
+     * @param query The query for the judgment.
+     * @param document The document in the jdugment.
+     * @param judgment The judgment value.
+     */
     public Judgment(final String queryId, final String query, final String document, final double judgment) {
         this.queryId = queryId;
         this.query = query;
@@ -39,6 +46,10 @@ public class Judgment {
         return queryId + ", " + query + ", " + document + ", " + MathUtils.round(judgment);
     }
 
+    /**
+     * A convenience function to output the judgments.
+     * @param judgments A collection of {@link Judgment}.
+     */
     public static void showJudgments(final Collection<Judgment> judgments) {
 
         LOGGER.info("query_id, query, document, judgment");
@@ -69,18 +80,34 @@ public class Judgment {
                 toHashCode();
     }
 
+    /**
+     * Gets the judgment's query ID.
+     * @return The judgment's query ID.
+     */
     public String getQueryId() {
         return queryId;
     }
 
+    /**
+     * Gets the judgment's query.
+     * @return The judgment's query.
+     */
     public String getQuery() {
         return query;
     }
 
+    /**
+     * Gets the judgment's document.
+     * @return The judgment's document.
+     */
     public String getDocument() {
         return document;
     }
 
+    /**
+     * Gets the judgment's value.
+     * @return The judgment's value.
+     */
     public double getJudgment() {
         return judgment;
     }

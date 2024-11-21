@@ -8,11 +8,16 @@
  */
 package org.opensearch.eval.judgments.clickmodel;
 
-public abstract class ClickModel<T extends ClickModelParameters> {
+/**
+ * Base class for creating click models.
+ */
+public abstract class ClickModel {
 
-    public static final String INDEX_UBI_EVENTS = "ubi_events";
-    public static final String INDEX_UBI_QUERIES = "ubi_queries";
-
+    /**
+     * Calculate implicit judgments.
+     * @return The number of implicit judgments created.
+     * @throws Exception Thrown if the judgments cannot be created.
+     */
     public abstract long calculateJudgments() throws Exception;
 
 }

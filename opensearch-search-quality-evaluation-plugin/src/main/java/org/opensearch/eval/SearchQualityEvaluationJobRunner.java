@@ -28,12 +28,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Job runner for scheduled implicit judgments jobs.
+ */
 public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
 
     private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationJobRunner.class);
 
     private static SearchQualityEvaluationJobRunner INSTANCE;
 
+    /**
+     * Gets a singleton instance of this class.
+     * @return A {@link SearchQualityEvaluationJobRunner}.
+     */
     public static SearchQualityEvaluationJobRunner getJobRunnerInstance() {
 
         LOGGER.info("Getting job runner instance");

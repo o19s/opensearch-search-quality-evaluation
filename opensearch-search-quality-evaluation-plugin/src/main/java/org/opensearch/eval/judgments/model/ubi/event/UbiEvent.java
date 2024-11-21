@@ -32,22 +32,42 @@ public class UbiEvent {
         return actionName + ", " + clientId + ", " + queryId + ", " + eventAttributes.getObject().toString() + ", " + eventAttributes.getPosition().getIndex();
     }
 
+    /**
+     * Gets the name of the action.
+     * @return The name of the action.
+     */
     public String getActionName() {
         return actionName;
     }
 
+    /**
+     * Gets the client ID.
+     * @return The client ID.
+     */
     public String getClientId() {
         return clientId;
     }
 
+    /**
+     * Gets the query ID.
+     * @return The query ID.
+     */
     public String getQueryId() {
         return queryId;
     }
 
+    /**
+     * Gets the event attributes.
+     * @return The {@link EventAttributes}.
+     */
     public EventAttributes getEventAttributes() {
         return eventAttributes;
     }
 
+    /**
+     * Sets the event attributes.
+     * @param eventAttributes The {@link EventAttributes}.
+     */
     public void setEventAttributes(EventAttributes eventAttributes) {
         this.eventAttributes = eventAttributes;
     }
