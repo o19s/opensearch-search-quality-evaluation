@@ -24,6 +24,8 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParameters;
+import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.rest.BaseRestHandler;
@@ -95,7 +97,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 final String name = request.param("name");
                 final String description = request.param("description");
                 final String sampling = request.param("sampling", "pptss");
-                final int maxQueries = Integer.parseInt(request.param("max_queries", "1000"));
+                final int querySetSize = Integer.parseInt(request.param("query_set_size", "1000"));
 
                 // Create a query set by finding all the unique user_query terms.
                 if (StringUtils.equalsIgnoreCase(sampling, "none")) {
@@ -109,14 +111,14 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
                         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
                         searchSourceBuilder.from(0);
-                        searchSourceBuilder.size(maxQueries);
+                        searchSourceBuilder.size(querySetSize);
 
                         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
                         searchRequest.source(searchSourceBuilder);
 
                         final SearchResponse searchResponse = client.search(searchRequest).get();
 
-                        LOGGER.info("Found {} user queries from the ubi_queries index.", searchResponse.getHits().getTotalHits().toString());
+                        // LOGGER.info("Found {} user queries from the ubi_queries index.", searchResponse.getHits().getTotalHits().toString());
 
                         final Set<String> queries = new HashSet<>();
                         for(final SearchHit hit : searchResponse.getHits().getHits()) {
@@ -124,7 +126,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                             queries.add(fields.get("user_query").toString());
                         }
 
-                        LOGGER.info("Found {} user queries from the ubi_queries index.", queries.size());
+                        // LOGGER.info("Found {} user queries from the ubi_queries index.", queries.size());
 
                         // Create the query set and return its ID.
                         final String querySetId = indexQuerySet(client, name, description, sampling, queries);
@@ -138,8 +140,12 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 // Create a query set by using PPTSS sampling.
                 } else if (StringUtils.equalsIgnoreCase(sampling, "pptss")) {
 
-                    // TODO: Use the PPTSS sampling method - https://opensourceconnections.com/blog/2022/10/13/how-to-succeed-with-explicit-relevance-evaluation-using-probability-proportional-to-size-sampling/
-                    final Collection<String> queries = List.of("computer", "desk", "table", "battery");
+                    final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters(querySetSize);
+                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
+
+                    // TODO: Get all queries from the ubi_queries index.
+
+                    final Collection<String> queries = sampler.sample();
 
                     try {
 
