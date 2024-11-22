@@ -12,19 +12,20 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
+import org.opensearch.action.search.SearchScrollRequest;
 import org.opensearch.client.node.NodeClient;
+import org.opensearch.common.unit.TimeValue;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
@@ -64,20 +65,35 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
         searchSourceBuilder.from(0);
-        // TODO: Need to get all queries.
-        searchSourceBuilder.size(10000);
+        searchSourceBuilder.size(1000);
+        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME).scroll(scroll);
         searchRequest.source(searchSourceBuilder);
 
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
+        String scrollId = searchResponse.getScrollId();
+        SearchHit[] searchHits = searchResponse.getHits().getHits();
+
         final Collection<String> userQueries = new ArrayList<>();
 
-        for(final SearchHit hit : searchResponse.getHits().getHits()) {
-            final Map<String, Object> fields = hit.getSourceAsMap();
-            userQueries.add(fields.get("user_query").toString());
+        while (searchHits != null && searchHits.length > 0) {
+
+            for(final SearchHit hit : searchResponse.getHits().getHits()) {
+                final Map<String, Object> fields = hit.getSourceAsMap();
+                userQueries.add(fields.get("user_query").toString());
+            }
+
+            final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
+            scrollRequest.scroll(scroll);
+
+            scrollId = searchResponse.getScrollId();
+            searchHits = searchResponse.getHits().getHits();
+
         }
+
+        LOGGER.info("User queries found: {}", userQueries);
 
         final Map<String, Long> weights = new HashMap<>();
 
@@ -93,6 +109,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         final Map<String, Double> normalizedWeights = new HashMap<>();
         for(final String userQuery : weights.keySet()) {
             normalizedWeights.put(userQuery, weights.get(userQuery) / (double) countOfQueries);
+            LOGGER.info("{}: {}/{} = {}", userQuery, weights.get(userQuery), countOfQueries, normalizedWeights.get(userQuery));
         }
 
         // Ensure all normalized weights sum to 1.
@@ -114,20 +131,19 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
             } while (randomNumbers.contains(random));
             randomNumbers.add(random);
 
-            // Find the weight closest to the random weight.
-            double finalRandom = random;
-            double nearestWeight = normalizedWeights.values().stream()
-                    .min(Comparator.comparingDouble(i -> Math.abs(i - finalRandom)))
-                    .orElseThrow(() -> new NoSuchElementException("No value present"));
-
-            // Find the query having the weight closest to this random number.
-            for(Map.Entry<String, Double> entry : normalizedWeights.entrySet()) {
-                if(entry.getValue() == nearestWeight) {
-                    querySet.add(entry.getKey());
-                    LOGGER.info("Generated random value: {}; Closest value = {}", random, entry.getKey());
-                    break;
+            // Find the weight closest to the random weight in the map of deltas.
+            double smallestDelta = Integer.MAX_VALUE;
+            String closestQuery = null;
+            for(final String query : normalizedWeights.keySet()) {
+                final double delta = Math.abs(normalizedWeights.get(query) - random);
+                if(delta < smallestDelta) {
+                    smallestDelta = delta;
+                    closestQuery = query;
                 }
+
             }
+
+            LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
 
         }
 
