@@ -1,7 +1,9 @@
 
 # How to load dashboards into your Open Search installation
 
-Run the following shell script: `install_dashboards.sh`
+Run the following shell script: `./install_dashboards.sh http://localhost:9200 http://localhost:5601`
+
+To deploy in the Chorus for OpenSearch environment it would be: `./install_dashboards.sh http://chorus-opensearch-edition.dev.o19s.com:9200 http://chorus-opensearch-edition.dev.o19s.com:5601`
 
 # Prototype Dashboards in Notebook
 
