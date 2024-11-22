@@ -11,7 +11,7 @@ package org.opensearch.eval.judgments.model.ubi.event;
 import com.google.gson.annotations.SerializedName;
 
 /**
- * A UBI event.
+ * Creates a representation of a UBI event.
  */
 public class UbiEvent {
 
@@ -26,6 +26,13 @@ public class UbiEvent {
 
     @SerializedName("event_attributes")
     private EventAttributes eventAttributes;
+
+    /**
+     * Creates a new representation of an UBI event.
+     */
+    public UbiEvent() {
+
+    }
 
     @Override
     public String toString() {

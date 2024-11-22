@@ -46,6 +46,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
     public String sample() throws Exception {
 
         // Get queries from the UBI queries index.
+        // TODO: This needs to use scroll or something else.
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
         searchSourceBuilder.from(0);

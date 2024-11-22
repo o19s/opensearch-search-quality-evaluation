@@ -64,14 +64,14 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         // Get queries from the UBI queries index.
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-        searchSourceBuilder.from(0);
         searchSourceBuilder.size(1000);
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME).scroll(scroll);
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
+        searchRequest.scroll(scroll);
         searchRequest.source(searchSourceBuilder);
 
-        final SearchResponse searchResponse = client.search(searchRequest).get();
+        SearchResponse searchResponse = client.search(searchRequest).get();
 
         String scrollId = searchResponse.getScrollId();
         SearchHit[] searchHits = searchResponse.getHits().getHits();
@@ -80,20 +80,25 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
 
         while (searchHits != null && searchHits.length > 0) {
 
-            for(final SearchHit hit : searchResponse.getHits().getHits()) {
+            LOGGER.info("search hits size = " + searchHits.length);
+
+            for(final SearchHit hit : searchHits) {
                 final Map<String, Object> fields = hit.getSourceAsMap();
                 userQueries.add(fields.get("user_query").toString());
+              //  LOGGER.info("user queries count: {} user query: {}", userQueries.size(), fields.get("user_query").toString());
             }
 
             final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
             scrollRequest.scroll(scroll);
+
+            searchResponse = client.searchScroll(scrollRequest).get();
 
             scrollId = searchResponse.getScrollId();
             searchHits = searchResponse.getHits().getHits();
 
         }
 
-        LOGGER.info("User queries found: {}", userQueries);
+        // LOGGER.info("User queries found: {}", userQueries);
 
         final Map<String, Long> weights = new HashMap<>();
 
@@ -109,16 +114,18 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         final Map<String, Double> normalizedWeights = new HashMap<>();
         for(final String userQuery : weights.keySet()) {
             normalizedWeights.put(userQuery, weights.get(userQuery) / (double) countOfQueries);
-            LOGGER.info("{}: {}/{} = {}", userQuery, weights.get(userQuery), countOfQueries, normalizedWeights.get(userQuery));
+            //LOGGER.info("{}: {}/{} = {}", userQuery, weights.get(userQuery), countOfQueries, normalizedWeights.get(userQuery));
         }
 
         // Ensure all normalized weights sum to 1.
         final double sumOfNormalizedWeights = normalizedWeights.values().stream().reduce(0.0, Double::sum);
         if(!compare(1.0, sumOfNormalizedWeights)) {
             throw new RuntimeException("Summed normalized weights do not equal 1.0: Actual value: " + sumOfNormalizedWeights);
+        } else {
+            LOGGER.info("Summed normalized weights sum to {}", sumOfNormalizedWeights);
         }
 
-        final Collection<String> querySet = new ArrayList<>();
+        final Set<String> querySet = new HashSet<>();
         final Set<Double> randomNumbers = new HashSet<>();
 
         // Generate a random number between 0 and 1 for the size of the query set.
@@ -143,7 +150,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
 
             }
 
-            LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
+            // LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
 
         }
 
