@@ -8,7 +8,15 @@
  */
 package org.opensearch.eval.samplers;
 
-import org.opensearch.eval.judgments.model.ubi.query.UbiQuery;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.opensearch.action.search.SearchRequest;
+import org.opensearch.action.search.SearchResponse;
+import org.opensearch.client.node.NodeClient;
+import org.opensearch.eval.SearchQualityEvaluationPlugin;
+import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.search.SearchHit;
+import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,19 +28,24 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * An implementation of {@link QuerySampler} that uses PPTSS sampling.
+ * An implementation of {@link AbstractQuerySampler} that uses PPTSS sampling.
  * See https://opensourceconnections.com/blog/2022/10/13/how-to-succeed-with-explicit-relevance-evaluation-using-probability-proportional-to-size-sampling/
  * for more information on PPTSS.
  */
-public class ProbabilityProportionalToSizeQuerySampler implements QuerySampler {
+public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQuerySampler {
 
+    private static final Logger LOGGER = LogManager.getLogger(ProbabilityProportionalToSizeAbstractQuerySampler.class);
+
+    private final NodeClient client;
     private final ProbabilityProportionalToSizeParameters parameters;
 
     /**
      * Creates a new PPTSS sampler.
+     * @param client The OpenSearch {@link NodeClient client}.
      * @param parameters The {@link ProbabilityProportionalToSizeParameters parameters} for the sampling.
      */
-    public ProbabilityProportionalToSizeQuerySampler(final ProbabilityProportionalToSizeParameters parameters) {
+    public ProbabilityProportionalToSizeAbstractQuerySampler(final NodeClient client, final ProbabilityProportionalToSizeParameters parameters) {
+        this.client = client;
         this.parameters = parameters;
     }
 
@@ -42,7 +55,29 @@ public class ProbabilityProportionalToSizeQuerySampler implements QuerySampler {
     }
 
     @Override
-    public Collection<String> sample(final Collection<String> userQueries) {
+    public String sample() throws Exception {
+
+        // TODO: Can this be changed to an aggregation?
+        // An aggregation is limited (?) to 10,000 which could miss some queries.
+
+        // Get queries from the UBI queries index.
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
+        searchSourceBuilder.from(0);
+        // TODO: Need to get all queries.
+        searchSourceBuilder.size(10000);
+
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
+        searchRequest.source(searchSourceBuilder);
+
+        final SearchResponse searchResponse = client.search(searchRequest).get();
+
+        final Collection<String> userQueries = new ArrayList<>();
+
+        for(final SearchHit hit : searchResponse.getHits().getHits()) {
+            final Map<String, Object> fields = hit.getSourceAsMap();
+            userQueries.add(fields.get("user_query").toString());
+        }
 
         final Map<String, Long> weights = new HashMap<>();
 
@@ -62,8 +97,8 @@ public class ProbabilityProportionalToSizeQuerySampler implements QuerySampler {
 
         // Ensure all normalized weights sum to 1.
         final double sumOfNormalizedWeights = normalizedWeights.values().stream().reduce(0.0, Double::sum);
-        if(sumOfNormalizedWeights != 1.0) {
-            throw new RuntimeException("Summed normalized weights do not equal 1.0");
+        if(!compare(1.0, sumOfNormalizedWeights)) {
+            throw new RuntimeException("Summed normalized weights do not equal 1.0: Actual value: " + sumOfNormalizedWeights);
         }
 
         final Collection<String> querySet = new ArrayList<>();
@@ -89,14 +124,19 @@ public class ProbabilityProportionalToSizeQuerySampler implements QuerySampler {
             for(Map.Entry<String, Double> entry : normalizedWeights.entrySet()) {
                 if(entry.getValue() == nearestWeight) {
                     querySet.add(entry.getKey());
+                    LOGGER.info("Generated random value: {}; Closest value = {}", random, entry.getKey());
                     break;
                 }
             }
 
         }
 
-        return querySet;
+        return indexQuerySet(client, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
+    }
+
+    public static boolean compare(double a, double b) {
+        return Math.abs(a - b) < 0.00001;
     }
 
 }

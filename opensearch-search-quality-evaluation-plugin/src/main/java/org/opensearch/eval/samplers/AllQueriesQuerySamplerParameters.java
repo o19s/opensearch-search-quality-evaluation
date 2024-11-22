@@ -8,9 +8,9 @@
  */
 package org.opensearch.eval.samplers;
 
-public class ProbabilityProportionalToSizeParameters extends AbstractSamplerParameters {
+public class AllQueriesQuerySamplerParameters extends AbstractSamplerParameters {
 
-    public ProbabilityProportionalToSizeParameters(final String name, final String description, final String sampling, final int querySetSize) {
+    public AllQueriesQuerySamplerParameters(final String name, final String description, final String sampling, final int querySetSize) {
         super(name, description, sampling, querySetSize);
     }
 
