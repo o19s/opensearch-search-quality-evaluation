@@ -8,10 +8,13 @@
  */
 package org.opensearch.eval.samplers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
+import org.opensearch.eval.SearchQualityEvaluationRestHandler;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -24,22 +27,26 @@ import java.util.UUID;
  */
 public abstract class AbstractQuerySampler {
 
+    private static final Logger LOGGER = LogManager.getLogger(AbstractQuerySampler.class);
+
     /**
      * Gets the name of the sampler.
      * @return The name of the sampler.
      */
-    abstract String getName();
+    public abstract String getName();
 
     /**
      * Samples the queries and inserts the query set into an index.
      * @return A query set ID.
      */
-    abstract String sample() throws Exception;
+    public abstract String sample() throws Exception;
 
     /**
      * Index the query set.
      */
     protected String indexQuerySet(final NodeClient client, final String name, final String description, final String sampling, Collection<String> queries) throws Exception {
+
+        LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
         final Map<String, Object> querySet = new HashMap<>();
         querySet.put("name", name);

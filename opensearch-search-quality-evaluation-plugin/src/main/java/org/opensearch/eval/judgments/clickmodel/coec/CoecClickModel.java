@@ -49,6 +49,8 @@ import java.util.Set;
 
 public class CoecClickModel extends ClickModel {
 
+    public static final String CLICK_MODEL_NAME = "coec";
+
     // OpenSearch indexes.
     public static final String INDEX_RANK_AGGREGATED_CTR = "rank_aggregated_ctr";
     public static final String INDEX_QUERY_DOC_CTR = "click_through_rates";

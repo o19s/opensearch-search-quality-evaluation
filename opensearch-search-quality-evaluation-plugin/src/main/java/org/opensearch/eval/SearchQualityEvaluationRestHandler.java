@@ -98,7 +98,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 final int querySetSize = Integer.parseInt(request.param("query_set_size", "1000"));
 
                 // Create a query set by finding all the unique user_query terms.
-                if ("none".equalsIgnoreCase(sampling)) {
+                if (AllQueriesQuerySampler.NAME.equalsIgnoreCase(sampling)) {
 
                     // If we are not sampling queries, the query sets should just be directly
                     // indexed into OpenSearch using the `ubu_queries` index directly.
@@ -119,7 +119,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
 
                 // Create a query set by using PPTSS sampling.
-                } else if ("pptss".equalsIgnoreCase(sampling)) {
+                } else if (ProbabilityProportionalToSizeAbstractQuerySampler.NAME.equalsIgnoreCase(sampling)) {
 
                     LOGGER.info("Creating query set using PPTSS");
 
@@ -192,7 +192,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 final int maxRank = Integer.parseInt(request.param("max_rank", "20"));
                 final long judgments;
 
-                if ("coec".equalsIgnoreCase(clickModel)) {
+                if (CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModel)) {
 
                     final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, maxRank);
                     final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);

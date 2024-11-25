@@ -25,6 +25,8 @@ import java.util.Set;
  */
 public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
+    public static final String NAME = "none";
+
     private final NodeClient client;
     private final AllQueriesQuerySamplerParameters parameters;
 
@@ -39,7 +41,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
     @Override
     public String getName() {
-        return "none";
+        return NAME;
     }
 
     @Override

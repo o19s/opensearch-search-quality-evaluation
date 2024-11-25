@@ -35,6 +35,8 @@ import java.util.Set;
  */
 public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQuerySampler {
 
+    public static final String NAME = "pptss";
+
     private static final Logger LOGGER = LogManager.getLogger(ProbabilityProportionalToSizeAbstractQuerySampler.class);
 
     private final NodeClient client;
@@ -52,7 +54,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
 
     @Override
     public String getName() {
-        return "pptss";
+        return NAME;
     }
 
     @Override
@@ -80,7 +82,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
 
         while (searchHits != null && searchHits.length > 0) {
 
-            LOGGER.info("search hits size = " + searchHits.length);
+            LOGGER.info("search hits size = {}", searchHits.length);
 
             for(final SearchHit hit : searchHits) {
                 final Map<String, Object> fields = hit.getSourceAsMap();
@@ -128,8 +130,12 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         final Set<String> querySet = new HashSet<>();
         final Set<Double> randomNumbers = new HashSet<>();
 
-        // Generate a random number between 0 and 1 for the size of the query set.
-        for(int count = 0; count < parameters.getQuerySetSize(); count++) {
+        // Generate random numbers between 0 and 1 for the size of the query set.
+        // Do this until our query set has reached the requested maximum size.
+        // This may require generating more random numbers than what was requested
+        // because removing duplicate user queries will require randomly picking more queries.
+        int count = 1;
+        while(querySet.size() < parameters.getQuerySetSize() && count < userQueries.size()) {
 
             // Make a random number not yet used.
             double random;
@@ -147,8 +153,10 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
                     smallestDelta = delta;
                     closestQuery = query;
                 }
-
             }
+
+            querySet.add(closestQuery);
+            count++;
 
             // LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
 
