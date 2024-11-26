@@ -57,7 +57,7 @@ curl -s http://localhost:9200/judgments/_search | jq
 
 This is a standalone Java application to generate implicit judgments from indexed UBI data. It runs outside OpenSearch and queries the UBI indexes to get the data for calculating the implicit judgments.
 
-To run it, run the `org.opensearch.qef.App` class. This will connect to OpenSearch running on `localhost:9200`. It expects the `ubi_events` and `ubi_queries` indexes to exist and be populated.
+To run it, run the `org.opensearch.eval.App` class. This will connect to OpenSearch running on `localhost:9200`. It expects the `ubi_events` and `ubi_queries` indexes to exist and be populated.
 
 ## License
 
