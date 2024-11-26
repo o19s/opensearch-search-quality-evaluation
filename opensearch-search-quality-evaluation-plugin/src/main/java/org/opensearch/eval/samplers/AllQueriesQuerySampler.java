@@ -16,9 +16,8 @@ import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * An implementation of {@link AbstractQuerySampler} that uses all UBI queries without any sampling.
@@ -61,10 +60,10 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
         // LOGGER.info("Found {} user queries from the ubi_queries index.", searchResponse.getHits().getTotalHits().toString());
 
-        final Set<String> queries = new HashSet<>();
+        final Map<String, Long> queries = new HashMap<>();
         for(final SearchHit hit : searchResponse.getHits().getHits()) {
             final Map<String, Object> fields = hit.getSourceAsMap();
-            queries.add(fields.get("user_query").toString());
+            queries.merge(fields.get("user_query").toString(), 1L, Long::sum);
         }
 
         // LOGGER.info("Found {} user queries from the ubi_queries index.", queries.size());

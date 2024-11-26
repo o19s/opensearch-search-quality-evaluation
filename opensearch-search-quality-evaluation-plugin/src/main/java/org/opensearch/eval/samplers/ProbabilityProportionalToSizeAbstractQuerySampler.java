@@ -127,7 +127,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
             LOGGER.info("Summed normalized weights sum to {}", sumOfNormalizedWeights);
         }
 
-        final Set<String> querySet = new HashSet<>();
+        final Map<String, Long> querySet = new HashMap<>();
         final Set<Double> randomNumbers = new HashSet<>();
 
         // Generate random numbers between 0 and 1 for the size of the query set.
@@ -155,7 +155,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
                 }
             }
 
-            querySet.add(closestQuery);
+            querySet.put(closestQuery, weights.get(closestQuery));
             count++;
 
             // LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
