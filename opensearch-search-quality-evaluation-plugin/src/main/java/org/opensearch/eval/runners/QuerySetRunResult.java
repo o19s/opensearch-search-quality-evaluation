@@ -8,11 +8,15 @@
  */
 package org.opensearch.eval.runners;
 
+import java.util.Collection;
+
 public class QuerySetRunResult {
 
-    private SearchMetrics searchMetrics;
+    private final Collection<QueryResult> queryResults;
+    private final SearchMetrics searchMetrics;
 
-    public QuerySetRunResult(final SearchMetrics searchMetrics) {
+    public QuerySetRunResult(final Collection<QueryResult> queryResults, final SearchMetrics searchMetrics) {
+        this.queryResults = queryResults;
         this.searchMetrics = searchMetrics;
     }
 
@@ -20,8 +24,8 @@ public class QuerySetRunResult {
         return searchMetrics;
     }
 
-    public void setSearchMetrics(SearchMetrics searchMetrics) {
-        this.searchMetrics = searchMetrics;
+    public Collection<QueryResult> getQueryResults() {
+        return queryResults;
     }
 
 }
