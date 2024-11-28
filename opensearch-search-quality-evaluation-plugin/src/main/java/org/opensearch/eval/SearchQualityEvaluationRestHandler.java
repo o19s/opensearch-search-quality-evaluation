@@ -14,8 +14,6 @@ import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
-import org.opensearch.action.search.SearchRequest;
-import org.opensearch.action.search.SearchResponse;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.xcontent.json.JsonXContent;
@@ -23,22 +21,21 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
+import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeAbstractQuerySampler;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParameters;
-import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
 import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestResponse;
-import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -150,37 +147,21 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
         // Handle running query sets.
         } else if(QUERYSET_RUN_URL.equalsIgnoreCase(request.path())) {
 
-            final String id = request.param("id");
-
-            // Get the query set.
-            final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
-            getQuerySetSearchSourceBuilder.query(QueryBuilders.matchQuery("_id", id));
-
-            final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME);
-            getQuerySetSearchRequest.source(getQuerySetSearchSourceBuilder);
+            final String querySetId = request.param("id");
 
             try {
 
-                final SearchResponse searchResponse = client.search(getQuerySetSearchRequest).get();
+                final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId);
 
-                // The queries from the query set that will be run.
-                final Collection<String> queries = (Collection<String>) searchResponse.getHits().getAt(0).getSourceAsMap().get("queries");
-
-                // TODO: Initiate the running of the query set.
-                for(final String query : queries) {
-
-                    // TODO: What should this query be?
-                    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-                    searchSourceBuilder.query(QueryBuilders.matchQuery("_id", id));
-
-                }
+                // TODO: Index the querySetRunResult.
 
             } catch (Exception ex) {
-                LOGGER.error("Unable to retrieve query set with ID {}", id);
+                LOGGER.error("Unable to retrieve query set with ID {}", querySetId);
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
             }
 
-            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Query set " + id + " run initiated.\"}"));
+            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Query set " + querySetId + " run initiated.\"}"));
 
         // Handle the on-demand creation of implicit judgments.
         } else if(IMPLICIT_JUDGMENTS_URL.equalsIgnoreCase(request.path())) {
