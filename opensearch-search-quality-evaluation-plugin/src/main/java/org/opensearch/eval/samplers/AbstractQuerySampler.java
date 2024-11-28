@@ -15,8 +15,11 @@ import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.SearchQualityEvaluationRestHandler;
+import org.opensearch.eval.judgments.model.QuerySetQuery;
 
+import javax.management.Query;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,15 +51,26 @@ public abstract class AbstractQuerySampler {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
+        final Collection<QuerySetQuery> querySetQueries = new ArrayList<>();
+
+        // Convert the queries map to an object.
+        for(final String query : queries.keySet()) {
+
+            final long frequency = queries.get(query);
+            querySetQueries.add(new QuerySetQuery(query, frequency));
+
+        }
+
         final Map<String, Object> querySet = new HashMap<>();
         querySet.put("name", name);
         querySet.put("description", description);
         querySet.put("sampling", sampling);
-        querySet.put("queries", queries);
+        querySet.put("queries", querySetQueries);
         querySet.put("created_at", Instant.now().toEpochMilli());
 
         final String querySetId = UUID.randomUUID().toString();
 
+        // TODO: Create a mapping for the query set index.
         final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME)
                 .id(querySetId)
                 .source(querySet)
