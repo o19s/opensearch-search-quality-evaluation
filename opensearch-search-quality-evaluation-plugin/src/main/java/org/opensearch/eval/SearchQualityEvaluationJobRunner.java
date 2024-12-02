@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.index.IndexResponse;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.Client;
 import org.opensearch.cluster.service.ClusterService;
@@ -139,10 +140,25 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     job.put("invocation", "scheduled");
                     job.put("max_rank", searchQualityEvaluationJobParameter.getMaxRank());
 
-                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
-                            .id(UUID.randomUUID().toString()).source(job).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+                    final String judgmentsId = UUID.randomUUID().toString();
 
-                    client.index(indexRequest).get();
+                    final IndexRequest indexRequest = new IndexRequest()
+                            .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
+                            .id(judgmentsId)
+                            .source(job)
+                            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+                    client.index(indexRequest, new ActionListener<>() {
+                        @Override
+                        public void onResponse(IndexResponse indexResponse) {
+                            LOGGER.info("Successfully indexed implicit judgments {}", judgmentsId);
+                        }
+
+                        @Override
+                        public void onFailure(Exception ex) {
+                            LOGGER.error("Unable to index implicit judgments", ex);
+                        }
+                    });
 
                 }, exception -> { throw new IllegalStateException("Failed to acquire lock."); }));
             }

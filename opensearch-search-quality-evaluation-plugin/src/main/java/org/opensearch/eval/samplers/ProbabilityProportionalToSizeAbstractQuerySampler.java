@@ -73,6 +73,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         searchRequest.scroll(scroll);
         searchRequest.source(searchSourceBuilder);
 
+        // TODO: Don't use .get()
         SearchResponse searchResponse = client.search(searchRequest).get();
 
         String scrollId = searchResponse.getScrollId();
@@ -93,6 +94,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
             final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
             scrollRequest.scroll(scroll);
 
+            // TODO: Don't use .get()
             searchResponse = client.searchScroll(scrollRequest).get();
 
             scrollId = searchResponse.getScrollId();

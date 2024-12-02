@@ -45,7 +45,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
     }
 
     @Override
-    public QuerySetRunResult run(final String querySetId) {
+    public QuerySetRunResult run(final String querySetId, final String judgmentsId) {
 
         // Get the query set.
         final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();

@@ -17,9 +17,10 @@ public interface QuerySetRunner {
     /**
      * Runs the query set.
      * @param querySetId The ID of the query set to run.
+     * @param judgmentsId The ID of the judgments set to use for search metric calcuation.
      * @return The query set {@link QuerySetRunResult results} and calculated metrics.
      */
-    QuerySetRunResult run(String querySetId);
+    QuerySetRunResult run(String querySetId, final String judgmentsId);
 
     /**
      * Saves the query set results to a persistent store, which may be the search engine itself.

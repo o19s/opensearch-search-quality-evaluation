@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
@@ -148,11 +149,16 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
         } else if(QUERYSET_RUN_URL.equalsIgnoreCase(request.path())) {
 
             final String querySetId = request.param("id");
+            final String judgmentsId = request.param("judgments");
+
+            if(querySetId == null || judgmentsId == null) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
+            }
 
             try {
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
-                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId);
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {
@@ -195,16 +201,35 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     job.put("invocation", "on_demand");
                     job.put("max_rank", maxRank);
 
-                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
-                            .id(UUID.randomUUID().toString()).source(job).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+                    final String judgmentsId = UUID.randomUUID().toString();
 
-                    try {
-                        client.index(indexRequest).get();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    final IndexRequest indexRequest = new IndexRequest()
+                            .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
+                            .id(judgmentsId)
+                            .source(job)
+                            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+                    final AtomicBoolean success = new AtomicBoolean(false);
+
+                    client.index(indexRequest, new ActionListener<>() {
+                        @Override
+                        public void onResponse(final IndexResponse indexResponse) {
+                            LOGGER.debug("Judgments indexed: {}", judgmentsId);
+                            success.set(true);
+                        }
+
+                        @Override
+                        public void onFailure(final Exception ex) {
+                            LOGGER.error("Unable to index judgment with ID {}", judgmentsId, ex);
+                            success.set(false);
+                        }
+                    });
+
+                    if(success.get()) {
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + judgmentsId + "\"}"));
+                    } else {
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR,"Unable to index judgments."));
                     }
-
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Implicit judgment generation initiated.\"}"));
 
                 } else {
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid click model.\"}"));
