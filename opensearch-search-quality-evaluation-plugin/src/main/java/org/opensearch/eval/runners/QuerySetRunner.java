@@ -8,8 +8,23 @@
  */
 package org.opensearch.eval.runners;
 
-public abstract class QuerySetRunner {
+/**
+ * Interface for query set runners. Classes that implement this interface
+ * should be specific to a search engine. See the {@link OpenSearchQuerySetRunner} for an example.
+ */
+public interface QuerySetRunner {
 
-    abstract QuerySetRunResult run(String querySetId);
+    /**
+     * Runs the query set.
+     * @param querySetId The ID of the query set to run.
+     * @return The query set {@link QuerySetRunResult results} and calculated metrics.
+     */
+    QuerySetRunResult run(String querySetId);
+
+    /**
+     * Saves the query set results to a persistent store, which may be the search engine itself.
+     * @param result The {@link QuerySetRunResult results}.
+     */
+    void save(QuerySetRunResult result) throws Exception;
 
 }

@@ -51,13 +51,17 @@ public abstract class AbstractQuerySampler {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
-        final Collection<QuerySetQuery> querySetQueries = new ArrayList<>();
+        final Collection<Map<String, Long>> querySetQueries = new ArrayList<>();
 
         // Convert the queries map to an object.
         for(final String query : queries.keySet()) {
 
+            // Map of the query itself to the frequency of the query.
+            final Map<String, Long> querySetQuery = new HashMap<>();
+            querySetQuery.put(query, queries.get(query));
+
             final long frequency = queries.get(query);
-            querySetQueries.add(new QuerySetQuery(query, frequency));
+            querySetQueries.add(querySetQuery);
 
         }
 

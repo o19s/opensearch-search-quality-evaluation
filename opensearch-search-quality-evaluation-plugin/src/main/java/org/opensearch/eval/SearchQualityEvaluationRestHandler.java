@@ -98,7 +98,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 if (AllQueriesQuerySampler.NAME.equalsIgnoreCase(sampling)) {
 
                     // If we are not sampling queries, the query sets should just be directly
-                    // indexed into OpenSearch using the `ubu_queries` index directly.
+                    // indexed into OpenSearch using the `ubi_queries` index directly.
 
                     try {
 
@@ -153,15 +153,14 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
                 final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId);
-
-                // TODO: Index the querySetRunResult.
+                openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {
-                LOGGER.error("Unable to retrieve query set with ID {}", querySetId);
+                LOGGER.error("Unable to run query set with ID {}: ", querySetId, ex);
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
             }
 
-            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Query set " + querySetId + " run initiated.\"}"));
+            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Run initiated for query set " + querySetId + "\"}"));
 
         // Handle the on-demand creation of implicit judgments.
         } else if(IMPLICIT_JUDGMENTS_URL.equalsIgnoreCase(request.path())) {
