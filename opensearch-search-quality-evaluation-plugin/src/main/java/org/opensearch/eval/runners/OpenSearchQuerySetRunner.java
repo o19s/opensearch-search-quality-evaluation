@@ -56,6 +56,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
         try {
 
+            // TODO: Don't use .get()
             final SearchResponse searchResponse = client.search(getQuerySetSearchRequest).get();
 
             // The queries from the query set that will be run.
@@ -69,9 +70,11 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                 // Loop over each query in the map and run each one.
                 for (final String query : queryMap.keySet()) {
 
+                    // TODO: Allow the user to pass these values in.
                     final String index = "ecommerce";
                     final String idField = "asin";
 
+                    // TODO: Allow the user to pass this in.
                     final String q = "{\n" +
                             "  \"query\": {\n" +
                             "    \"match\": {\n" +
@@ -122,7 +125,6 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                             LOGGER.error("Unable to search for query: {}", query, ex);
                         }
                     });
-
 
                 }
 
