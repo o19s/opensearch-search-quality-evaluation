@@ -120,7 +120,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
             }
 
             // TODO: Calculate the search metrics given the results and the judgments.
-            final SearchMetrics searchMetrics = new SearchMetrics(k);
+            final SearchMetrics searchMetrics = new SearchMetrics(queryResults, k);
 
             return new QuerySetRunResult(queryResults, searchMetrics);
 

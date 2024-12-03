@@ -9,6 +9,7 @@
 package org.opensearch.eval.runners;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,8 +23,26 @@ public class SearchMetrics {
     private double ndcg = 0.0;
     private double precision = 0.0;
 
-    public SearchMetrics(final int k) {
+    /**
+     * Create the search metrics for an entire query set.
+     * @param queryResults A list of {@link QueryResult}.
+     * @param k The k used for metrics calculation, i.e. DCG@k.
+     */
+    public SearchMetrics(final List<QueryResult> queryResults, final int k) {
         this.k = k;
+
+        // TODO: Calculate the metrics for the whole query set.
+    }
+
+    /**
+     * Create the search metrics for a single query.
+
+     * @param k The k used for metrics calculation, i.e. DCG@k.
+     */
+    public SearchMetrics(final String query, final List<String> orderedDocumentIds, final int k) {
+        this.k = k;
+
+        // TODO: Calculate the metrics for the single query.
     }
 
     /**

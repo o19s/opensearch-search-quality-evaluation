@@ -11,14 +11,12 @@ package org.opensearch.eval.runners;
 import java.util.List;
 
 /**
- * Contains the search results for a query.
+ * Contains the search results for a single query.
  */
 public class QueryResult {
 
     private final String query;
     private final List<String> orderedDocumentIds;
-
-    // TODO: Calculate these metrics.
     private final SearchMetrics searchMetrics;
 
     /**
@@ -31,7 +29,7 @@ public class QueryResult {
     public QueryResult(final String query, final List<String> orderedDocumentIds, final int k) {
         this.query = query;
         this.orderedDocumentIds = orderedDocumentIds;
-        this.searchMetrics = new SearchMetrics(k);
+        this.searchMetrics = new SearchMetrics(query, orderedDocumentIds, k);
     }
 
     /**
