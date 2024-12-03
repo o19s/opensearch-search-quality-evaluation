@@ -18,6 +18,7 @@ import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.core.action.ActionListener;
+import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
@@ -65,6 +66,11 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
      * URL for initiating query sets to run on-demand.
      */
     public static final String QUERYSET_RUN_URL = "/_plugins/search_quality_eval/run";
+
+    /**
+     * The placeholder in the query that gets replaced by the query term when running a query set.
+     */
+    public static final String QUERY_PLACEHOLDER = "#$query##";
 
     @Override
     public String getName() {
@@ -149,16 +155,30 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
         } else if(QUERYSET_RUN_URL.equalsIgnoreCase(request.path())) {
 
             final String querySetId = request.param("id");
-            final String judgmentsId = request.param("judgments");
+            final String judgmentsId = request.param("judgments_id");
+            final String index = request.param("index");
+            final String idField = request.param("id_field", "_id");
 
-            if(querySetId == null || judgmentsId == null) {
+            if(querySetId == null || judgmentsId == null || index == null) {
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
+            }
+
+            if(!request.hasContent()) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing query in body.\"}"));
+            }
+
+            // Get the query JSON from the content.
+            final String query = new String(BytesReference.toBytes(request.content()));
+
+            // Validate the query has a QUERY_PLACEHOLDER.
+            if(!query.contains(QUERY_PLACEHOLDER)) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing query placeholder in query.\"}"));
             }
 
             try {
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
-                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query);
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {

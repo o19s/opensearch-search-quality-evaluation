@@ -27,6 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACEHOLDER;
+
 /**
  * A {@link QuerySetRunner} for Amazon OpenSearch.
  */
@@ -45,7 +47,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
     }
 
     @Override
-    public QuerySetRunResult run(final String querySetId, final String judgmentsId) {
+    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query) {
 
         // Get the query set.
         final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
@@ -68,27 +70,14 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
             for(Map<String, Long> queryMap : queries) {
 
                 // Loop over each query in the map and run each one.
-                for (final String query : queryMap.keySet()) {
+                for (final String userQuery : queryMap.keySet()) {
 
-                    // TODO: Allow the user to pass these values in.
-                    final String index = "ecommerce";
-                    final String idField = "asin";
+                    // Replace the query placeholder with the user query.
+                    final String q = query.replace(QUERY_PLACEHOLDER, userQuery);
 
-                    // TODO: Allow the user to pass this in.
-                    final String q = "{\n" +
-                            "  \"query\": {\n" +
-                            "    \"match\": {\n" +
-                            "      \"description\": {\n" +
-                            "        \"query\": \" + query + \"\n" +
-                            "      }\n" +
-                            "    }\n" +
-                            "  }\n" +
-                            "}";
-
-                    // TODO: What should this query be?
+                    // Build the query from the one that was passed in.
                     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-                    //searchSourceBuilder.query(QueryBuilders.wrapperQuery(q));
-                    searchSourceBuilder.query(QueryBuilders.matchQuery("description", query));
+                    searchSourceBuilder.query(QueryBuilders.wrapperQuery(q));
                     searchSourceBuilder.from(0);
                     searchSourceBuilder.size(10);
 
