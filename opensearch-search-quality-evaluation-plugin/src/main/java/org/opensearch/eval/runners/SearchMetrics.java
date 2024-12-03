@@ -73,24 +73,12 @@ public class SearchMetrics {
         return dcg;
     }
 
-    public void setDcg(double dcg) {
-        this.dcg = dcg;
-    }
-
     public double getNdcg() {
         return ndcg;
     }
 
-    public void setNdcg(double ndcg) {
-        this.ndcg = ndcg;
-    }
-
     public double getPrecision() {
         return precision;
-    }
-
-    public void setPrecision(double precision) {
-        this.precision = precision;
     }
 
 }
