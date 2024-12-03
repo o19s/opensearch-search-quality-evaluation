@@ -201,7 +201,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 final long startTime = System.currentTimeMillis();
                 final String clickModel = request.param("click_model", "coec");
                 final int maxRank = Integer.parseInt(request.param("max_rank", "20"));
-                final long judgments;
+                final long judgmentCount;
 
                 if (CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModel)) {
 
@@ -210,7 +210,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
                     // TODO: Run this in a separate thread.
                     try {
-                        judgments = coecClickModel.calculateJudgments();
+                        judgmentCount = coecClickModel.calculateJudgments();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -222,15 +222,15 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     job.put("click_model", clickModel);
                     job.put("started", startTime);
                     job.put("duration", elapsedTime);
-                    job.put("judgments", judgments);
+                    job.put("judgment_count", judgmentCount);
                     job.put("invocation", "on_demand");
                     job.put("max_rank", maxRank);
 
-                    final String judgmentsId = UUID.randomUUID().toString();
+                    final String jobId = UUID.randomUUID().toString();
 
                     final IndexRequest indexRequest = new IndexRequest()
                             .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
-                            .id(judgmentsId)
+                            .id(jobId)
                             .source(job)
                             .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
@@ -239,19 +239,19 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     client.index(indexRequest, new ActionListener<>() {
                         @Override
                         public void onResponse(final IndexResponse indexResponse) {
-                            LOGGER.debug("Judgments indexed: {}", judgmentsId);
+                            LOGGER.debug("Job completed successfully: {}", jobId);
                             success.set(true);
                         }
 
                         @Override
                         public void onFailure(final Exception ex) {
-                            LOGGER.error("Unable to index judgment with ID {}", judgmentsId, ex);
+                            LOGGER.error("Unable to run job with ID {}", jobId, ex);
                             success.set(false);
                         }
                     });
 
                     if(success.get()) {
-                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + judgmentsId + "\"}"));
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + jobId + "\"}"));
                     } else {
                         return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR,"Unable to index judgments."));
                     }

@@ -12,10 +12,12 @@ import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.judgments.model.ubi.query.UbiQuery;
@@ -312,32 +314,41 @@ public class OpenSearchHelper {
      * Index the judgments.
      * @param judgments A collection of {@link Judgment judgments}.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
+     * @return The ID of the indexed judgments.
      */
-    public void indexJudgments(final Collection<Judgment> judgments) throws Exception {
+    public String indexJudgments(final Collection<Judgment> judgments) throws Exception {
 
-        if(!judgments.isEmpty()) {
+        final String judgmentsId = UUID.randomUUID().toString();
 
-            // TODO: Split this into multiple bulk insert requests.
+        final Collection<Map<String, Object>> j = new ArrayList<>();
 
-            final BulkRequest request = new BulkRequest();
+        for (final Judgment judgment : judgments) {
+            j.add(judgment.getJudgmentAsMap());
+        }
 
-            for (final Judgment judgment : judgments) {
+        final Map<String, Object> judgmentsSource = new HashMap<>();
+        judgmentsSource.put("judgments", j);
 
-                final Map<String, Object> jsonMap = new HashMap<>();
-                jsonMap.put("query_id", judgment.getQueryId());
-                jsonMap.put("query", judgment.getQuery());
-                jsonMap.put("document", judgment.getDocument());
-                jsonMap.put("judgment", judgment.getJudgment());
+        final IndexRequest indexRequest = new IndexRequest(INDEX_JUDGMENTS)
+                .id(judgmentsId)
+                .source(judgmentsSource);
 
-                final IndexRequest indexRequest = new IndexRequest(INDEX_JUDGMENTS).id(UUID.randomUUID().toString()).source(jsonMap);
+        final BulkRequest request = new BulkRequest();
+        request.add(indexRequest);
 
-                request.add(indexRequest);
-
+        client.bulk(request, new ActionListener<BulkResponse>() {
+            @Override
+            public void onResponse(BulkResponse bulkItemResponses) {
+                LOGGER.info("Judgments indexed: {}", judgmentsId);
             }
 
-            client.bulk(request).get();
+            @Override
+            public void onFailure(Exception ex) {
+                throw new RuntimeException("Unable to insert judgments.", ex);
+            }
+        });
 
-        }
+        return judgmentsId;
 
     }
 

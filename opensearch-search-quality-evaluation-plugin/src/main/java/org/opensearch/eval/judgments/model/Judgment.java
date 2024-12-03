@@ -15,6 +15,8 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.judgments.util.MathUtils;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A judgment of a search result's quality for a given query.
@@ -44,6 +46,18 @@ public class Judgment {
 
     public String toJudgmentString() {
         return queryId + ", " + query + ", " + document + ", " + MathUtils.round(judgment);
+    }
+
+    public Map<String, Object> getJudgmentAsMap() {
+
+        final Map<String, Object> judgmentMap = new HashMap<>();
+        judgmentMap.put("query_id", queryId);
+        judgmentMap.put("query", query);
+        judgmentMap.put("document", document);
+        judgmentMap.put("judgment", judgment);
+
+        return judgmentMap;
+
     }
 
     /**
