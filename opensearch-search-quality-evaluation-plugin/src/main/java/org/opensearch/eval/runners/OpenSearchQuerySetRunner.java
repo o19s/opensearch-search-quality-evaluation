@@ -83,7 +83,8 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
                     searchSourceBuilder.query(QueryBuilders.wrapperQuery(q));
                     searchSourceBuilder.from(0);
-                    searchSourceBuilder.size(10);
+                    // TODO: If k is > 10, we'll need to page through these.
+                    searchSourceBuilder.size(k);
 
                     String[] includeFields = new String[] {idField};
                     String[] excludeFields = new String[] {};
