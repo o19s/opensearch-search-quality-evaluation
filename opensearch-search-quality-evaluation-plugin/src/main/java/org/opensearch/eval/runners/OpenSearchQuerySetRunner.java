@@ -17,6 +17,7 @@ import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
+import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -48,6 +49,9 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
     @Override
     public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) {
+
+        // TODO: Get the judgments we will use for metric calculation.
+        final List<Judgment> judgments = new ArrayList<>();
 
         // Get the query set.
         final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
@@ -105,7 +109,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
                             }
 
-                            queryResults.add(new QueryResult(query, orderedDocumentIds, k));
+                            queryResults.add(new QueryResult(query, orderedDocumentIds, judgments, k));
 
                         }
 
@@ -120,7 +124,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
             }
 
             // TODO: Calculate the search metrics given the results and the judgments.
-            final SearchMetrics searchMetrics = new SearchMetrics(queryResults, k);
+            final SearchMetrics searchMetrics = new SearchMetrics(queryResults, judgments, k);
 
             return new QuerySetRunResult(queryResults, searchMetrics);
 

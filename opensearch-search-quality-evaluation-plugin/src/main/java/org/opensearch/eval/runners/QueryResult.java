@@ -8,6 +8,8 @@
  */
 package org.opensearch.eval.runners;
 
+import org.opensearch.eval.judgments.model.Judgment;
+
 import java.util.List;
 
 /**
@@ -24,12 +26,13 @@ public class QueryResult {
      * @param query The query used to generate this result.
      * @param orderedDocumentIds A list of ordered document IDs in the same order as they appeared
      *                           in the query.
+     * @param judgments A list of {@link Judgment judgments} used for metric calculation.
      * @param k The k used for metrics calculation, i.e. DCG@k.
      */
-    public QueryResult(final String query, final List<String> orderedDocumentIds, final int k) {
+    public QueryResult(final String query, final List<String> orderedDocumentIds, final List<Judgment> judgments, final int k) {
         this.query = query;
         this.orderedDocumentIds = orderedDocumentIds;
-        this.searchMetrics = new SearchMetrics(query, orderedDocumentIds, k);
+        this.searchMetrics = new SearchMetrics(query, orderedDocumentIds, judgments, k);
     }
 
     /**

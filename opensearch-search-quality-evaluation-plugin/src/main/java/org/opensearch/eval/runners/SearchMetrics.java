@@ -8,6 +8,8 @@
  */
 package org.opensearch.eval.runners;
 
+import org.opensearch.eval.judgments.model.Judgment;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +28,10 @@ public class SearchMetrics {
     /**
      * Create the search metrics for an entire query set.
      * @param queryResults A list of {@link QueryResult}.
+     * @param judgments A list of {@link Judgment judgments} used for metric calculation.
      * @param k The k used for metrics calculation, i.e. DCG@k.
      */
-    public SearchMetrics(final List<QueryResult> queryResults, final int k) {
+    public SearchMetrics(final List<QueryResult> queryResults, final List<Judgment> judgments, final int k) {
         this.k = k;
 
         // TODO: Calculate the metrics for the whole query set.
@@ -36,10 +39,12 @@ public class SearchMetrics {
 
     /**
      * Create the search metrics for a single query.
-
+     * @param query The user query.
+     * @param orderedDocumentIds The documents returned for the user query in order.
+     * @param judgments A list of {@link Judgment judgments} used for metric calculation.
      * @param k The k used for metrics calculation, i.e. DCG@k.
      */
-    public SearchMetrics(final String query, final List<String> orderedDocumentIds, final int k) {
+    public SearchMetrics(final String query, final List<String> orderedDocumentIds, final List<Judgment> judgments, final int k) {
         this.k = k;
 
         // TODO: Calculate the metrics for the single query.
