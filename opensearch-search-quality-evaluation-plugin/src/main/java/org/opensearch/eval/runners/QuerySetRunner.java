@@ -21,9 +21,10 @@ public interface QuerySetRunner {
      * @param index The name of the index to run the query sets against.
      * @param idField The field in the index that is used to uniquely identify a document.
      * @param query The query that will be used to run the query set.
+     * @param k The k used for metrics calculation, i.e. DCG@k.
      * @return The query set {@link QuerySetRunResult results} and calculated metrics.
      */
-    QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String idField, final String query);
+    QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k);
 
     /**
      * Saves the query set results to a persistent store, which may be the search engine itself.

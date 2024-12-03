@@ -47,7 +47,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
     }
 
     @Override
-    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query) {
+    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) {
 
         // Get the query set.
         final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
@@ -105,7 +105,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
                             }
 
-                            queryResults.add(new QueryResult(query, orderedDocumentIds));
+                            queryResults.add(new QueryResult(query, orderedDocumentIds, k));
 
                         }
 
@@ -120,7 +120,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
             }
 
             // TODO: Calculate the search metrics given the results and the judgments.
-            final SearchMetrics searchMetrics = new SearchMetrics();
+            final SearchMetrics searchMetrics = new SearchMetrics(k);
 
             return new QuerySetRunResult(queryResults, searchMetrics);
 

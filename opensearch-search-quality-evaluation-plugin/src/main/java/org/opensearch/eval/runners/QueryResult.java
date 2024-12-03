@@ -19,17 +19,19 @@ public class QueryResult {
     private final List<String> orderedDocumentIds;
 
     // TODO: Calculate these metrics.
-    private final SearchMetrics searchMetrics = new SearchMetrics();
+    private final SearchMetrics searchMetrics;
 
     /**
      * Creates the search results.
      * @param query The query used to generate this result.
      * @param orderedDocumentIds A list of ordered document IDs in the same order as they appeared
      *                           in the query.
+     * @param k The k used for metrics calculation, i.e. DCG@k.
      */
-    public QueryResult(final String query, final List<String> orderedDocumentIds) {
+    public QueryResult(final String query, final List<String> orderedDocumentIds, final int k) {
         this.query = query;
         this.orderedDocumentIds = orderedDocumentIds;
+        this.searchMetrics = new SearchMetrics(k);
     }
 
     /**

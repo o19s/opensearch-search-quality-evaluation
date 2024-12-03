@@ -158,9 +158,14 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             final String judgmentsId = request.param("judgments_id");
             final String index = request.param("index");
             final String idField = request.param("id_field", "_id");
+            final int k = Integer.parseInt(request.param("k", "10"));
 
             if(querySetId == null || judgmentsId == null || index == null) {
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
+            }
+
+            if(k < 1) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"k must be a positive integer.\"}"));
             }
 
             if(!request.hasContent()) {
@@ -178,7 +183,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             try {
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
-                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query, k);
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {

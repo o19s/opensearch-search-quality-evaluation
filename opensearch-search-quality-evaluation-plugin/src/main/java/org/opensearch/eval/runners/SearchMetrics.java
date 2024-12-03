@@ -16,9 +16,15 @@ import java.util.Map;
  */
 public class SearchMetrics {
 
-    private double dcg_at_10 = 0.0;
-    private double ndcg_at_10 = 0.0;
-    private double prec_at_10 = 0.0;
+    private final int k;
+
+    private double dcg = 0.0;
+    private double ndcg = 0.0;
+    private double precision = 0.0;
+
+    public SearchMetrics(final int k) {
+        this.k = k;
+    }
 
     /**
      * Gets the metrics as a map for ease of indexing.
@@ -27,36 +33,40 @@ public class SearchMetrics {
     public Map<String, Double> getSearchMetricsAsMap() {
 
         final Map<String, Double> metrics = new HashMap<>();
-        metrics.put("dcg_at_10", dcg_at_10);
-        metrics.put("ndcg_at_10", ndcg_at_10);
-        metrics.put("prec_at_10", prec_at_10);
+        metrics.put("dcg_at_" + k, dcg);
+        metrics.put("ndcg_at_" + k, ndcg);
+        metrics.put("prec_at_" + k, precision);
 
         return metrics;
 
     }
 
-    public double getDcg_at_10() {
-        return dcg_at_10;
+    public int getK() {
+        return k;
     }
 
-    public void setDcg_at_10(double dcg_at_10) {
-        this.dcg_at_10 = dcg_at_10;
+    public double getDcg() {
+        return dcg;
     }
 
-    public double getNdcg_at_10() {
-        return ndcg_at_10;
+    public void setDcg(double dcg) {
+        this.dcg = dcg;
     }
 
-    public void setNdcg_at_10(double ndcg_at_10) {
-        this.ndcg_at_10 = ndcg_at_10;
+    public double getNdcg() {
+        return ndcg;
     }
 
-    public double getPrec_at_10() {
-        return prec_at_10;
+    public void setNdcg(double ndcg) {
+        this.ndcg = ndcg;
     }
 
-    public void setPrec_at_10(double prec_at_10) {
-        this.prec_at_10 = prec_at_10;
+    public double getPrecision() {
+        return precision;
+    }
+
+    public void setPrecision(double precision) {
+        this.precision = precision;
     }
 
 }
