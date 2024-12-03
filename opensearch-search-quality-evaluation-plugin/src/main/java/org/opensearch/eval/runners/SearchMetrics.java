@@ -20,10 +20,9 @@ import java.util.Map;
 public class SearchMetrics {
 
     private final int k;
-
-    private double dcg = 0.0;
-    private double ndcg = 0.0;
-    private double precision = 0.0;
+    private final double dcg;
+    private final double ndcg;
+    private final double precision;
 
     /**
      * Create the search metrics for an entire query set.
@@ -35,6 +34,9 @@ public class SearchMetrics {
         this.k = k;
 
         // TODO: Calculate the metrics for the whole query set.
+        this.dcg = 0.0;
+        this.ndcg = 0.0;
+        this.precision = 0.0;
     }
 
     /**
@@ -48,6 +50,9 @@ public class SearchMetrics {
         this.k = k;
 
         // TODO: Calculate the metrics for the single query.
+        this.dcg = 0.0;
+        this.ndcg = 0.0;
+        this.precision = 0.0;
     }
 
     /**
