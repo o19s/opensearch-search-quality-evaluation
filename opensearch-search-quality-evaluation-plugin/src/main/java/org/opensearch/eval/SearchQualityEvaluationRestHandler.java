@@ -18,6 +18,7 @@ import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.xcontent.json.JsonXContent;
 import org.opensearch.core.action.ActionListener;
+import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
@@ -40,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
@@ -64,6 +66,11 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
      * URL for initiating query sets to run on-demand.
      */
     public static final String QUERYSET_RUN_URL = "/_plugins/search_quality_eval/run";
+
+    /**
+     * The placeholder in the query that gets replaced by the query term when running a query set.
+     */
+    public static final String QUERY_PLACEHOLDER = "#$query##";
 
     @Override
     public String getName() {
@@ -98,7 +105,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 if (AllQueriesQuerySampler.NAME.equalsIgnoreCase(sampling)) {
 
                     // If we are not sampling queries, the query sets should just be directly
-                    // indexed into OpenSearch using the `ubu_queries` index directly.
+                    // indexed into OpenSearch using the `ubi_queries` index directly.
 
                     try {
 
@@ -148,20 +155,43 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
         } else if(QUERYSET_RUN_URL.equalsIgnoreCase(request.path())) {
 
             final String querySetId = request.param("id");
+            final String judgmentsId = request.param("judgments_id");
+            final String index = request.param("index");
+            final String idField = request.param("id_field", "_id");
+            final int k = Integer.parseInt(request.param("k", "10"));
+
+            if(querySetId == null || judgmentsId == null || index == null) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
+            }
+
+            if(k < 1) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"k must be a positive integer.\"}"));
+            }
+
+            if(!request.hasContent()) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing query in body.\"}"));
+            }
+
+            // Get the query JSON from the content.
+            final String query = new String(BytesReference.toBytes(request.content()));
+
+            // Validate the query has a QUERY_PLACEHOLDER.
+            if(!query.contains(QUERY_PLACEHOLDER)) {
+                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing query placeholder in query.\"}"));
+            }
 
             try {
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
-                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId);
-
-                // TODO: Index the querySetRunResult.
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query, k);
+                openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {
-                LOGGER.error("Unable to retrieve query set with ID {}", querySetId);
+                LOGGER.error("Unable to run query set with ID {}: ", querySetId, ex);
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
             }
 
-            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Query set " + querySetId + " run initiated.\"}"));
+            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Run initiated for query set " + querySetId + "\"}"));
 
         // Handle the on-demand creation of implicit judgments.
         } else if(IMPLICIT_JUDGMENTS_URL.equalsIgnoreCase(request.path())) {
@@ -196,16 +226,35 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     job.put("invocation", "on_demand");
                     job.put("max_rank", maxRank);
 
-                    final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
-                            .id(UUID.randomUUID().toString()).source(job).setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+                    final String judgmentsId = UUID.randomUUID().toString();
 
-                    try {
-                        client.index(indexRequest).get();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    final IndexRequest indexRequest = new IndexRequest()
+                            .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
+                            .id(judgmentsId)
+                            .source(job)
+                            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+                    final AtomicBoolean success = new AtomicBoolean(false);
+
+                    client.index(indexRequest, new ActionListener<>() {
+                        @Override
+                        public void onResponse(final IndexResponse indexResponse) {
+                            LOGGER.debug("Judgments indexed: {}", judgmentsId);
+                            success.set(true);
+                        }
+
+                        @Override
+                        public void onFailure(final Exception ex) {
+                            LOGGER.error("Unable to index judgment with ID {}", judgmentsId, ex);
+                            success.set(false);
+                        }
+                    });
+
+                    if(success.get()) {
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + judgmentsId + "\"}"));
+                    } else {
+                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR,"Unable to index judgments."));
                     }
-
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Implicit judgment generation initiated.\"}"));
 
                 } else {
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid click model.\"}"));

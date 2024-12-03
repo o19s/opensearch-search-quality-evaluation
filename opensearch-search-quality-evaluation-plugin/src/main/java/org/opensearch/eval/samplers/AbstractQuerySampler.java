@@ -11,13 +11,12 @@ package org.opensearch.eval.samplers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.index.IndexRequest;
+import org.opensearch.action.index.IndexResponse;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
+import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
-import org.opensearch.eval.SearchQualityEvaluationRestHandler;
-import org.opensearch.eval.judgments.model.QuerySetQuery;
 
-import javax.management.Query;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -51,13 +50,16 @@ public abstract class AbstractQuerySampler {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
-        final Collection<QuerySetQuery> querySetQueries = new ArrayList<>();
+        final Collection<Map<String, Long>> querySetQueries = new ArrayList<>();
 
         // Convert the queries map to an object.
         for(final String query : queries.keySet()) {
 
-            final long frequency = queries.get(query);
-            querySetQueries.add(new QuerySetQuery(query, frequency));
+            // Map of the query itself to the frequency of the query.
+            final Map<String, Long> querySetQuery = new HashMap<>();
+            querySetQuery.put(query, queries.get(query));
+
+            querySetQueries.add(querySetQuery);
 
         }
 
@@ -76,7 +78,18 @@ public abstract class AbstractQuerySampler {
                 .source(querySet)
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-        client.index(indexRequest).get();
+        client.index(indexRequest, new ActionListener<>() {
+
+            @Override
+            public void onResponse(IndexResponse indexResponse) {
+                LOGGER.info("Indexed query set {} having name {}", querySetId, name);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                LOGGER.error("Unable to index query set {}", querySetId, e);
+            }
+        });
 
         return querySetId;
 
