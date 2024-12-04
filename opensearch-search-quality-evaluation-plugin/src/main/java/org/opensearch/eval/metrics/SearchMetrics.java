@@ -8,17 +8,23 @@
  */
 package org.opensearch.eval.metrics;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.runners.QueryResult;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Provides the ability to calculate search metrics and stores them.
  */
 public class SearchMetrics {
+
+    private static final Logger LOGGER = LogManager.getLogger(SearchMetrics.class.getName());
 
     private final int k;
     private final double dcg;
@@ -26,7 +32,7 @@ public class SearchMetrics {
     private final double precision;
 
     /**
-     * Create the search metrics for an entire query set.
+     * Calculate the search metrics for an entire query set.
      * @param queryResults A list of {@link QueryResult}.
      * @param judgments A list of {@link Judgment judgments} used for metric calculation.
      * @param k The k used for metrics calculation, i.e. DCG@k.
@@ -41,7 +47,7 @@ public class SearchMetrics {
     }
 
     /**
-     * Create the search metrics for a single query.
+     * Calculate the search metrics for a single query.
      * @param query The user query.
      * @param orderedDocumentIds The documents returned for the user query in order.
      * @param judgments A list of {@link Judgment judgments} used for metric calculation.
@@ -51,7 +57,9 @@ public class SearchMetrics {
         this.k = k;
 
         // TODO: Calculate the metrics for the single query.
-        this.dcg = 0.0;
+        final List<Double> scores = getRelevanceScores(query, orderedDocumentIds, judgments, k);
+
+        this.dcg = calculateDCG(scores);
         this.ndcg = 0.0;
         this.precision = 0.0;
     }
@@ -69,6 +77,57 @@ public class SearchMetrics {
 
         return metrics;
 
+    }
+
+    private List<Double> getRelevanceScores(final String query, final List<String> orderedDocumentIds, final List<Judgment> judgments, final int k) {
+
+        // Ordered list of scores.
+        final List<Double> scores = new ArrayList<>();
+
+        // Go through each document up to k and get the score.
+        for(int i = 0; i < k; i++) {
+
+            final String documentId = orderedDocumentIds.get(i);
+
+            // Get the score for this document for this query.
+            final Judgment judgment = Judgment.findJudgment(judgments, query, documentId);
+
+            if(judgment != null) {
+                scores.add(judgment.getJudgment());
+            }
+
+            if(i == orderedDocumentIds.size()) {
+                // k is greater than the actual length of documents.
+                break;
+            }
+
+        }
+
+        String listOfScores = scores.stream().map(Object::toString).collect(Collectors.joining(", "));
+        LOGGER.info("Got relevance scores: {}", listOfScores);
+
+        return scores;
+
+    }
+
+    private double calculateDCG(final List<Double> relevanceScores) {
+        double dcg = 0.0;
+        for(int i = 0; i < relevanceScores.size(); i++) {
+            double relevance = relevanceScores.get(i);
+            dcg += relevance / Math.log(i + 2); // Add 2 to avoid log(1) = 0
+        }
+        return dcg;
+    }
+
+    private double calculateNDCG(final List<Double> relevanceScores, final List<Double> idealRelevanceScores) {
+        double dcg = calculateDCG(relevanceScores);
+        double idcg = calculateDCG(idealRelevanceScores);
+
+        if(idcg == 0) {
+            return 0; // Avoid division by zero
+        }
+
+        return dcg / idcg;
     }
 
     public int getK() {

@@ -22,7 +22,7 @@ import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
-import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
+import org.opensearch.eval.runners.OpenSearchAbstractQuerySetRunner;
 import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
@@ -182,7 +182,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
             try {
 
-                final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
+                final OpenSearchAbstractQuerySetRunner openSearchQuerySetRunner = new OpenSearchAbstractQuerySetRunner(client);
                 final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query, k);
                 openSearchQuerySetRunner.save(querySetRunResult);
 

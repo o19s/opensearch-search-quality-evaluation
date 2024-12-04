@@ -25,15 +25,15 @@ import java.util.Map;
 
 /**
  * Base class for query set runners. Classes that extend this class
- * should be specific to a search engine. See the {@link OpenSearchQuerySetRunner} for an example.
+ * should be specific to a search engine. See the {@link OpenSearchAbstractQuerySetRunner} for an example.
  */
-public abstract class QuerySetRunner {
+public abstract class AbstractQuerySetRunner {
 
-    private static final Logger LOGGER = LogManager.getLogger(QuerySetRunner.class);
+    private static final Logger LOGGER = LogManager.getLogger(AbstractQuerySetRunner.class);
 
     protected final Client client;
 
-    public QuerySetRunner(final Client client) {
+    public AbstractQuerySetRunner(final Client client) {
         this.client = client;
     }
 
@@ -60,6 +60,10 @@ public abstract class QuerySetRunner {
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchQuery("_id", judgmentsId));
         searchSourceBuilder.trackTotalHits(true);
+
+        // Will be a max of 1 result since we are getting the judgments by ID.
+        searchSourceBuilder.from(0);
+        searchSourceBuilder.size(1);
 
         final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME);
         getQuerySetSearchRequest.source(searchSourceBuilder);

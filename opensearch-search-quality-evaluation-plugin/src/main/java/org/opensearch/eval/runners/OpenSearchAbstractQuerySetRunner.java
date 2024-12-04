@@ -33,17 +33,17 @@ import java.util.Map;
 import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACEHOLDER;
 
 /**
- * A {@link QuerySetRunner} for Amazon OpenSearch.
+ * A {@link AbstractQuerySetRunner} for Amazon OpenSearch.
  */
-public class OpenSearchQuerySetRunner extends QuerySetRunner {
+public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
 
-    private static final Logger LOGGER = LogManager.getLogger(OpenSearchQuerySetRunner.class);
+    private static final Logger LOGGER = LogManager.getLogger(OpenSearchAbstractQuerySetRunner.class);
 
     /**
      * Creates a new query set runner
      * @param client An OpenSearch {@link Client}.
      */
-    public OpenSearchQuerySetRunner(final Client client) {
+    public OpenSearchAbstractQuerySetRunner(final Client client) {
         super(client);
     }
 
@@ -131,7 +131,7 @@ public class OpenSearchQuerySetRunner extends QuerySetRunner {
 
             }
 
-            // TODO: Calculate the search metrics given the results and the judgments.
+            // TODO: Calculate the search metrics for the entire query set given the results and the judgments.
             final SearchMetrics searchMetrics = new SearchMetrics(queryResults, judgments, k);
 
             return new QuerySetRunResult(queryResults, searchMetrics);
