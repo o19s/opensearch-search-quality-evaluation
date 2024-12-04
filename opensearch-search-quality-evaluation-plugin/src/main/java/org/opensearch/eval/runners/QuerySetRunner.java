@@ -24,7 +24,7 @@ public interface QuerySetRunner {
      * @param k The k used for metrics calculation, i.e. DCG@k.
      * @return The query set {@link QuerySetRunResult results} and calculated metrics.
      */
-    QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k);
+    QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception;
 
     /**
      * Saves the query set results to a persistent store, which may be the search engine itself.

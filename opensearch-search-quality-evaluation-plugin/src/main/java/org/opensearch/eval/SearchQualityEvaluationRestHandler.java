@@ -160,7 +160,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             final String idField = request.param("id_field", "_id");
             final int k = Integer.parseInt(request.param("k", "10"));
 
-            if(querySetId == null || judgmentsId == null || index == null) {
+            if(querySetId == null || querySetId.isEmpty() || judgmentsId == null || judgmentsId.isEmpty() || index == null || index.isEmpty()) {
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
             }
 
@@ -187,7 +187,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {
-                LOGGER.error("Unable to run query set with ID {}: ", querySetId, ex);
+                LOGGER.error("Unable to run query set.", ex);
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
             }
 

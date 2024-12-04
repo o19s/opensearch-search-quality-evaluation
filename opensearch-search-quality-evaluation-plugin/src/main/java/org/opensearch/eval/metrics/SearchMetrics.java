@@ -6,9 +6,10 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.runners;
+package org.opensearch.eval.metrics;
 
 import org.opensearch.eval.judgments.model.Judgment;
+import org.opensearch.eval.runners.QueryResult;
 
 import java.util.HashMap;
 import java.util.List;

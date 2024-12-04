@@ -9,6 +9,7 @@
 package org.opensearch.eval.runners;
 
 import org.opensearch.eval.judgments.model.Judgment;
+import org.opensearch.eval.metrics.SearchMetrics;
 
 import java.util.List;
 

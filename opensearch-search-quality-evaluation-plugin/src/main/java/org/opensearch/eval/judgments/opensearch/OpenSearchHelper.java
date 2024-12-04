@@ -36,12 +36,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
 import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME;
 import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_JUDGMENTS;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
 
+/**
+ * Functionality for interacting with OpenSearch.
+ * TODO: Move these functions out of this class.
+ */
 public class OpenSearchHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchHelper.class.getName());
@@ -329,7 +333,7 @@ public class OpenSearchHelper {
         final Map<String, Object> judgmentsSource = new HashMap<>();
         judgmentsSource.put("judgments", j);
 
-        final IndexRequest indexRequest = new IndexRequest(INDEX_JUDGMENTS)
+        final IndexRequest indexRequest = new IndexRequest(JUDGMENTS_INDEX_NAME)
                 .id(judgmentsId)
                 .source(judgmentsSource);
 

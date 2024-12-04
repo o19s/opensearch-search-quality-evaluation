@@ -16,8 +16,10 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
+import org.opensearch.core.common.util.CollectionUtils;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.judgments.model.Judgment;
+import org.opensearch.eval.metrics.SearchMetrics;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -48,14 +50,22 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
     }
 
     @Override
-    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) {
+    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception {
 
-        // TODO: Get the judgments we will use for metric calculation.
-        final List<Judgment> judgments = new ArrayList<>();
+        // Get the judgments we will use for metric calculation.
+        final List<Judgment> judgments = getJudgments(judgmentsId);
+
+        if(CollectionUtils.isEmpty(judgments)) {
+            // We have to have judgments to continue. The judgmentsId is either wrong or doesn't exist.
+            throw new RuntimeException("Judgments are empty. Check judgment_id and try again.");
+        }
 
         // Get the query set.
         final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
         getQuerySetSearchSourceBuilder.query(QueryBuilders.matchQuery("_id", querySetId));
+        getQuerySetSearchSourceBuilder.from(0);
+        // TODO: Need to page through to make sure we get all of the queries.
+        getQuerySetSearchSourceBuilder.size(500);
 
         final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME);
         getQuerySetSearchRequest.source(getQuerySetSearchSourceBuilder);
@@ -83,7 +93,6 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
                     searchSourceBuilder.query(QueryBuilders.wrapperQuery(q));
                     searchSourceBuilder.from(0);
-                    // TODO: If k is > 10, we'll need to page through these.
                     searchSourceBuilder.size(k);
 
                     String[] includeFields = new String[] {idField};
@@ -110,7 +119,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
                             }
 
-                            queryResults.add(new QueryResult(query, orderedDocumentIds, judgments, k));
+                            queryResults.add(new QueryResult(userQuery, orderedDocumentIds, judgments, k));
 
                         }
 
@@ -129,8 +138,8 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
             return new QuerySetRunResult(queryResults, searchMetrics);
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception ex) {
+            throw new RuntimeException("Unable to run query set.", ex);
         }
 
     }
@@ -146,7 +155,7 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
         results.put("search_metrics", result.getSearchMetrics().getSearchMetricsAsMap());
         results.put("query_results", result.getQueryResultsAsMap());
 
-        final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS);
+        final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME);
         indexRequest.source(results);
 
         client.index(indexRequest, new ActionListener<>() {
@@ -160,6 +169,51 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                 throw new RuntimeException(ex);
             }
         });
+
+    }
+
+    private List<Judgment> getJudgments(final String judgmentsId) throws Exception {
+
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(QueryBuilders.matchQuery("_id", judgmentsId));
+        searchSourceBuilder.trackTotalHits(true);
+
+        final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME);
+        getQuerySetSearchRequest.source(searchSourceBuilder);
+
+        // TODO: Don't use .get()
+        final SearchResponse searchResponse = client.search(getQuerySetSearchRequest).get();
+
+        final List<Judgment> judgments = new ArrayList<>();
+
+        if(searchResponse.getHits().getTotalHits().value == 0) {
+
+            // The judgment_id is probably not valid.
+            // This will return an empty list.
+
+        } else {
+
+            // TODO: Make sure the search gets something back.
+            final Collection<Map<String, Object>> j = (Collection<Map<String, Object>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("judgments");
+
+            for (final Map<String, Object> judgment : j) {
+
+                final String queryId = judgment.get("query_id").toString();
+                final double judgmentValue = Double.parseDouble(judgment.get("judgment").toString());
+                final String query = judgment.get("query").toString();
+                final String document = judgment.get("document").toString();
+
+                final Judgment jobj = new Judgment(queryId, query, document, judgmentValue);
+                LOGGER.info("Judgment: {}", jobj.toJudgmentString());
+
+                judgments.add(jobj);
+
+            }
+
+        }
+
+        return judgments;
+
     }
 
 }

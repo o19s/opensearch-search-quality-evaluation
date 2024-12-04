@@ -8,6 +8,8 @@
  */
 package org.opensearch.eval.runners;
 
+import org.opensearch.eval.metrics.SearchMetrics;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -72,7 +74,6 @@ public class QuerySetRunResult {
             q.put("search_metrics", queryResult.getSearchMetrics().getSearchMetricsAsMap());
 
             qs.add(q);
-
 
         }
 
