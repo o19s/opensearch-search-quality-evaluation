@@ -13,7 +13,7 @@ curl -s -X POST "http://localhost:9200/_plugins/search_quality_eval/run?id=${QUE
     --data-binary '{
                     "query": {
                       "match": {
-                        "description": {
+                        "title": {
                           "query": "#$query##"
                         }
                       }

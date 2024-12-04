@@ -324,23 +324,22 @@ public class OpenSearchHelper {
 
         final String judgmentsId = UUID.randomUUID().toString();
 
-        final Collection<Map<String, Object>> j = new ArrayList<>();
+        final BulkRequest request = new BulkRequest();
 
-        for (final Judgment judgment : judgments) {
-            j.add(judgment.getJudgmentAsMap());
+        for(final Judgment judgment : judgments) {
+
+            final Map<String, Object> j = judgment.getJudgmentAsMap();
+            j.put("judgment_id", judgmentsId);
+
+            final IndexRequest indexRequest = new IndexRequest(JUDGMENTS_INDEX_NAME)
+                    .id(UUID.randomUUID().toString())
+                    .source(j);
+
+            request.add(indexRequest);
+
         }
 
-        final Map<String, Object> judgmentsSource = new HashMap<>();
-        judgmentsSource.put("judgments", j);
-
-        final IndexRequest indexRequest = new IndexRequest(JUDGMENTS_INDEX_NAME)
-                .id(judgmentsId)
-                .source(judgmentsSource);
-
-        final BulkRequest request = new BulkRequest();
-        request.add(indexRequest);
-
-        client.bulk(request, new ActionListener<BulkResponse>() {
+        client.bulk(request, new ActionListener<>() {
             @Override
             public void onResponse(BulkResponse bulkItemResponses) {
                 LOGGER.info("Judgments indexed: {}", judgmentsId);
