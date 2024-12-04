@@ -35,18 +35,16 @@ import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACE
 /**
  * A {@link QuerySetRunner} for Amazon OpenSearch.
  */
-public class OpenSearchQuerySetRunner implements QuerySetRunner {
+public class OpenSearchQuerySetRunner extends QuerySetRunner {
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchQuerySetRunner.class);
-
-    final Client client;
 
     /**
      * Creates a new query set runner
      * @param client An OpenSearch {@link Client}.
      */
     public OpenSearchQuerySetRunner(final Client client) {
-        this.client = client;
+        super(client);
     }
 
     @Override
@@ -169,50 +167,6 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                 throw new RuntimeException(ex);
             }
         });
-
-    }
-
-    private List<Judgment> getJudgments(final String judgmentsId) throws Exception {
-
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(QueryBuilders.matchQuery("_id", judgmentsId));
-        searchSourceBuilder.trackTotalHits(true);
-
-        final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME);
-        getQuerySetSearchRequest.source(searchSourceBuilder);
-
-        // TODO: Don't use .get()
-        final SearchResponse searchResponse = client.search(getQuerySetSearchRequest).get();
-
-        final List<Judgment> judgments = new ArrayList<>();
-
-        if(searchResponse.getHits().getTotalHits().value == 0) {
-
-            // The judgment_id is probably not valid.
-            // This will return an empty list.
-
-        } else {
-
-            // TODO: Make sure the search gets something back.
-            final Collection<Map<String, Object>> j = (Collection<Map<String, Object>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("judgments");
-
-            for (final Map<String, Object> judgment : j) {
-
-                final String queryId = judgment.get("query_id").toString();
-                final double judgmentValue = Double.parseDouble(judgment.get("judgment").toString());
-                final String query = judgment.get("query").toString();
-                final String document = judgment.get("document").toString();
-
-                final Judgment jobj = new Judgment(queryId, query, document, judgmentValue);
-                LOGGER.info("Judgment: {}", jobj.toJudgmentString());
-
-                judgments.add(jobj);
-
-            }
-
-        }
-
-        return judgments;
 
     }
 
