@@ -50,14 +50,6 @@ public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
     @Override
     public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception {
 
-        // Get the judgments we will use for metric calculation.
-        final List<Judgment> judgments = getJudgments(judgmentsId);
-
-        if(CollectionUtils.isEmpty(judgments)) {
-            // We have to have judgments to continue. The judgmentsId is either wrong or doesn't exist.
-            throw new RuntimeException("Judgments are empty. Check judgment_id and try again.");
-        }
-
         // Get the query set.
         final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
         getQuerySetSearchSourceBuilder.query(QueryBuilders.matchQuery("_id", querySetId));
@@ -117,6 +109,7 @@ public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
 
                             }
 
+                            // TODO: Use getJudgment() to get the judgment for this document.
                             queryResults.add(new QueryResult(userQuery, orderedDocumentIds, judgments, k));
 
                         }

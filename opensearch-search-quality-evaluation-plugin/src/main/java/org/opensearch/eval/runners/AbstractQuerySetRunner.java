@@ -14,13 +14,10 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
-import org.opensearch.eval.judgments.model.Judgment;
+import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -55,53 +52,53 @@ public abstract class AbstractQuerySetRunner {
      */
     abstract void save(QuerySetRunResult result) throws Exception;
 
-    public List<Judgment> getJudgments(final String judgmentsId) throws Exception {
+    /**
+     * Get a judgment from the index.
+     * @param judgmentsId The judgements ID the judgment to find belongs to.
+     * @param query The user query.
+     * @param documentId The document ID.
+     * @return The value of the judgment, or <code>NaN</code> if the judgment cannot be found.
+     * @throws Exception Thrown if the indexed cannot be queried for the judgment.
+     */
+    public Double getJudgment(final String judgmentsId, final String query, final String documentId) throws Exception {
+
+        // Find a judgment that matches the judgments_id, query_id, and document_id fields in the index.
+
+        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        boolQueryBuilder.must(QueryBuilders.matchQuery("judgments_id", judgmentsId));
+        boolQueryBuilder.must(QueryBuilders.matchQuery("query", query));
+        boolQueryBuilder.must(QueryBuilders.matchQuery("document_id", documentId));
 
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(QueryBuilders.matchQuery("_id", judgmentsId));
-        searchSourceBuilder.trackTotalHits(true);
+        searchSourceBuilder.query(boolQueryBuilder);
 
         // Will be a max of 1 result since we are getting the judgments by ID.
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(1);
 
-        final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME);
-        getQuerySetSearchRequest.source(searchSourceBuilder);
+        // Only include the judgment field.
+        String[] includeFields = new String[] {"judgment"};
+        String[] excludeFields = new String[] {};
+        searchSourceBuilder.fetchSource(includeFields, excludeFields);
+
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME);
+        searchRequest.source(searchSourceBuilder);
 
         // TODO: Don't use .get()
-        final SearchResponse searchResponse = client.search(getQuerySetSearchRequest).get();
+        final SearchResponse searchResponse = client.search(searchRequest).get();
 
-        final List<Judgment> judgments = new ArrayList<>();
+        if(searchResponse.getHits().getHits().length == 0) {
 
-        if(searchResponse.getHits().getTotalHits().value == 0) {
-
-            // The judgment_id is probably not valid.
-            // This will return an empty list.
+            // The judgments_id is probably not valid.
+            return Double.NaN;
 
         } else {
 
-            // TODO: Make sure the search gets something back.
-            final Collection<Map<String, Object>> j = (Collection<Map<String, Object>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("judgments");
-
-            for (final Map<String, Object> judgment : j) {
-
-                final String queryId = judgment.get("query_id").toString();
-                final double judgmentValue = Double.parseDouble(judgment.get("judgment").toString());
-                final String query = judgment.get("query").toString();
-                final String document = judgment.get("document").toString();
-
-                final Judgment jobj = new Judgment(queryId, query, document, judgmentValue);
-                LOGGER.info("Judgment: {}", jobj.toJudgmentString());
-
-                judgments.add(jobj);
-
-            }
+            final Map<String, Object> j = searchResponse.getHits().getAt(0).getSourceAsMap();
+            return Double.parseDouble(j.get("judgment").toString());
 
         }
 
-        return judgments;
-
     }
-
 
 }
