@@ -234,27 +234,20 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                             .source(job)
                             .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-                    final AtomicBoolean success = new AtomicBoolean(false);
-
                     client.index(indexRequest, new ActionListener<>() {
                         @Override
                         public void onResponse(final IndexResponse indexResponse) {
-                            LOGGER.debug("Job completed successfully: {}", jobId);
-                            success.set(true);
+                            LOGGER.debug("Click model job completed successfully: {}", jobId);
                         }
 
                         @Override
                         public void onFailure(final Exception ex) {
                             LOGGER.error("Unable to run job with ID {}", jobId, ex);
-                            success.set(false);
+                            throw new RuntimeException("Unable to run job", ex);
                         }
                     });
 
-                    if(success.get()) {
-                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + jobId + "\"}"));
-                    } else {
-                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR,"Unable to index judgments."));
-                    }
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + jobId + "\"}"));
 
                 } else {
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid click model.\"}"));

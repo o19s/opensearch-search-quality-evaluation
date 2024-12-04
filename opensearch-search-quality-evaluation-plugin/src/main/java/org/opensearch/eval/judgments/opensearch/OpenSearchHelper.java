@@ -329,7 +329,7 @@ public class OpenSearchHelper {
         for(final Judgment judgment : judgments) {
 
             final Map<String, Object> j = judgment.getJudgmentAsMap();
-            j.put("judgment_id", judgmentsId);
+            j.put("judgments_id", judgmentsId);
 
             final IndexRequest indexRequest = new IndexRequest(JUDGMENTS_INDEX_NAME)
                     .id(UUID.randomUUID().toString())
