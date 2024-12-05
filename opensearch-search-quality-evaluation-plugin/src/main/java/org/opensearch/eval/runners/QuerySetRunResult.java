@@ -8,7 +8,7 @@
  */
 package org.opensearch.eval.runners;
 
-import org.opensearch.eval.metrics.SearchMetrics;
+import org.opensearch.eval.metrics.SearchMetric;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,17 +24,17 @@ public class QuerySetRunResult {
 
     private final String runId;
     private final List<QueryResult> queryResults;
-    private final SearchMetrics searchMetrics;
+    private final Collection<SearchMetric> metrics;
 
     /**
      * Creates a new query set run result. A random UUID is generated as the run ID.
      * @param queryResults A collection of {@link QueryResult} that contains the queries and search results.
-     * @param searchMetrics The {@link SearchMetrics metrics} calculated from the search results.
+     * @param metrics The {@link SearchMetric metrics} calculated from the search results.
      */
-    public QuerySetRunResult(final List<QueryResult> queryResults, final SearchMetrics searchMetrics) {
+    public QuerySetRunResult(final List<QueryResult> queryResults, final Collection<SearchMetric> metrics) {
         this.runId = UUID.randomUUID().toString();
         this.queryResults = queryResults;
-        this.searchMetrics = searchMetrics;
+        this.metrics = metrics;
     }
 
     /**
@@ -46,11 +46,11 @@ public class QuerySetRunResult {
     }
 
     /**
-     * Gets the {@link SearchMetrics metrics} calculated from the run.
-     * @return The {@link SearchMetrics metrics} calculated from the run.
+     * Gets the {@link SearchMetric metrics} calculated from the run.
+     * @return The {@link SearchMetric metrics} calculated from the run.
      */
-    public SearchMetrics getSearchMetrics() {
-        return searchMetrics;
+    public Collection<SearchMetric> getSearchMetrics() {
+        return metrics;
     }
 
     /**
@@ -71,7 +71,11 @@ public class QuerySetRunResult {
 
             q.put("query", queryResult.getQuery());
             q.put("document_ids", queryResult.getOrderedDocumentIds());
-            q.put("search_metrics", queryResult.getSearchMetrics().getSearchMetricsAsMap());
+
+            // Calculate and add each metric to the map.
+            for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+                q.put(searchMetric.getName(), searchMetric.calculate());
+            }
 
             qs.add(q);
 

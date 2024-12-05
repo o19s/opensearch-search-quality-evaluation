@@ -8,9 +8,9 @@
  */
 package org.opensearch.eval.runners;
 
-import org.opensearch.eval.judgments.model.Judgment;
-import org.opensearch.eval.metrics.SearchMetrics;
+import org.opensearch.eval.metrics.SearchMetric;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -20,20 +20,21 @@ public class QueryResult {
 
     private final String query;
     private final List<String> orderedDocumentIds;
-    private final SearchMetrics searchMetrics;
+    private final int k;
+    private final Collection<SearchMetric> searchMetrics;
 
     /**
      * Creates the search results.
      * @param query The query used to generate this result.
      * @param orderedDocumentIds A list of ordered document IDs in the same order as they appeared
      *                           in the query.
-     * @param judgments A list of {@link Judgment judgments} used for metric calculation.
      * @param k The k used for metrics calculation, i.e. DCG@k.
      */
-    public QueryResult(final String query, final List<String> orderedDocumentIds, final List<Judgment> judgments, final int k) {
+    public QueryResult(final String query, final List<String> orderedDocumentIds, final int k, final Collection<SearchMetric> searchMetrics) {
         this.query = query;
         this.orderedDocumentIds = orderedDocumentIds;
-        this.searchMetrics = new SearchMetrics(query, orderedDocumentIds, judgments, k);
+        this.k = k;
+        this.searchMetrics = searchMetrics;
     }
 
     /**
@@ -52,11 +53,11 @@ public class QueryResult {
         return orderedDocumentIds;
     }
 
-    /**
-     * Gets the search metrics for this query.
-     * @return The {@link SearchMetrics} for this query.
-     */
-    public SearchMetrics getSearchMetrics() {
+    public int getK() {
+        return k;
+    }
+
+    public Collection<SearchMetric> getSearchMetrics() {
         return searchMetrics;
     }
 
