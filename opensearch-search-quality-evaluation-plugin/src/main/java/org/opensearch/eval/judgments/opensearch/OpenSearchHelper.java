@@ -234,9 +234,9 @@ public class OpenSearchHelper {
 
         for(final SearchHit searchHit : response.getHits().getHits()) {
 
-            final List<String> queryResponseObjectIds = (List<String>) searchHit.getSourceAsMap().get("query_response_object_ids");
+            final List<String> queryResponseHidsIds = (List<String>) searchHit.getSourceAsMap().get("query_response_hit_ids");
 
-            if(queryResponseObjectIds.get(rank).equals(objectId)) {
+            if(queryResponseHidsIds.get(rank).equals(objectId)) {
                 countOfTimesShownAtRank++;
             }
 
