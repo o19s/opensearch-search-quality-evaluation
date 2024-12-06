@@ -26,6 +26,10 @@ public class DcgSearchMetric extends SearchMetric {
 
     @Override
     public double calculate() {
+        return calculateDcg(relevanceScores);
+    }
+
+    protected double calculateDcg(final List<Double> relevanceScores) {
 
         double dcg = 0.0;
         for(int i = 1; i <= relevanceScores.size(); i++) {

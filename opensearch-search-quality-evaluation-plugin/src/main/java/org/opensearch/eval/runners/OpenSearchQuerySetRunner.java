@@ -18,6 +18,7 @@ import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.metrics.DcgSearchMetric;
+import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
@@ -97,19 +98,14 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                             final List<String> orderedDocumentIds = new ArrayList<>();
 
-                           // LOGGER.info("Found {} results for query {}", searchResponse.getHits().getTotalHits().value, userQuery);
-
                             for (final SearchHit hit : searchResponse.getHits().getHits()) {
 
                                 final Map<String, Object> sourceAsMap = hit.getSourceAsMap();
                                 final String documentId = sourceAsMap.get(idField).toString();
 
-                                //LOGGER.info("     -- query {}, documentId: {}", userQuery, documentId);
                                 orderedDocumentIds.add(documentId);
 
                             }
-
-                            //LOGGER.info("Number of documents: " + orderedDocumentIds.size());
 
                             try {
 
@@ -117,8 +113,9 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                                 final List<Double> relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
 
                                 final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
+                                final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores);
+
                                 // TODO: Add these metrics in, too.
-                                //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
                                 //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
 
                                 //LOGGER.info("size list for query {}: {}", userQuery, relevanceScores.size());

@@ -12,11 +12,8 @@ import java.util.List;
 
 public class NdcgSearchMetric extends DcgSearchMetric {
 
-    private final List<Double> idealRelevanceScores;
-
-    public NdcgSearchMetric(final int k, final List<Double> relevanceScores, final List<Double> idealRelevanceScores) {
+    public NdcgSearchMetric(final int k, final List<Double> relevanceScores) {
         super(k, relevanceScores);
-        this.idealRelevanceScores = idealRelevanceScores;
     }
 
     @Override
@@ -27,17 +24,11 @@ public class NdcgSearchMetric extends DcgSearchMetric {
     @Override
     public double calculate() {
 
+        // Make the ideal relevance scores by sorting the relevance scores largest to smallest.
+        relevanceScores.sort(Double::compare);
+
         double dcg = super.calculate();
-
-        double idcg = 0.0;
-        for(int i = 0; i < idealRelevanceScores.size(); i++) {
-            double relevance = idealRelevanceScores.get(i);
-            idcg += relevance / Math.log(i + 2); // Add 2 to avoid log(1) = 0
-        }
-
-        if(idcg == 0) {
-            return 0;
-        }
+        double idcg = super.calculateDcg(relevanceScores);
 
         return dcg / idcg;
 
