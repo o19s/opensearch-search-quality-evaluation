@@ -19,6 +19,7 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
+import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
@@ -109,19 +110,14 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                             try {
 
-                                // TODO: If no hits are returned, there's no need to get the relevance scores.
                                 final List<Double> relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
 
+                                // Calculate the metrics for this query.
                                 final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
                                 final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores);
+                                final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
 
-                                // TODO: Add these metrics in, too.
-                                //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
-
-                                //LOGGER.info("size list for query {}: {}", userQuery, relevanceScores.size());
-                                //LOGGER.info("query set ({}) dcg = {}", userQuery, dcgSearchMetric.getValue());
-
-                                final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+                                final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
 
                                 queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics));
 

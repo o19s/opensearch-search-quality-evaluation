@@ -13,7 +13,6 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
-import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
@@ -146,8 +145,6 @@ public abstract class AbstractQuerySetRunner {
 
         } else {
 
-            // LOGGER.info("No judgments found for query: {}; documentId = {}; judgmentsId = {}", query, documentId, judgmentsId);
-
             // No judgment for this query/doc pair exists.
             judgment = Double.NaN;
 
@@ -157,9 +154,16 @@ public abstract class AbstractQuerySetRunner {
 
     }
 
-    public List<Double> getRelevanceScores(final String judgmentsId, final String query, final List<String> orderedDocumentIds, final int k) throws Exception {
-
-       //  LOGGER.info("Getting relevance scores for query: {}, k = {}, docIds size = {}", query, k, orderedDocumentIds.size());
+    /**
+     * Gets the judgments for a query / document pairs.
+     * @param judgmentsId The judgments collection for which the judgment to retrieve belongs.
+     * @param query The user query.
+     * @param orderedDocumentIds A list of document IDs returned for the user query.
+     * @param k The k used for metrics calculation, i.e. DCG@k.
+     * @return An ordered list of relevance scores for the query / document pairs.
+     * @throws Exception Thrown if a judgment cannot be retrieved.
+     */
+    protected List<Double> getRelevanceScores(final String judgmentsId, final String query, final List<String> orderedDocumentIds, final int k) throws Exception {
 
         // Ordered list of scores.
         final List<Double> scores = new ArrayList<>();
@@ -172,25 +176,12 @@ public abstract class AbstractQuerySetRunner {
             // Find the judgment value for this combination of query and documentId from the index.
             final Double judgmentValue = getJudgmentValue(judgmentsId, query, documentId);
 
-            // LOGGER.info("Got judgment value: {}", judgmentValue);
-
             // If a judgment for this query/doc pair is not found, Double.NaN will be returned.
             if(!Double.isNaN(judgmentValue)) {
-                //LOGGER.info("Adding score {} for query {}", judgmentValue, query);
                 scores.add(judgmentValue);
             }
 
-//            if (i == orderedDocumentIds.size()) {
-//                // k is greater than the actual length of documents.
-//                break;
-//            }
-
         }
-
-       // LOGGER.info("----- scores size: " + scores.size());
-
-        //final String listOfScores = scores.stream().map(Object::toString).collect(Collectors.joining(", "));
-        //LOGGER.info("Got relevance scores: size = {}: scores = {}", listOfScores.length(), listOfScores);
 
         return scores;
 

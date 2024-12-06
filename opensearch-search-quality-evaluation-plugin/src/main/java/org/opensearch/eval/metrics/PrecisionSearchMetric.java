@@ -27,7 +27,7 @@ public class PrecisionSearchMetric extends SearchMetric {
     @Override
     public double calculate() {
 
-        // TODO: Implement this.
+        // TODO: Implement precision calculation.
         return 0.0;
 
     }
