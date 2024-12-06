@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * The results of a query set run.
@@ -28,11 +27,12 @@ public class QuerySetRunResult {
 
     /**
      * Creates a new query set run result. A random UUID is generated as the run ID.
+     * @param runId A unique identifier for this query set run.
      * @param queryResults A collection of {@link QueryResult} that contains the queries and search results.
      * @param metrics The {@link SearchMetric metrics} calculated from the search results.
      */
-    public QuerySetRunResult(final List<QueryResult> queryResults, final Collection<SearchMetric> metrics) {
-        this.runId = UUID.randomUUID().toString();
+    public QuerySetRunResult(final String runId, final List<QueryResult> queryResults, final Collection<SearchMetric> metrics) {
+        this.runId = runId;
         this.queryResults = queryResults;
         this.metrics = metrics;
     }

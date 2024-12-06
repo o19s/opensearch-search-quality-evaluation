@@ -53,7 +53,7 @@ public class Judgment {
         final Map<String, Object> judgmentMap = new HashMap<>();
         judgmentMap.put("query_id", queryId);
         judgmentMap.put("query", query);
-        judgmentMap.put("document", document);
+        judgmentMap.put("document_id", document);
         judgmentMap.put("judgment", judgment);
 
         return judgmentMap;

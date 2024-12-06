@@ -106,9 +106,9 @@ public abstract class AbstractQuerySetRunner {
         // Find a judgment that matches the judgments_id, query_id, and document_id fields in the index.
 
         final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        boolQueryBuilder.must(QueryBuilders.matchQuery("judgments_id", judgmentsId));
-        boolQueryBuilder.must(QueryBuilders.matchQuery("query", query));
-        boolQueryBuilder.must(QueryBuilders.matchQuery("document_id", documentId));
+        boolQueryBuilder.must(QueryBuilders.termQuery("judgment_id", judgmentsId));
+        boolQueryBuilder.must(QueryBuilders.termQuery("query", query));
+        boolQueryBuilder.must(QueryBuilders.termQuery("document_id", documentId));
 
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(boolQueryBuilder);
@@ -117,13 +117,14 @@ public abstract class AbstractQuerySetRunner {
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(1);
 
-        // Only include the judgment field.
+        // Only include the judgment field in the response.
         final String[] includeFields = new String[] {"judgment"};
         final String[] excludeFields = new String[] {};
         searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME);
-        searchRequest.source(searchSourceBuilder);
+        LOGGER.info("query: " + boolQueryBuilder.toString());
+
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME).source(searchSourceBuilder);
 
         try {
 
@@ -137,9 +138,7 @@ public abstract class AbstractQuerySetRunner {
 
             } else {
 
-                LOGGER.warn("Unable to find judgments with ID {} for query {} and document ID {}", judgmentsId, query, documentId);
-
-                // TODO: What to return here when there is no judgment?
+                // No judgment for this query/doc pair exists.
                 return Double.NaN;
 
             }
@@ -159,7 +158,7 @@ public abstract class AbstractQuerySetRunner {
         final List<Double> scores = new ArrayList<>();
 
         // Go through each document up to k and get the score.
-        for (int i = 0; i < k; i++) {
+        for (int i = 0; i < k && i < orderedDocumentIds.size(); i++) {
 
             final String documentId = orderedDocumentIds.get(i);
 
@@ -178,8 +177,8 @@ public abstract class AbstractQuerySetRunner {
 
         }
 
-        String listOfScores = scores.stream().map(Object::toString).collect(Collectors.joining(", "));
-        LOGGER.info("Got relevance scores: {}", listOfScores);
+        final String listOfScores = scores.stream().map(Object::toString).collect(Collectors.joining(", "));
+        LOGGER.info("Got relevance scores: size = {}: scores = {}", listOfScores.length(), listOfScores);
 
         return scores;
 

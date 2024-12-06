@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACEHOLDER;
 
@@ -79,6 +80,8 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     final SearchRequest searchRequest = new SearchRequest(index);
                     searchRequest.source(searchSourceBuilder);
 
+                    LOGGER.info("Doing search for: {}", userQuery);
+
                     client.search(searchRequest, new ActionListener<>() {
 
                         @Override
@@ -111,7 +114,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                         @Override
                         public void onFailure(Exception ex) {
-                            LOGGER.error("Unable to search using query: {}", query, ex);
+                            LOGGER.error("Unable to search using query: {}", parsedQuery, ex);
                         }
                     });
 
@@ -128,8 +131,12 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
 
             final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+            final String querySetRunId = UUID.randomUUID().toString();
+            final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, queryResults, searchMetrics);
 
-            return new QuerySetRunResult(queryResults, searchMetrics);
+            LOGGER.info("Query set run complete: {}", querySetRunId);
+
+            return querySetRunResult;
 
         } catch (Exception ex) {
             throw new RuntimeException("Unable to run query set.", ex);

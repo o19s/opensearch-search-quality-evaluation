@@ -186,7 +186,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {
-                LOGGER.error("Unable to run query set.", ex);
+                LOGGER.error("Unable to run query set. Verify query set and judgments exist.", ex);
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
             }
 
