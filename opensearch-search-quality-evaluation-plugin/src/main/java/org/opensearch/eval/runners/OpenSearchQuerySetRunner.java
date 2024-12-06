@@ -52,6 +52,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
     public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception {
 
         final Collection<Map<String, Long>> querySet = getQuerySet(querySetId);
+        LOGGER.info("Found {} queries in query set {}", querySet.size(), querySetId);
 
         try {
 
@@ -76,11 +77,12 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     final String[] excludeFields = new String[]{};
                     searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
-                    // TODO: Allow for setting this index name.
                     final SearchRequest searchRequest = new SearchRequest(index);
                     searchRequest.source(searchSourceBuilder);
 
-                    LOGGER.info("Doing search for: {}", userQuery);
+                    // This is to keep OpenSearch from rejecting queries.
+                    // TODO: Look at using the Workload Management in 2.18.0.
+                    Thread.sleep(50);
 
                     client.search(searchRequest, new ActionListener<>() {
 
@@ -89,22 +91,29 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                             final List<String> orderedDocumentIds = new ArrayList<>();
 
+                           // LOGGER.info("Found {} results for query {}", searchResponse.getHits().getTotalHits().value, userQuery);
+
                             for (final SearchHit hit : searchResponse.getHits().getHits()) {
 
                                 final Map<String, Object> sourceAsMap = hit.getSourceAsMap();
                                 final String documentId = sourceAsMap.get(idField).toString();
 
+                                //LOGGER.info("     -- query {}, documentId: {}", userQuery, documentId);
                                 orderedDocumentIds.add(documentId);
 
                             }
 
-                            // TODO: Use getJudgment() to get the judgment for this document.
+                            //LOGGER.info("Number of documents: " + orderedDocumentIds.size());
+
+                            // TODO: If no hits are returned, there's no need to get the relevance scores.
                             final List<Double> relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
 
                             final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
                             // TODO: Add these metrics in, too.
                             //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
                             //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
+
+                            LOGGER.info("query set dcg = " + dcgSearchMetric.getValue());
 
                             final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
 
@@ -123,14 +132,14 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             }
 
             // TODO: Calculate the search metrics for the entire query set given the results and the judgments.
-            final List<String> orderedDocumentIds = new ArrayList<>();
+            /*final List<String> orderedDocumentIds = new ArrayList<>();
             final List<Double> relevanceScores = getRelevanceScores(judgmentsId, "TODO", orderedDocumentIds, k);
             final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
             // TODO: Add these metrics in, too.
             //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
-            //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
+            //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);*/
 
-            final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+            final Collection<SearchMetric> searchMetrics = new ArrayList<>(); // List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
             final String querySetRunId = UUID.randomUUID().toString();
             final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, queryResults, searchMetrics);
 
@@ -147,7 +156,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
     @Override
     public void save(final QuerySetRunResult result) throws Exception {
 
-        // Index the results into OpenSearch.
+        // Index the query results into OpenSearch.
 
         final Map<String, Object> results = new HashMap<>();
 

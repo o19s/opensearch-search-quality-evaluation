@@ -9,7 +9,6 @@
 package org.opensearch.eval.judgments.clickmodel.coec;
 
 import com.google.gson.Gson;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.search.SearchRequest;
@@ -24,8 +23,8 @@ import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.judgments.model.ubi.event.UbiEvent;
 import org.opensearch.eval.judgments.opensearch.OpenSearchHelper;
-import org.opensearch.eval.judgments.util.MathUtils;
 import org.opensearch.eval.judgments.util.IncrementalUserQueryHash;
+import org.opensearch.eval.judgments.util.MathUtils;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
@@ -272,7 +271,7 @@ public class CoecClickModel extends ClickModel {
                 // Get the ClickthroughRate object for the object that was interacted with.
                 final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
 
-                if (StringUtils.equalsIgnoreCase(ubiEvent.getActionName(), EVENT_CLICK)) {
+                if (EVENT_CLICK.equalsIgnoreCase(ubiEvent.getActionName())) {
                     //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
                     clickthroughRate.logClick();
                 } else {
@@ -341,10 +340,11 @@ public class CoecClickModel extends ClickModel {
 
         final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
         final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
+
         for(final Terms.Bucket actionBucket : actionBuckets) {
 
             // Handle the "click" bucket.
-            if(StringUtils.equalsIgnoreCase(actionBucket.getKey().toString(), EVENT_CLICK)) {
+            if(EVENT_CLICK.equalsIgnoreCase(actionBucket.getKey().toString())) {
 
                 final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
@@ -356,7 +356,7 @@ public class CoecClickModel extends ClickModel {
             }
 
             // Handle the "view" bucket.
-            if(StringUtils.equalsIgnoreCase(actionBucket.getKey().toString(), EVENT_VIEW)) {
+            if(EVENT_VIEW.equalsIgnoreCase(actionBucket.getKey().toString())) {
 
                 final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();

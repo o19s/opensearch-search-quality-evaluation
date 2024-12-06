@@ -21,12 +21,24 @@ public abstract class SearchMetric {
 
     public abstract double calculate();
 
+    private Double value = Double.NaN;
+
     public SearchMetric(final int k) {
         this.k = k;
     }
 
     public int getK() {
         return k;
+    }
+
+    public double getValue() {
+
+        if(Double.isNaN(value)) {
+            this.value = calculate();
+        }
+
+        return value;
+
     }
 
 }

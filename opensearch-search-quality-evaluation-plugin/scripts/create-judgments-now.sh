@@ -8,7 +8,8 @@ curl -s -X PUT http://localhost:9200/judgments -H 'Content-Type: application/jso
                                               {
                                                 "mappings": {
                                                   "properties": {
-                                                    "judgment_id": { "type": "keyword" },
+                                                    "judgments_id": { "type": "keyword" },
+                                                    "query_id": { "type": "keyword" },
                                                     "query": { "type": "keyword" },
                                                     "document_id": { "type": "keyword" },
                                                     "judgment": { "type": "double" }
