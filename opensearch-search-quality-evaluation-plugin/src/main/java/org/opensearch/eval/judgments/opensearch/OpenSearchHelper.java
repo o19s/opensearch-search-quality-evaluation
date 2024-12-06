@@ -204,7 +204,10 @@ public class OpenSearchHelper {
 
             //LOGGER.info("Query ID: {} --- Count of {} having {} at rank {} = {}", queryId, userQuery, objectId, rank, response.getHits().getTotalHits().value);
 
-            countOfTimesShownAtRank += response.getHits().getTotalHits().value;
+            // Won't be null as long as trackTotalHits is true.
+            if(response.getHits().getTotalHits() != null) {
+                countOfTimesShownAtRank += response.getHits().getTotalHits().value;
+            }
 
         }
 

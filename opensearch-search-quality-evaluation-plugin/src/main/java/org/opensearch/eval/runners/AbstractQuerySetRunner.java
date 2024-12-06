@@ -76,14 +76,13 @@ public abstract class AbstractQuerySetRunner {
         // Will be at most one match.
         sourceBuilder.from(0);
         sourceBuilder.size(1);
-        sourceBuilder.trackTotalHits(true);
 
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME).source(sourceBuilder);
 
         // TODO: Don't use .get()
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
-        if(searchResponse.getHits().getTotalHits().value > 0) {
+        if (searchResponse.getHits().getHits().length > 0) {
 
             // The queries from the query set that will be run.
             return (Collection<Map<String, Long>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("queries");
@@ -93,7 +92,7 @@ public abstract class AbstractQuerySetRunner {
             LOGGER.error("Unable to get query set with ID {}", querySetId);
 
             // The query set was not found.
-           throw new RuntimeException("The query set with ID " + querySetId + " was not found.");
+            throw new RuntimeException("The query set with ID " + querySetId + " was not found.");
 
         }
 
