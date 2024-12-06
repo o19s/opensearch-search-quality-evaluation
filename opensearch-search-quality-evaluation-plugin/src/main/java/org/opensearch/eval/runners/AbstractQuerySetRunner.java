@@ -46,10 +46,14 @@ public abstract class AbstractQuerySetRunner {
      * @param idField The field in the index that is used to uniquely identify a document.
      * @param query The query that will be used to run the query set.
      * @param k The k used for metrics calculation, i.e. DCG@k.
+     * @param threshold The cutoff for binary judgments. A judgment score greater than or equal
+     *                  to this value will be assigned a binary judgment value of 1. A judgment score
+     *                  less than this value will be assigned a binary judgment value of 0.
      * @return The query set {@link QuerySetRunResult results} and calculated metrics.
      */
     abstract QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String searchPipeline,
-                                   final String idField, final String query, final int k) throws Exception;
+                                   final String idField, final String query, final int k,
+                                   final double threshold) throws Exception;
 
     /**
      * Saves the query set results to a persistent store, which may be the search engine itself.

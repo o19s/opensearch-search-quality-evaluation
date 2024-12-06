@@ -5,6 +5,7 @@ JUDGMENTS_ID="9183599e-46dd-49e0-9584-df816164a4c2"
 INDEX="ecommerce"
 ID_FIELD="asin"
 K="20"
+THRESHOLD="1.0" # Default value
 
 curl -s -X DELETE "http://localhost:9200/search_quality_eval_query_sets_run_results"
 

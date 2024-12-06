@@ -53,7 +53,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
     @Override
     public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index,
                                  final String searchPipeline, final String idField, final String query,
-                                 final int k) throws Exception {
+                                 final int k, final double threshold) throws Exception {
 
         final Collection<Map<String, Long>> querySet = getQuerySet(querySetId);
         LOGGER.info("Found {} queries in query set {}", querySet.size(), querySetId);
@@ -115,7 +115,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                                 // Calculate the metrics for this query.
                                 final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
                                 final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores);
-                                final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
+                                final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores);
 
                                 final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
 

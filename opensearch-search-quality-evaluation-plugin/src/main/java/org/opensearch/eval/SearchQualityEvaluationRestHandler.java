@@ -159,6 +159,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             final String searchPipeline = request.param("search_pipeline", null);
             final String idField = request.param("id_field", "_id");
             final int k = Integer.parseInt(request.param("k", "10"));
+            final double threshold = Double.parseDouble(request.param("threshold", "1.0"));
 
             if(querySetId == null || querySetId.isEmpty() || judgmentsId == null || judgmentsId.isEmpty() || index == null || index.isEmpty()) {
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
@@ -183,7 +184,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             try {
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
-                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, searchPipeline, idField, query, k);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, searchPipeline, idField, query, k, threshold);
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {

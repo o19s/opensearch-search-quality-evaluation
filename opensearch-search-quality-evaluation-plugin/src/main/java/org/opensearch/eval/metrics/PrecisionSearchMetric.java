@@ -12,10 +12,12 @@ import java.util.List;
 
 public class PrecisionSearchMetric extends SearchMetric {
 
+    private final double threshold;
     private final List<Double> relevanceScores;
 
-    public PrecisionSearchMetric(final int k, final List<Double> relevanceScores) {
+    public PrecisionSearchMetric(final int k, final double threshold, final List<Double> relevanceScores) {
         super(k);
+        this.threshold = threshold;
         this.relevanceScores = relevanceScores;
     }
 
