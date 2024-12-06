@@ -49,7 +49,9 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
     }
 
     @Override
-    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception {
+    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index,
+                                 final String searchPipeline, final String idField, final String query,
+                                 final int k) throws Exception {
 
         final Collection<Map<String, Long>> querySet = getQuerySet(querySetId);
         LOGGER.info("Found {} queries in query set {}", querySet.size(), querySetId);
@@ -76,6 +78,10 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     final String[] includeFields = new String[]{idField};
                     final String[] excludeFields = new String[]{};
                     searchSourceBuilder.fetchSource(includeFields, excludeFields);
+
+                    if(searchPipeline != null) {
+                        searchSourceBuilder.pipeline(searchPipeline);
+                    }
 
                     final SearchRequest searchRequest = new SearchRequest(index);
                     searchRequest.source(searchSourceBuilder);

@@ -156,6 +156,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             final String querySetId = request.param("id");
             final String judgmentsId = request.param("judgments_id");
             final String index = request.param("index");
+            final String searchPipeline = request.param("search_pipeline", null);
             final String idField = request.param("id_field", "_id");
             final int k = Integer.parseInt(request.param("k", "10"));
 
@@ -182,7 +183,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             try {
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
-                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query, k);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, searchPipeline, idField, query, k);
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {

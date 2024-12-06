@@ -43,12 +43,14 @@ public abstract class AbstractQuerySetRunner {
      * @param querySetId The ID of the query set to run.
      * @param judgmentsId The ID of the judgments set to use for search metric calculation.
      * @param index The name of the index to run the query sets against.
+     * @param searchPipeline The name of the search pipeline to use, or <code>null</code> to not use a search pipeline.
      * @param idField The field in the index that is used to uniquely identify a document.
      * @param query The query that will be used to run the query set.
      * @param k The k used for metrics calculation, i.e. DCG@k.
      * @return The query set {@link QuerySetRunResult results} and calculated metrics.
      */
-    abstract QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception;
+    abstract QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String searchPipeline,
+                                   final String idField, final String query, final int k) throws Exception;
 
     /**
      * Saves the query set results to a persistent store, which may be the search engine itself.
@@ -141,6 +143,10 @@ public abstract class AbstractQuerySetRunner {
                         judgment[0] = (Double) j.get("judgment");
                     }
 
+                    if(judgment[0] > 0) {
+                        LOGGER.info("Found a nonzero judgment! = {}", judgment[0]);
+                    }
+
                 } else {
 
                     // LOGGER.info("No judgments found for query: {}; documentId = {}; judgmentsId = {}", query, documentId, judgmentsId);
@@ -192,7 +198,7 @@ public abstract class AbstractQuerySetRunner {
 
         }
 
-        LOGGER.info("----- scores size: " + scores.size());
+       // LOGGER.info("----- scores size: " + scores.size());
 
         //final String listOfScores = scores.stream().map(Object::toString).collect(Collectors.joining(", "));
         //LOGGER.info("Got relevance scores: size = {}: scores = {}", listOfScores.length(), listOfScores);
