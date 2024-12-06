@@ -10,8 +10,16 @@ package org.opensearch.eval.metrics;
 
 import java.util.List;
 
+/**
+ * Subclass of {@link SearchMetric} that calculates Normalized Discounted Cumulative Gain @ k.
+ */
 public class NdcgSearchMetric extends DcgSearchMetric {
 
+    /**
+     * Creates new NDCG metrics.
+     * @param k The <code>k</code> value.
+     * @param relevanceScores A list of relevancy scores.
+     */
     public NdcgSearchMetric(final int k, final List<Double> relevanceScores) {
         super(k, relevanceScores);
     }

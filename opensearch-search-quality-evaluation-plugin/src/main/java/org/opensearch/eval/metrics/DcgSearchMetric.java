@@ -10,10 +10,18 @@ package org.opensearch.eval.metrics;
 
 import java.util.List;
 
+/**
+ * Subclass of {@link SearchMetric} that calculates Discounted Cumulative Gain @ k.
+ */
 public class DcgSearchMetric extends SearchMetric {
 
     protected final List<Double> relevanceScores;
 
+    /**
+     * Creates new DCG metrics.
+     * @param k The <code>k</code> value.
+     * @param relevanceScores A list of relevance scores.
+     */
     public DcgSearchMetric(final int k, final List<Double> relevanceScores) {
         super(k);
         this.relevanceScores = relevanceScores;
