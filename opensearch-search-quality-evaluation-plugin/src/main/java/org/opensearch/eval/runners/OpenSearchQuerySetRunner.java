@@ -111,19 +111,26 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                             //LOGGER.info("Number of documents: " + orderedDocumentIds.size());
 
-                            // TODO: If no hits are returned, there's no need to get the relevance scores.
-                            final List<Double> relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
+                            try {
 
-                            final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
-                            // TODO: Add these metrics in, too.
-                            //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
-                            //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
+                                // TODO: If no hits are returned, there's no need to get the relevance scores.
+                                final List<Double> relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
 
-                            LOGGER.info("query set dcg = " + dcgSearchMetric.getValue());
+                                final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
+                                // TODO: Add these metrics in, too.
+                                //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
+                                //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
 
-                            final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+                                //LOGGER.info("size list for query {}: {}", userQuery, relevanceScores.size());
+                                //LOGGER.info("query set ({}) dcg = {}", userQuery, dcgSearchMetric.getValue());
 
-                            queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics));
+                                final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+
+                                queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics));
+
+                            } catch (Exception ex) {
+                                LOGGER.error("Unable to get relevance scores.", ex);
+                            }
 
                         }
 

@@ -103,7 +103,7 @@ public abstract class AbstractQuerySetRunner {
      * @param documentId The document ID.
      * @return The value of the judgment, or <code>NaN</code> if the judgment cannot be found.
      */
-    public Double getJudgmentValue(final String judgmentsId, final String query, final String documentId) {
+    public Double getJudgmentValue(final String judgmentsId, final String query, final String documentId) throws Exception {
 
         // Find a judgment that matches the judgments_id, query_id, and document_id fields in the index.
 
@@ -126,50 +126,38 @@ public abstract class AbstractQuerySetRunner {
 
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME).source(searchSourceBuilder);
 
-        final Double[] judgment = new Double[1];
-        judgment[0] = Double.NaN;
+        Double judgment = Double.NaN;
 
-        client.search(searchRequest, new ActionListener<>() {
+        final SearchResponse searchResponse = client.search(searchRequest).get();
 
-            @Override
-            public void onResponse(SearchResponse searchResponse) {
+        if (searchResponse.getHits().getHits().length > 0) {
 
-                if (searchResponse.getHits().getHits().length > 0) {
+            final Map<String, Object> j = searchResponse.getHits().getAt(0).getSourceAsMap();
 
-                    final Map<String, Object> j = searchResponse.getHits().getAt(0).getSourceAsMap();
+            // TODO: Why does this not exist in some cases?
+            if(j.containsKey("judgment")) {
+                judgment = (Double) j.get("judgment");
 
-                    // TODO: Why does this not exist in some cases?
-                    if(j.containsKey("judgment")) {
-                        judgment[0] = (Double) j.get("judgment");
-                    }
-
-                    if(judgment[0] > 0) {
-                        LOGGER.info("Found a nonzero judgment! = {}", judgment[0]);
-                    }
-
-                } else {
-
-                    // LOGGER.info("No judgments found for query: {}; documentId = {}; judgmentsId = {}", query, documentId, judgmentsId);
-
-                    // No judgment for this query/doc pair exists.
-                    judgment[0] = Double.NaN;
-
+                if(judgment > 0) {
+                    LOGGER.info("Found a nonzero judgment! = {}, {}", judgment, query);
                 }
 
             }
 
-            @Override
-            public void onFailure(Exception ex) {
-                LOGGER.error("Unable to get judgment for query: {}; documentId = {}; judgmentsId = {}", query, documentId, judgmentsId, ex);
-            }
+        } else {
 
-        });
+            // LOGGER.info("No judgments found for query: {}; documentId = {}; judgmentsId = {}", query, documentId, judgmentsId);
 
-        return judgment[0];
+            // No judgment for this query/doc pair exists.
+            judgment = Double.NaN;
+
+        }
+
+        return judgment;
 
     }
 
-    public List<Double> getRelevanceScores(final String judgmentsId, final String query, final List<String> orderedDocumentIds, final int k) {
+    public List<Double> getRelevanceScores(final String judgmentsId, final String query, final List<String> orderedDocumentIds, final int k) throws Exception {
 
        //  LOGGER.info("Getting relevance scores for query: {}, k = {}, docIds size = {}", query, k, orderedDocumentIds.size());
 
@@ -188,6 +176,7 @@ public abstract class AbstractQuerySetRunner {
 
             // If a judgment for this query/doc pair is not found, Double.NaN will be returned.
             if(!Double.isNaN(judgmentValue)) {
+                //LOGGER.info("Adding score {} for query {}", judgmentValue, query);
                 scores.add(judgmentValue);
             }
 

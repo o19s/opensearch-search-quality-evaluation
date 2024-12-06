@@ -28,10 +28,17 @@ public class DcgSearchMetric extends SearchMetric {
     public double calculate() {
 
         double dcg = 0.0;
-        for(int i = 0; i < relevanceScores.size(); i++) {
-            double relevance = relevanceScores.get(i);
-            dcg += relevance / Math.log(i + 2); // Add 2 to avoid log(1) = 0
+        for(int i = 1; i <= relevanceScores.size(); i++) {
+
+            final double relevanceScore = relevanceScores.get(i - 1);
+            final double numerator = Math.pow(2, relevanceScore) - 1.0;
+            final double denominator = Math.log(i) / Math.log(i + 2);
+
+            LOGGER.info("numerator = {}, denominator = {}", numerator, denominator);
+            dcg += (numerator / denominator);
+
         }
+
         return dcg;
 
     }

@@ -13,7 +13,7 @@ import org.apache.logging.log4j.Logger;
 
 public abstract class SearchMetric {
 
-    private static final Logger LOGGER = LogManager.getLogger(SearchMetric.class);
+    protected static final Logger LOGGER = LogManager.getLogger(SearchMetric.class);
 
     protected int k;
 
