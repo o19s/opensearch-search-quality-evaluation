@@ -18,11 +18,12 @@ import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
+import java.util.Collection;
 import java.util.Map;
 
 /**
  * Base class for query set runners. Classes that extend this class
- * should be specific to a search engine. See the {@link OpenSearchAbstractQuerySetRunner} for an example.
+ * should be specific to a search engine. See the {@link OpenSearchQuerySetRunner} for an example.
  */
 public abstract class AbstractQuerySetRunner {
 
@@ -53,8 +54,46 @@ public abstract class AbstractQuerySetRunner {
     abstract void save(QuerySetRunResult result) throws Exception;
 
     /**
+     * Gets a query set from the index.
+     * @param querySetId The ID of the query set to get.
+     * @return The query set as a collection of maps of query to frequency
+     * @throws Exception Thrown if the query set cannot be retrieved.
+     */
+    public final Collection<Map<String, Long>> getQuerySet(final String querySetId) throws Exception {
+
+        // Get the query set.
+        final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        sourceBuilder.query(QueryBuilders.matchQuery("_id", querySetId));
+
+        // Will be at most one match.
+        sourceBuilder.from(0);
+        sourceBuilder.size(1);
+        sourceBuilder.trackTotalHits(true);
+
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME).source(sourceBuilder);
+
+        // TODO: Don't use .get()
+        final SearchResponse searchResponse = client.search(searchRequest).get();
+
+        if(searchResponse.getHits().getTotalHits().value > 0) {
+
+            // The queries from the query set that will be run.
+            return (Collection<Map<String, Long>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("queries");
+
+        } else {
+
+            LOGGER.error("Unable to get query set with ID {}", querySetId);
+
+            // The query set was not found.
+           throw new RuntimeException("The query set with ID " + querySetId + " was not found.");
+
+        }
+
+    }
+
+    /**
      * Get a judgment from the index.
-     * @param judgmentsId The judgements ID the judgment to find belongs to.
+     * @param judgmentsId The ID of the judgments to find.
      * @param query The user query.
      * @param documentId The document ID.
      * @return The value of the judgment, or <code>NaN</code> if the judgment cannot be found.
@@ -87,15 +126,17 @@ public abstract class AbstractQuerySetRunner {
         // TODO: Don't use .get()
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
-        if(searchResponse.getHits().getHits().length == 0) {
-
-            // The judgments_id is probably not valid.
-            return Double.NaN;
-
-        } else {
+        if(searchResponse.getHits().getHits().length > 0) {
 
             final Map<String, Object> j = searchResponse.getHits().getAt(0).getSourceAsMap();
             return Double.parseDouble(j.get("judgment").toString());
+
+        } else {
+
+            LOGGER.warn("Unable to find judgments with ID {} for query {} and document ID {}", judgmentsId, query, documentId);
+
+            // TODO: What to return here when there is no judgment?
+            return Double.NaN;
 
         }
 

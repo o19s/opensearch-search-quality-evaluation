@@ -57,6 +57,7 @@ public class CoecClickModel extends ClickModel {
 
     // UBI event names.
     public static final String EVENT_CLICK = "click";
+    // TODO: Change "view" to "impression".
     public static final String EVENT_VIEW = "view";
 
     private final CoecClickModelParameters parameters;
@@ -244,6 +245,7 @@ public class CoecClickModel extends ClickModel {
                 .source(searchSourceBuilder)
                 .scroll(scroll);
 
+        // TODO Don't use .get()
         SearchResponse searchResponse = client.search(searchRequest).get();
 
         String scrollId = searchResponse.getScrollId();

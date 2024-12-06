@@ -17,10 +17,7 @@ import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
-import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.metrics.DcgSearchMetric;
-import org.opensearch.eval.metrics.NdcgSearchMetric;
-import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
@@ -38,63 +35,50 @@ import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACE
 /**
  * A {@link AbstractQuerySetRunner} for Amazon OpenSearch.
  */
-public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
+public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
-    private static final Logger LOGGER = LogManager.getLogger(OpenSearchAbstractQuerySetRunner.class);
+    private static final Logger LOGGER = LogManager.getLogger(OpenSearchQuerySetRunner.class);
 
     /**
      * Creates a new query set runner
+     *
      * @param client An OpenSearch {@link Client}.
      */
-    public OpenSearchAbstractQuerySetRunner(final Client client) {
+    public OpenSearchQuerySetRunner(final Client client) {
         super(client);
     }
 
     @Override
     public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception {
 
-        // Get the query set.
-        final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
-        getQuerySetSearchSourceBuilder.query(QueryBuilders.matchQuery("_id", querySetId));
-        getQuerySetSearchSourceBuilder.from(0);
-        // TODO: Need to page through to make sure we get all of the queries.
-        getQuerySetSearchSourceBuilder.size(500);
-
-        final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME);
-        getQuerySetSearchRequest.source(getQuerySetSearchSourceBuilder);
+        final Collection<Map<String, Long>> querySet = getQuerySet(querySetId);
 
         try {
-
-            // TODO: Don't use .get()
-            final SearchResponse searchResponse = client.search(getQuerySetSearchRequest).get();
-
-            // The queries from the query set that will be run.
-            final Collection<Map<String, Long>> queries = (Collection<Map<String, Long>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("queries");
 
             // The results of each query.
             final List<QueryResult> queryResults = new ArrayList<>();
 
-            for(Map<String, Long> queryMap : queries) {
+            for (Map<String, Long> queryMap : querySet) {
 
                 // Loop over each query in the map and run each one.
                 for (final String userQuery : queryMap.keySet()) {
 
                     // Replace the query placeholder with the user query.
-                    final String q = query.replace(QUERY_PLACEHOLDER, userQuery);
+                    final String parsedQuery = query.replace(QUERY_PLACEHOLDER, userQuery);
 
                     // Build the query from the one that was passed in.
                     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-                    searchSourceBuilder.query(QueryBuilders.wrapperQuery(q));
+                    searchSourceBuilder.query(QueryBuilders.wrapperQuery(parsedQuery));
                     searchSourceBuilder.from(0);
                     searchSourceBuilder.size(k);
 
-                    String[] includeFields = new String[] {idField};
-                    String[] excludeFields = new String[] {};
+                    String[] includeFields = new String[]{idField};
+                    String[] excludeFields = new String[]{};
                     searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
                     // TODO: Allow for setting this index name.
                     final SearchRequest searchRequest = new SearchRequest(index);
-                    getQuerySetSearchRequest.source(searchSourceBuilder);
+                    searchRequest.source(searchSourceBuilder);
 
                     client.search(searchRequest, new ActionListener<>() {
 
@@ -165,7 +149,7 @@ public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
         results.put("query_results", result.getQueryResultsAsMap());
 
         // Calculate and add each metric to the object to index.
-        for(final SearchMetric searchMetric : result.getSearchMetrics()) {
+        for (final SearchMetric searchMetric : result.getSearchMetrics()) {
             results.put(searchMetric.getName(), searchMetric.calculate());
         }
 
@@ -192,7 +176,7 @@ public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
         final List<Double> scores = new ArrayList<>();
 
         // Go through each document up to k and get the score.
-        for(int i = 0; i < k; i++) {
+        for (int i = 0; i < k; i++) {
 
             final String documentId = orderedDocumentIds.get(i);
 
@@ -201,7 +185,7 @@ public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
 
             scores.add(judgment);
 
-            if(i == orderedDocumentIds.size()) {
+            if (i == orderedDocumentIds.size()) {
                 // k is greater than the actual length of documents.
                 break;
             }
