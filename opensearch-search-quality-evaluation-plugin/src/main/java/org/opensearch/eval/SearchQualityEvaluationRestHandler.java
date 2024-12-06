@@ -22,7 +22,7 @@ import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
-import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
+import org.opensearch.eval.runners.OpenSearchAbstractQuerySetRunner;
 import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
@@ -160,7 +160,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             final String idField = request.param("id_field", "_id");
             final int k = Integer.parseInt(request.param("k", "10"));
 
-            if(querySetId == null || judgmentsId == null || index == null) {
+            if(querySetId == null || querySetId.isEmpty() || judgmentsId == null || judgmentsId.isEmpty() || index == null || index.isEmpty()) {
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
             }
 
@@ -182,12 +182,12 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
             try {
 
-                final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
+                final OpenSearchAbstractQuerySetRunner openSearchQuerySetRunner = new OpenSearchAbstractQuerySetRunner(client);
                 final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query, k);
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {
-                LOGGER.error("Unable to run query set with ID {}: ", querySetId, ex);
+                LOGGER.error("Unable to run query set.", ex);
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
             }
 
@@ -234,27 +234,20 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                             .source(job)
                             .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-                    final AtomicBoolean success = new AtomicBoolean(false);
-
                     client.index(indexRequest, new ActionListener<>() {
                         @Override
                         public void onResponse(final IndexResponse indexResponse) {
-                            LOGGER.debug("Job completed successfully: {}", jobId);
-                            success.set(true);
+                            LOGGER.debug("Click model job completed successfully: {}", jobId);
                         }
 
                         @Override
                         public void onFailure(final Exception ex) {
                             LOGGER.error("Unable to run job with ID {}", jobId, ex);
-                            success.set(false);
+                            throw new RuntimeException("Unable to run job", ex);
                         }
                     });
 
-                    if(success.get()) {
-                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + jobId + "\"}"));
-                    } else {
-                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR,"Unable to index judgments."));
-                    }
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + jobId + "\"}"));
 
                 } else {
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid click model.\"}"));

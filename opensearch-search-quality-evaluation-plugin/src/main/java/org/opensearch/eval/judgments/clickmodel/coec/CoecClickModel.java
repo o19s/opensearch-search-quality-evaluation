@@ -51,10 +51,9 @@ public class CoecClickModel extends ClickModel {
 
     public static final String CLICK_MODEL_NAME = "coec";
 
-    // OpenSearch indexes.
+    // OpenSearch indexes for COEC data.
     public static final String INDEX_RANK_AGGREGATED_CTR = "rank_aggregated_ctr";
     public static final String INDEX_QUERY_DOC_CTR = "click_through_rates";
-    public static final String INDEX_JUDGMENTS = "judgments";
 
     // UBI event names.
     public static final String EVENT_CLICK = "click";

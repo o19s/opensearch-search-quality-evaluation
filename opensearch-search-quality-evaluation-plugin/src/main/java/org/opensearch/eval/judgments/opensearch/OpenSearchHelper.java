@@ -36,12 +36,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
 import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME;
 import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_JUDGMENTS;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
 
+/**
+ * Functionality for interacting with OpenSearch.
+ * TODO: Move these functions out of this class.
+ */
 public class OpenSearchHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchHelper.class.getName());
@@ -230,9 +234,9 @@ public class OpenSearchHelper {
 
         for(final SearchHit searchHit : response.getHits().getHits()) {
 
-            final List<String> queryResponseObjectIds = (List<String>) searchHit.getSourceAsMap().get("query_response_object_ids");
+            final List<String> queryResponseHidsIds = (List<String>) searchHit.getSourceAsMap().get("query_response_hit_ids");
 
-            if(queryResponseObjectIds.get(rank).equals(objectId)) {
+            if(queryResponseHidsIds.get(rank).equals(objectId)) {
                 countOfTimesShownAtRank++;
             }
 
@@ -320,23 +324,22 @@ public class OpenSearchHelper {
 
         final String judgmentsId = UUID.randomUUID().toString();
 
-        final Collection<Map<String, Object>> j = new ArrayList<>();
+        final BulkRequest request = new BulkRequest();
 
-        for (final Judgment judgment : judgments) {
-            j.add(judgment.getJudgmentAsMap());
+        for(final Judgment judgment : judgments) {
+
+            final Map<String, Object> j = judgment.getJudgmentAsMap();
+            j.put("judgments_id", judgmentsId);
+
+            final IndexRequest indexRequest = new IndexRequest(JUDGMENTS_INDEX_NAME)
+                    .id(UUID.randomUUID().toString())
+                    .source(j);
+
+            request.add(indexRequest);
+
         }
 
-        final Map<String, Object> judgmentsSource = new HashMap<>();
-        judgmentsSource.put("judgments", j);
-
-        final IndexRequest indexRequest = new IndexRequest(INDEX_JUDGMENTS)
-                .id(judgmentsId)
-                .source(judgmentsSource);
-
-        final BulkRequest request = new BulkRequest();
-        request.add(indexRequest);
-
-        client.bulk(request, new ActionListener<BulkResponse>() {
+        client.bulk(request, new ActionListener<>() {
             @Override
             public void onResponse(BulkResponse bulkItemResponses) {
                 LOGGER.info("Judgments indexed: {}", judgmentsId);

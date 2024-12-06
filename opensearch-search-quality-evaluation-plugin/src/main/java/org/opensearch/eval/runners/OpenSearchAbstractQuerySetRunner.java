@@ -18,6 +18,10 @@ import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.judgments.model.Judgment;
+import org.opensearch.eval.metrics.DcgSearchMetric;
+import org.opensearch.eval.metrics.NdcgSearchMetric;
+import org.opensearch.eval.metrics.PrecisionSearchMetric;
+import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -27,35 +31,34 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACEHOLDER;
 
 /**
- * A {@link QuerySetRunner} for Amazon OpenSearch.
+ * A {@link AbstractQuerySetRunner} for Amazon OpenSearch.
  */
-public class OpenSearchQuerySetRunner implements QuerySetRunner {
+public class OpenSearchAbstractQuerySetRunner extends AbstractQuerySetRunner {
 
-    private static final Logger LOGGER = LogManager.getLogger(OpenSearchQuerySetRunner.class);
-
-    final Client client;
+    private static final Logger LOGGER = LogManager.getLogger(OpenSearchAbstractQuerySetRunner.class);
 
     /**
      * Creates a new query set runner
      * @param client An OpenSearch {@link Client}.
      */
-    public OpenSearchQuerySetRunner(final Client client) {
-        this.client = client;
+    public OpenSearchAbstractQuerySetRunner(final Client client) {
+        super(client);
     }
 
     @Override
-    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) {
-
-        // TODO: Get the judgments we will use for metric calculation.
-        final List<Judgment> judgments = new ArrayList<>();
+    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index, final String idField, final String query, final int k) throws Exception {
 
         // Get the query set.
         final SearchSourceBuilder getQuerySetSearchSourceBuilder = new SearchSourceBuilder();
         getQuerySetSearchSourceBuilder.query(QueryBuilders.matchQuery("_id", querySetId));
+        getQuerySetSearchSourceBuilder.from(0);
+        // TODO: Need to page through to make sure we get all of the queries.
+        getQuerySetSearchSourceBuilder.size(500);
 
         final SearchRequest getQuerySetSearchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME);
         getQuerySetSearchRequest.source(getQuerySetSearchSourceBuilder);
@@ -83,7 +86,6 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
                     searchSourceBuilder.query(QueryBuilders.wrapperQuery(q));
                     searchSourceBuilder.from(0);
-                    // TODO: If k is > 10, we'll need to page through these.
                     searchSourceBuilder.size(k);
 
                     String[] includeFields = new String[] {idField};
@@ -110,7 +112,17 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
                             }
 
-                            queryResults.add(new QueryResult(query, orderedDocumentIds, judgments, k));
+                            // TODO: Use getJudgment() to get the judgment for this document.
+                            final List<Double> relevanceScores = getRelevanceScores(query, orderedDocumentIds, k);
+
+                            final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
+                            // TODO: Add these metrics in, too.
+                            //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
+                            //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
+
+                            final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+
+                            queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics));
 
                         }
 
@@ -124,13 +136,20 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
 
             }
 
-            // TODO: Calculate the search metrics given the results and the judgments.
-            final SearchMetrics searchMetrics = new SearchMetrics(queryResults, judgments, k);
+            // TODO: Calculate the search metrics for the entire query set given the results and the judgments.
+            final List<String> orderedDocumentIds = new ArrayList<>();
+            final List<Double> relevanceScores = getRelevanceScores(query, orderedDocumentIds, k);
+            final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
+            // TODO: Add these metrics in, too.
+            //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
+            //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);
+
+            final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
 
             return new QuerySetRunResult(queryResults, searchMetrics);
 
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception ex) {
+            throw new RuntimeException("Unable to run query set.", ex);
         }
 
     }
@@ -143,11 +162,15 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
         final Map<String, Object> results = new HashMap<>();
 
         results.put("run_id", result.getRunId());
-        results.put("search_metrics", result.getSearchMetrics().getSearchMetricsAsMap());
         results.put("query_results", result.getQueryResultsAsMap());
 
-        final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS);
-        indexRequest.source(results);
+        // Calculate and add each metric to the object to index.
+        for(final SearchMetric searchMetric : result.getSearchMetrics()) {
+            results.put(searchMetric.getName(), searchMetric.calculate());
+        }
+
+        final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME)
+                .source(results);
 
         client.index(indexRequest, new ActionListener<>() {
             @Override
@@ -160,6 +183,36 @@ public class OpenSearchQuerySetRunner implements QuerySetRunner {
                 throw new RuntimeException(ex);
             }
         });
+
+    }
+
+    public List<Double> getRelevanceScores(final String query, final List<String> orderedDocumentIds, final int k) {
+
+        // Ordered list of scores.
+        final List<Double> scores = new ArrayList<>();
+
+        // Go through each document up to k and get the score.
+        for(int i = 0; i < k; i++) {
+
+            final String documentId = orderedDocumentIds.get(i);
+
+            // TODO: Find the judgment value for this combination of query and documentId from the index.
+            final double judgment = 0.1;
+
+            scores.add(judgment);
+
+            if(i == orderedDocumentIds.size()) {
+                // k is greater than the actual length of documents.
+                break;
+            }
+
+        }
+
+        String listOfScores = scores.stream().map(Object::toString).collect(Collectors.joining(", "));
+        LOGGER.info("Got relevance scores: {}", listOfScores);
+
+        return scores;
+
     }
 
 }

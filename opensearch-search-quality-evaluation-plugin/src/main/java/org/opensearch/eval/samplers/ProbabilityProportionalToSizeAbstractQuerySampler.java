@@ -66,7 +66,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         // Get queries from the UBI queries index.
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-        searchSourceBuilder.size(1000);
+        searchSourceBuilder.size(10000);
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
