@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACEHOLDER;
 
@@ -72,8 +71,8 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     searchSourceBuilder.from(0);
                     searchSourceBuilder.size(k);
 
-                    String[] includeFields = new String[]{idField};
-                    String[] excludeFields = new String[]{};
+                    final String[] includeFields = new String[]{idField};
+                    final String[] excludeFields = new String[]{};
                     searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
                     // TODO: Allow for setting this index name.
@@ -97,7 +96,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                             }
 
                             // TODO: Use getJudgment() to get the judgment for this document.
-                            final List<Double> relevanceScores = getRelevanceScores(query, orderedDocumentIds, k);
+                            final List<Double> relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
 
                             final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
                             // TODO: Add these metrics in, too.
@@ -112,7 +111,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                         @Override
                         public void onFailure(Exception ex) {
-                            LOGGER.error("Unable to search for query: {}", query, ex);
+                            LOGGER.error("Unable to search using query: {}", query, ex);
                         }
                     });
 
@@ -122,7 +121,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
             // TODO: Calculate the search metrics for the entire query set given the results and the judgments.
             final List<String> orderedDocumentIds = new ArrayList<>();
-            final List<Double> relevanceScores = getRelevanceScores(query, orderedDocumentIds, k);
+            final List<Double> relevanceScores = getRelevanceScores(judgmentsId, "TODO", orderedDocumentIds, k);
             final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
             // TODO: Add these metrics in, too.
             //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
@@ -167,35 +166,6 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                 throw new RuntimeException(ex);
             }
         });
-
-    }
-
-    public List<Double> getRelevanceScores(final String query, final List<String> orderedDocumentIds, final int k) {
-
-        // Ordered list of scores.
-        final List<Double> scores = new ArrayList<>();
-
-        // Go through each document up to k and get the score.
-        for (int i = 0; i < k; i++) {
-
-            final String documentId = orderedDocumentIds.get(i);
-
-            // TODO: Find the judgment value for this combination of query and documentId from the index.
-            final double judgment = 0.1;
-
-            scores.add(judgment);
-
-            if (i == orderedDocumentIds.size()) {
-                // k is greater than the actual length of documents.
-                break;
-            }
-
-        }
-
-        String listOfScores = scores.stream().map(Object::toString).collect(Collectors.joining(", "));
-        LOGGER.info("Got relevance scores: {}", listOfScores);
-
-        return scores;
 
     }
 
