@@ -137,17 +137,24 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
             }
 
-            // TODO: Calculate the search metrics for the entire query set given the results and the judgments.
-            /*final List<String> orderedDocumentIds = new ArrayList<>();
-            final List<Double> relevanceScores = getRelevanceScores(judgmentsId, "TODO", orderedDocumentIds, k);
-            final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
-            // TODO: Add these metrics in, too.
-            //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
-            //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);*/
+            // Calculate the search metrics for the entire query set given the individual query set metrics.
+            // Sum up the metrics for each query per metric type.
+            final int querySetSize = queryResults.size();
+            final Map<String, Double> sumOfMetrics = new HashMap<>();
+            for(final QueryResult queryResult : queryResults) {
+                for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+                    sumOfMetrics.merge(searchMetric.getName(), searchMetric.getValue(), Double::sum);
+                }
+            }
 
-            final Collection<SearchMetric> searchMetrics = new ArrayList<>(); // List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+            // Now divide by the number of queries.
+            final Map<String, Double> querySetMetrics = new HashMap<>();
+            for(final String metric : sumOfMetrics.keySet()) {
+                querySetMetrics.put(metric, sumOfMetrics.get(metric) / querySetSize);
+            }
+
             final String querySetRunId = UUID.randomUUID().toString();
-            final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, queryResults, searchMetrics);
+            final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, queryResults, querySetMetrics);
 
             LOGGER.info("Query set run complete: {}", querySetRunId);
 
@@ -169,9 +176,9 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
         results.put("run_id", result.getRunId());
         results.put("query_results", result.getQueryResultsAsMap());
 
-        // Calculate and add each metric to the object to index.
-        for (final SearchMetric searchMetric : result.getSearchMetrics()) {
-            results.put(searchMetric.getName(), searchMetric.calculate());
+        // Add each metric to the object to index.
+        for (final String metric : result.getSearchMetrics().keySet()) {
+            results.put(metric, result.getSearchMetrics().get(metric));
         }
 
         final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME)

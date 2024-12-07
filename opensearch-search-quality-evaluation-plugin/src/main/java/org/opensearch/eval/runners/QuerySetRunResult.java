@@ -23,15 +23,15 @@ public class QuerySetRunResult {
 
     private final String runId;
     private final List<QueryResult> queryResults;
-    private final Collection<SearchMetric> metrics;
+    private final Map<String, Double> metrics;
 
     /**
      * Creates a new query set run result. A random UUID is generated as the run ID.
      * @param runId A unique identifier for this query set run.
      * @param queryResults A collection of {@link QueryResult} that contains the queries and search results.
-     * @param metrics The {@link SearchMetric metrics} calculated from the search results.
+     * @param metrics A map of metric name to value.
      */
-    public QuerySetRunResult(final String runId, final List<QueryResult> queryResults, final Collection<SearchMetric> metrics) {
+    public QuerySetRunResult(final String runId, final List<QueryResult> queryResults, final Map<String, Double> metrics) {
         this.runId = runId;
         this.queryResults = queryResults;
         this.metrics = metrics;
@@ -46,10 +46,10 @@ public class QuerySetRunResult {
     }
 
     /**
-     * Gets the {@link SearchMetric metrics} calculated from the run.
-     * @return The {@link SearchMetric metrics} calculated from the run.
+     * Gets the search metrics.
+     * @return The search metrics.
      */
-    public Collection<SearchMetric> getSearchMetrics() {
+    public Map<String, Double> getSearchMetrics() {
         return metrics;
     }
 
