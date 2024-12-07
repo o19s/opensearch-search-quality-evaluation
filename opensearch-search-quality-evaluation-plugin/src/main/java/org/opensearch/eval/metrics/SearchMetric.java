@@ -53,8 +53,8 @@ public abstract class SearchMetric {
     /**
      * Gets the value of the metric. If the metric has not yet been calculated,
      * the metric will first be calculated by calling <code>calculate</code>. This
-     * function should be used in cases where repeated access to the metric's value is
-     * needed without recalculating the metric's value.
+     * function should be used in cases where repeated access to the metrics value is
+     * needed without recalculating the metrics value.
      * @return The value of the metric.
      */
     public double getValue() {
