@@ -22,6 +22,7 @@ import java.util.Map;
 public class QuerySetRunResult {
 
     private final String runId;
+    private final String querySetId;
     private final List<QueryResult> queryResults;
     private final Map<String, Double> metrics;
 
@@ -31,8 +32,9 @@ public class QuerySetRunResult {
      * @param queryResults A collection of {@link QueryResult} that contains the queries and search results.
      * @param metrics A map of metric name to value.
      */
-    public QuerySetRunResult(final String runId, final List<QueryResult> queryResults, final Map<String, Double> metrics) {
+    public QuerySetRunResult(final String runId, final String querySetId, final List<QueryResult> queryResults, final Map<String, Double> metrics) {
         this.runId = runId;
+        this.querySetId = querySetId;
         this.queryResults = queryResults;
         this.metrics = metrics;
     }
@@ -43,6 +45,14 @@ public class QuerySetRunResult {
      */
     public String getRunId() {
         return runId;
+    }
+
+    /**
+     * Gets the query set ID.
+     * @return The query set ID.
+     */
+    public String getQuerySetId() {
+        return querySetId;
     }
 
     /**
