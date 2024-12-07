@@ -9,8 +9,6 @@
 package org.opensearch.eval.judgments.model.ubi.query;
 
 import com.google.gson.annotations.SerializedName;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.util.Map;
 
@@ -45,20 +43,6 @@ public class UbiQuery {
      */
     public UbiQuery() {
 
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder(17, 37).
-                append(queryId).
-                append(userQuery).
-                append(clientId).
-                toHashCode();
     }
 
     /**

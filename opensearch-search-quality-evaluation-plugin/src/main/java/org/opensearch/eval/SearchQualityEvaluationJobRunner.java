@@ -8,7 +8,6 @@
  */
 package org.opensearch.eval;
 
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.index.IndexRequest;
@@ -113,7 +112,7 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     final long startTime = System.currentTimeMillis();
                     final long judgments;
 
-                    if(StringUtils.equalsIgnoreCase(searchQualityEvaluationJobParameter.getClickModel(), "coec")) {
+                    if("coec".equalsIgnoreCase(searchQualityEvaluationJobParameter.getClickModel())) {
 
                         LOGGER.info("Beginning implicit judgment generation using clicks-over-expected-clicks.");
                         final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, searchQualityEvaluationJobParameter.getMaxRank());

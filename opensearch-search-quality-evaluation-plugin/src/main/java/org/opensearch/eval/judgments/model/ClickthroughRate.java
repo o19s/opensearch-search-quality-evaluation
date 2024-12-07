@@ -8,7 +8,6 @@
  */
 package org.opensearch.eval.judgments.model;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.opensearch.eval.judgments.util.MathUtils;
 
 /**
@@ -40,18 +39,6 @@ public class ClickthroughRate {
         this.objectId = objectId;
         this.clicks = clicks;
         this.events = events;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 17;
-        result = 29 * result + objectId.hashCode();
-        return result;
     }
 
     @Override

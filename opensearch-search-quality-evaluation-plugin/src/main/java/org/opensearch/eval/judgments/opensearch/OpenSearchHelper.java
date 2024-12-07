@@ -328,6 +328,7 @@ public class OpenSearchHelper {
 
         for(final Judgment judgment : judgments) {
 
+            // TODO: Add a timestamp.
             final Map<String, Object> j = judgment.getJudgmentAsMap();
             j.put("judgments_id", judgmentsId);
 

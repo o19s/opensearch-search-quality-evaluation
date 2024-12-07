@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * The results of a query set run.
@@ -23,16 +22,19 @@ import java.util.UUID;
 public class QuerySetRunResult {
 
     private final String runId;
+    private final String querySetId;
     private final List<QueryResult> queryResults;
-    private final Collection<SearchMetric> metrics;
+    private final Map<String, Double> metrics;
 
     /**
      * Creates a new query set run result. A random UUID is generated as the run ID.
+     * @param runId A unique identifier for this query set run.
      * @param queryResults A collection of {@link QueryResult} that contains the queries and search results.
-     * @param metrics The {@link SearchMetric metrics} calculated from the search results.
+     * @param metrics A map of metric name to value.
      */
-    public QuerySetRunResult(final List<QueryResult> queryResults, final Collection<SearchMetric> metrics) {
-        this.runId = UUID.randomUUID().toString();
+    public QuerySetRunResult(final String runId, final String querySetId, final List<QueryResult> queryResults, final Map<String, Double> metrics) {
+        this.runId = runId;
+        this.querySetId = querySetId;
         this.queryResults = queryResults;
         this.metrics = metrics;
     }
@@ -46,10 +48,18 @@ public class QuerySetRunResult {
     }
 
     /**
-     * Gets the {@link SearchMetric metrics} calculated from the run.
-     * @return The {@link SearchMetric metrics} calculated from the run.
+     * Gets the query set ID.
+     * @return The query set ID.
      */
-    public Collection<SearchMetric> getSearchMetrics() {
+    public String getQuerySetId() {
+        return querySetId;
+    }
+
+    /**
+     * Gets the search metrics.
+     * @return The search metrics.
+     */
+    public Map<String, Double> getSearchMetrics() {
         return metrics;
     }
 
