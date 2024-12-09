@@ -83,7 +83,7 @@ for x in range(number_of_user_queries):
                     "description": query_response["hits"]["hits"][random_search_result_index]["_source"][item_description_field]
                 },
                 "position": {
-                    "index": random_search_result_index
+                    "ordinal": random_search_result_index
                 },
                 "session_id": session_id
             }
@@ -113,7 +113,7 @@ for x in range(number_of_user_queries):
                         "description": query_response["hits"]["hits"][random_search_result_index]["_source"][item_description_field]
                     },
                     "position": {
-                        "index": random_search_result_index
+                        "ordinal": random_search_result_index
                     },
                     "session_id": session_id
                 }

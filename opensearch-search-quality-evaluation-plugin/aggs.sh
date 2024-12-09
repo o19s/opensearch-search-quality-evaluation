@@ -11,7 +11,7 @@ curl -X GET http://localhost:9200/ubi_events/_search -H "Content-Type: applicati
       "aggs": {
         "By_Position": {
           "terms": {
-            "field": "event_attributes.position.index"
+            "field": "event_attributes.position.ordinal"
           }
         }
       }

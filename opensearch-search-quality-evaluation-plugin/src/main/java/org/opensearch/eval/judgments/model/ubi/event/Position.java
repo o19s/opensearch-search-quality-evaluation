@@ -15,28 +15,28 @@ import com.google.gson.annotations.SerializedName;
  */
 public class Position {
 
-    @SerializedName("index")
-    private int index;
+    @SerializedName("ordinal")
+    private int ordinal;
 
     @Override
     public String toString() {
-        return String.valueOf(index);
+        return String.valueOf(ordinal);
     }
 
     /**
-     * Gets the index of the position.
-     * @return The index of the position.
+     * Gets the ordinal of the position.
+     * @return The ordinal of the position.
      */
-    public int getIndex() {
-        return index;
+    public int getOrdinal() {
+        return ordinal;
     }
 
     /**
-     * Sets the index of the position.
-     * @param index The index of the position.
+     * Sets the ordinal of the position.
+     * @param ordinal The ordinal of the position.
      */
-    public void setIndex(int index) {
-        this.index = index;
+    public void setOrdinal(int ordinal) {
+        this.ordinal = ordinal;
     }
 
 }

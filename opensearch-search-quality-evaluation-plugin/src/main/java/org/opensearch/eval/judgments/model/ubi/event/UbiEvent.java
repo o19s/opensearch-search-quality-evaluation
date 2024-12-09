@@ -36,7 +36,7 @@ public class UbiEvent {
 
     @Override
     public String toString() {
-        return actionName + ", " + clientId + ", " + queryId + ", " + eventAttributes.getObject().toString() + ", " + eventAttributes.getPosition().getIndex();
+        return actionName + ", " + clientId + ", " + queryId + ", " + eventAttributes.getObject().toString() + ", " + eventAttributes.getPosition().getOrdinal();
     }
 
     /**

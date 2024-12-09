@@ -82,7 +82,7 @@ GET ubi_events/_search
 {
   "query": {
     "range": {
-      "event_attributes.position.index": {
+      "event_attributes.position.ordinal": {
         "lte": 20
       }
     }
@@ -115,7 +115,7 @@ GET ubi_events/_search
           },
           {
             "term": {
-              "event_attributes.position.index": "0"
+              "event_attributes.position.ordinal": "0"
             }
           },
           {
@@ -141,7 +141,7 @@ GET ubi_events/_search
       "aggs": {
         "By_Position": {
           "terms": {
-            "field": "event_attributes.position.index",
+            "field": "event_attributes.position.ordinal",
             "size": 20
           }
         }

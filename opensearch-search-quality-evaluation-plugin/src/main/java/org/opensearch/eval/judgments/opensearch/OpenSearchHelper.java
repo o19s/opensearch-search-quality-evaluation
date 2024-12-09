@@ -165,7 +165,7 @@ public class OpenSearchHelper {
                     "          },\n" +
                     "          {\n" +
                     "            \"term\": {\n" +
-                    "              \"event_attributes.position.index\": \"" + rank + "\"\n" +
+                    "              \"event_attributes.position.ordinal\": \"" + rank + "\"\n" +
                     "            }\n" +
                     "          },\n" +
                     "          {\n" +
