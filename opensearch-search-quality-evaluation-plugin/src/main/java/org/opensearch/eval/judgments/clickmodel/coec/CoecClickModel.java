@@ -181,36 +181,7 @@ public class CoecClickModel extends ClickModel {
         // - Get each document returned in that query (in the QueryResponse object).
         // - Calculate the click-through rate for the document. (clicks/impressions)
 
-        // TODO: Use maxRank in place of the hardcoded 20.
         // TODO: Allow for a time period and for a specific application.
-
-        /*
-         * {
-         *                 "bool": {
-         *                   "should": [
-         *                     {
-         *                       "term": {
-         *                         "action_name": "click"
-         *                       }
-         *                     },
-         *                     {
-         *                       "term": {
-         *                         "action_name": "impression"
-         *                       }
-         *                     }
-         *                   ],
-         *                   "must": [
-         *                     {
-         *                       "range": {
-         *                         "event_attributes.position.ordinal": {
-         *                           "lte": 20
-         *                         }
-         *                       }
-         *                     }
-         *                   ]
-         *                 }
-         *               }
-         */
 
         final String query = "{\n" +
                 "                \"bool\": {\n" +
@@ -230,7 +201,7 @@ public class CoecClickModel extends ClickModel {
                 "                    {\n" +
                 "                      \"range\": {\n" +
                 "                        \"event_attributes.position.ordinal\": {\n" +
-                "                          \"lte\": 20\n" +
+                "                          \"lte\": " + maxRank + "\n" +
                 "                        }\n" +
                 "                      }\n" +
                 "                    }\n" +
