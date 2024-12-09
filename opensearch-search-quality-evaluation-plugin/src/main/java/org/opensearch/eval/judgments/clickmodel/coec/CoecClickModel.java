@@ -198,7 +198,7 @@ public class CoecClickModel extends ClickModel {
          *                   "must": [
          *                     {
          *                       "range": {
-         *                         "event_attributes.position.index": {
+         *                         "event_attributes.position.ordinal": {
          *                           "lte": 20
          *                         }
          *                       }
@@ -225,7 +225,7 @@ public class CoecClickModel extends ClickModel {
                 "                  \"must\": [\n" +
                 "                    {\n" +
                 "                      \"range\": {\n" +
-                "                        \"event_attributes.position.index\": {\n" +
+                "                        \"event_attributes.position.ordinal\": {\n" +
                 "                          \"lte\": 20\n" +
                 "                        }\n" +
                 "                      }\n" +
@@ -319,10 +319,10 @@ public class CoecClickModel extends ClickModel {
 
         // TODO: Allow for a time period and for a specific application.
 
-        final QueryBuilder findRangeNumber = QueryBuilders.rangeQuery("event_attributes.position.index").lte(parameters.getMaxRank());
+        final QueryBuilder findRangeNumber = QueryBuilders.rangeQuery("event_attributes.position.ordinal").lte(parameters.getMaxRank());
         final QueryBuilder queryBuilder = new BoolQueryBuilder().must(findRangeNumber);
 
-        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.index").size(parameters.getMaxRank());
+        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").size(parameters.getMaxRank());
         final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).size(parameters.getMaxRank());
 
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
