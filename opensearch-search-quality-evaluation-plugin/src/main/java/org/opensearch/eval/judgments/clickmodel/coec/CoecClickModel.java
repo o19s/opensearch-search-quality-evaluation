@@ -56,8 +56,7 @@ public class CoecClickModel extends ClickModel {
 
     // UBI event names.
     public static final String EVENT_CLICK = "click";
-    // TODO: Change "view" to "impression".
-    public static final String EVENT_VIEW = "view";
+    public static final String EVENT_IMPRESSION = "impression";
 
     private final CoecClickModelParameters parameters;
 
@@ -192,7 +191,7 @@ public class CoecClickModel extends ClickModel {
          *                     },
          *                     {
          *                       "term": {
-         *                         "action_name": "view"
+         *                         "action_name": "impression"
          *                       }
          *                     }
          *                   ],
@@ -219,7 +218,7 @@ public class CoecClickModel extends ClickModel {
                 "                    },\n" +
                 "                    {\n" +
                 "                      \"term\": {\n" +
-                "                        \"action_name\": \"view\"\n" +
+                "                        \"action_name\": \"impression\"\n" +
                 "                      }\n" +
                 "                    }\n" +
                 "                  ],\n" +
@@ -355,8 +354,8 @@ public class CoecClickModel extends ClickModel {
 
             }
 
-            // Handle the "view" bucket.
-            if(EVENT_VIEW.equalsIgnoreCase(actionBucket.getKey().toString())) {
+            // Handle the "impression" bucket.
+            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
 
                 final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();

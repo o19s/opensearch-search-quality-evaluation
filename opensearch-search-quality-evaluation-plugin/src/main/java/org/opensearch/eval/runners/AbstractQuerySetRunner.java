@@ -92,7 +92,7 @@ public abstract class AbstractQuerySetRunner {
             LOGGER.error("Unable to get query set with ID {}", querySetId);
 
             // The query set was not found.
-           throw new RuntimeException("The query set with ID " + querySetId + " was not found.");
+            throw new RuntimeException("The query set with ID " + querySetId + " was not found.");
 
         }
 
