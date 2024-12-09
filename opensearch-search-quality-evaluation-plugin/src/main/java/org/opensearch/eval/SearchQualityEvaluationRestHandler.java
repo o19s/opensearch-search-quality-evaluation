@@ -35,6 +35,7 @@ import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestResponse;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -174,7 +175,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             }
 
             // Get the query JSON from the content.
-            final String query = new String(BytesReference.toBytes(request.content()));
+            final String query = new String(BytesReference.toBytes(request.content()), Charset.defaultCharset());
 
             // Validate the query has a QUERY_PLACEHOLDER.
             if(!query.contains(QUERY_PLACEHOLDER)) {

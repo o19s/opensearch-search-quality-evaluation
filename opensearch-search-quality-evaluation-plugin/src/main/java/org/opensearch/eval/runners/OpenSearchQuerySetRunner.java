@@ -10,6 +10,8 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.action.bulk.BulkRequest;
+import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.index.IndexResponse;
 import org.opensearch.action.search.SearchRequest;
@@ -137,17 +139,24 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
             }
 
-            // TODO: Calculate the search metrics for the entire query set given the results and the judgments.
-            /*final List<String> orderedDocumentIds = new ArrayList<>();
-            final List<Double> relevanceScores = getRelevanceScores(judgmentsId, "TODO", orderedDocumentIds, k);
-            final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
-            // TODO: Add these metrics in, too.
-            //final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores, idealRelevanceScores);
-            //final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, relevanceScores);*/
+            // Calculate the search metrics for the entire query set given the individual query set metrics.
+            // Sum up the metrics for each query per metric type.
+            final int querySetSize = queryResults.size();
+            final Map<String, Double> sumOfMetrics = new HashMap<>();
+            for(final QueryResult queryResult : queryResults) {
+                for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+                    sumOfMetrics.merge(searchMetric.getName(), searchMetric.getValue(), Double::sum);
+                }
+            }
 
-            final Collection<SearchMetric> searchMetrics = new ArrayList<>(); // List.of(dcgSearchMetric); // ndcgSearchmetric, precisionSearchMetric);
+            // Now divide by the number of queries.
+            final Map<String, Double> querySetMetrics = new HashMap<>();
+            for(final String metric : sumOfMetrics.keySet()) {
+                querySetMetrics.put(metric, sumOfMetrics.get(metric) / querySetSize);
+            }
+
             final String querySetRunId = UUID.randomUUID().toString();
-            final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, queryResults, searchMetrics);
+            final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetId, queryResults, querySetMetrics);
 
             LOGGER.info("Query set run complete: {}", querySetRunId);
 
@@ -169,9 +178,9 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
         results.put("run_id", result.getRunId());
         results.put("query_results", result.getQueryResultsAsMap());
 
-        // Calculate and add each metric to the object to index.
-        for (final SearchMetric searchMetric : result.getSearchMetrics()) {
-            results.put(searchMetric.getName(), searchMetric.calculate());
+        // Add each metric to the object to index.
+        for (final String metric : result.getSearchMetrics().keySet()) {
+            results.put(metric, result.getSearchMetrics().get(metric));
         }
 
         final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME)
@@ -187,6 +196,49 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             public void onFailure(Exception ex) {
                 throw new RuntimeException(ex);
             }
+        });
+
+        // TODO: Index the metrics as expected by the dashboards.
+
+        // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
+        // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
+
+        final BulkRequest bulkRequest = new BulkRequest();
+
+        for(final QueryResult queryResult : result.getQueryResults()) {
+
+            for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+
+                // TODO: Make sure all of these items have values.
+                final Map<String, Object> metrics = new HashMap<>();
+                metrics.put("datetime", "2024-09-01T00:00:00");
+                metrics.put("search_config", "research_1");
+                metrics.put("query_set_id", result.getQuerySetId());
+                metrics.put("query", queryResult.getQuery());
+                metrics.put("metric", searchMetric.getName());
+                metrics.put("value", searchMetric.getValue());
+                metrics.put("application", "sample_data");
+                metrics.put("evaluation_id", result.getRunId());
+
+                // TODO: This is using the index name from the sample data.
+                bulkRequest.add(new IndexRequest("sqe_metrics_sample_data").source(metrics));
+
+            }
+
+        }
+
+        client.bulk(bulkRequest, new ActionListener<>() {
+
+            @Override
+            public void onResponse(BulkResponse bulkItemResponses) {
+                LOGGER.info("Successfully indexed {} metrics.", bulkItemResponses.getItems().length);
+            }
+
+            @Override
+            public void onFailure(Exception ex) {
+                LOGGER.error("Unable to bulk index metrics.", ex);
+            }
+
         });
 
     }

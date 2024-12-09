@@ -82,7 +82,7 @@ public abstract class AbstractQuerySetRunner {
         // TODO: Don't use .get()
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
-        if (searchResponse.getHits().getHits().length > 0) {
+        if(searchResponse.getHits().getHits().length > 0) {
 
             // The queries from the query set that will be run.
             return (Collection<Map<String, Long>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("queries");
