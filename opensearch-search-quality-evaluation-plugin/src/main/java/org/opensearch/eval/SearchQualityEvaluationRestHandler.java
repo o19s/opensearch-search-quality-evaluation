@@ -10,6 +10,10 @@ package org.opensearch.eval;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.action.admin.indices.create.CreateIndexRequest;
+import org.opensearch.action.admin.indices.create.CreateIndexResponse;
+import org.opensearch.action.admin.indices.exists.indices.IndicesExistsRequest;
+import org.opensearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.opensearch.action.delete.DeleteRequest;
 import org.opensearch.action.delete.DeleteResponse;
 import org.opensearch.action.index.IndexRequest;
@@ -42,6 +46,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
 
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
@@ -199,6 +205,9 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
         } else if(IMPLICIT_JUDGMENTS_URL.equalsIgnoreCase(request.path())) {
 
             if (request.method().equals(RestRequest.Method.POST)) {
+
+                // Create the judgments index.
+                createJudgmentsIndex(client);
 
                 final long startTime = System.currentTimeMillis();
                 final String clickModel = request.param("click_model", "coec");
@@ -363,6 +372,57 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
         } else {
             return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.NOT_FOUND, "{\"error\": \"" + request.path() + " was not found.\"}"));
         }
+
+    }
+
+    private void createJudgmentsIndex(final NodeClient client) {
+
+        // If the judgments index does not exist we need to create it.
+        final IndicesExistsRequest indicesExistsRequest = new IndicesExistsRequest(JUDGMENTS_INDEX_NAME);
+
+        client.admin().indices().exists(indicesExistsRequest, new ActionListener<>() {
+
+            @Override
+            public void onResponse(final IndicesExistsResponse indicesExistsResponse) {
+
+                if(!indicesExistsResponse.isExists()) {
+
+                    // TODO: Read this from a resource file instead.
+                    final String mapping = "{\n" +
+                            "                                                  \"properties\": {\n" +
+                            "                                                    \"judgments_id\": { \"type\": \"keyword\" },\n" +
+                            "                                                    \"query_id\": { \"type\": \"keyword\" },\n" +
+                            "                                                    \"query\": { \"type\": \"keyword\" },\n" +
+                            "                                                    \"document_id\": { \"type\": \"keyword\" },\n" +
+                            "                                                    \"judgment\": { \"type\": \"double\" }\n" +
+                            "                                                  }\n" +
+                            "                                              }";
+
+                    // Create the judgments index.
+                    final CreateIndexRequest createIndexRequest = new CreateIndexRequest(JUDGMENTS_INDEX_NAME);
+                    createIndexRequest.mapping(mapping);
+
+                    client.admin().indices().create(createIndexRequest, new ActionListener<>() {
+                        @Override
+                        public void onResponse(CreateIndexResponse createIndexResponse) {
+                            LOGGER.info("Judgments index created: {}", JUDGMENTS_INDEX_NAME);
+                        }
+
+                        @Override
+                        public void onFailure(Exception ex) {
+                            throw new RuntimeException("Unable to create judgments index: " + JUDGMENTS_INDEX_NAME, ex);
+                        }
+                    });
+
+                }
+            }
+
+            @Override
+            public void onFailure(Exception ex) {
+                throw new RuntimeException("Unable to determine if the judgments index exists.", ex);
+            }
+
+        });
 
     }
 
