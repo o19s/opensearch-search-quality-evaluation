@@ -75,9 +75,18 @@ public class OpenSearchHelper {
 
         // Cache it and return it.
         final UbiQuery ubiQuery = getQueryFromQueryId(queryId);
-        userQueryCache.put(queryId, ubiQuery.getUserQuery());
 
-        return ubiQuery.getUserQuery();
+        // ubiQuery will be null if the query does not exist.
+        if(ubiQuery != null) {
+
+            userQueryCache.put(queryId, ubiQuery.getUserQuery());
+            return ubiQuery.getUserQuery();
+
+        } else {
+
+            return null;
+
+        }
 
     }
 
@@ -89,7 +98,7 @@ public class OpenSearchHelper {
      */
     public UbiQuery getQueryFromQueryId(final String queryId) throws Exception {
 
-        //LOGGER.info("Getting query from query ID {}", queryId);
+        LOGGER.info("Getting query from query ID {}", queryId);
 
         final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
@@ -105,12 +114,20 @@ public class OpenSearchHelper {
         final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
         final SearchResponse response = client.search(searchRequest).get();
 
-        // Will only be a single result.
-        final SearchHit hit = response.getHits().getHits()[0];
+        // If this does not return a query then we cannot calculate the judgments. Each even should have a query associated with it.
+        if(response.getHits().getHits() != null & response.getHits().getHits().length > 0) {
 
-        //LOGGER.info("Retrieved query from query ID {}", queryId);
+            final SearchHit hit = response.getHits().getHits()[0];
 
-        return AccessController.doPrivileged((PrivilegedAction<UbiQuery>) () -> gson.fromJson(hit.getSourceAsString(), UbiQuery.class));
+            //LOGGER.info("Retrieved query from query ID {}", queryId);
+            return AccessController.doPrivileged((PrivilegedAction<UbiQuery>) () -> gson.fromJson(hit.getSourceAsString(), UbiQuery.class));
+
+        } else {
+
+            LOGGER.warn("No query exists for query ID {} to calculate judgments.", queryId);
+            return null;
+
+        }
 
     }
 
