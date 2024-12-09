@@ -237,25 +237,31 @@ public class CoecClickModel extends ClickModel {
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but they are the same search.
                 final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
-                // LOGGER.debug("user_query = {}", userQuery);
 
-                // Get the clicks for this queryId from the map, or an empty list if this is a new query.
-                final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
+                // userQuery will be null if there is not a query for this event in ubi_queries.
+                if(userQuery != null) {
 
-                // Get the ClickthroughRate object for the object that was interacted with.
-                final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
+                    // LOGGER.debug("user_query = {}", userQuery);
 
-                if (EVENT_CLICK.equalsIgnoreCase(ubiEvent.getActionName())) {
-                    //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
-                    clickthroughRate.logClick();
-                } else {
-                    //LOGGER.info("Logging a VIEW on " + ubiEvent.getEventAttributes().getObject().getObjectId());
-                    clickthroughRate.logEvent();
+                    // Get the clicks for this queryId from the map, or an empty list if this is a new query.
+                    final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
+
+                    // Get the ClickthroughRate object for the object that was interacted with.
+                    final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
+
+                    if (EVENT_CLICK.equalsIgnoreCase(ubiEvent.getActionName())) {
+                        //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
+                        clickthroughRate.logClick();
+                    } else {
+                        //LOGGER.info("Logging a VIEW on " + ubiEvent.getEventAttributes().getObject().getObjectId());
+                        clickthroughRate.logEvent();
+                    }
+
+                    clickthroughRates.add(clickthroughRate);
+                    queriesToClickthroughRates.put(userQuery, clickthroughRates);
+                    // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
+
                 }
-
-                clickthroughRates.add(clickthroughRate);
-                queriesToClickthroughRates.put(userQuery, clickthroughRates);
-                // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
 
             }
 
@@ -310,7 +316,7 @@ public class CoecClickModel extends ClickModel {
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
         final Map<Integer, Double> clickCounts = new HashMap<>();
-        final Map<Integer, Double> viewCounts = new HashMap<>();
+        final Map<Integer, Double> impressionCounts = new HashMap<>();
 
         final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
         final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
@@ -324,6 +330,7 @@ public class CoecClickModel extends ClickModel {
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
+                    LOGGER.info("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
                     clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
@@ -336,7 +343,8 @@ public class CoecClickModel extends ClickModel {
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
-                    viewCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
+                    LOGGER.info("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
             }
@@ -344,8 +352,19 @@ public class CoecClickModel extends ClickModel {
         }
 
         for(final Integer x : clickCounts.keySet()) {
-            //System.out.println("Position = " + x + ", Click Count = " + clickCounts.get(x) + ", Event Count = " + viewCounts.get(x));
-            rankAggregatedClickThrough.put(x, clickCounts.get(x) / viewCounts.get(x));
+
+            if(!(impressionCounts.get(x) == null)) {
+
+                // Calculate the CTR by dividing the number of clicks by the number of impressions.
+                LOGGER.info("Position = {}, Click Count = {}, Event Count = {}", x, clickCounts.get(x), impressionCounts.get(x));
+                rankAggregatedClickThrough.put(x, clickCounts.get(x) / impressionCounts.get(x));
+
+            } else {
+                // This will happen in the case where a document has a "click" event but not an "impression." This
+                // likely should not happen, but we will protect against an NPE anyway by setting the CTR to zero.
+                rankAggregatedClickThrough.put(x, (double) 0);
+            }
+
         }
 
         if(parameters.isPersist()) {
