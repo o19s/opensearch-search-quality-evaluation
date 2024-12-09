@@ -22,7 +22,7 @@ import org.opensearch.core.common.bytes.BytesReference;
 import org.opensearch.core.rest.RestStatus;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
-import org.opensearch.eval.runners.OpenSearchAbstractQuerySetRunner;
+import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
@@ -35,13 +35,13 @@ import org.opensearch.rest.RestRequest;
 import org.opensearch.rest.RestResponse;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
@@ -157,8 +157,10 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             final String querySetId = request.param("id");
             final String judgmentsId = request.param("judgments_id");
             final String index = request.param("index");
+            final String searchPipeline = request.param("search_pipeline", null);
             final String idField = request.param("id_field", "_id");
             final int k = Integer.parseInt(request.param("k", "10"));
+            final double threshold = Double.parseDouble(request.param("threshold", "1.0"));
 
             if(querySetId == null || querySetId.isEmpty() || judgmentsId == null || judgmentsId.isEmpty() || index == null || index.isEmpty()) {
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
@@ -173,7 +175,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
             }
 
             // Get the query JSON from the content.
-            final String query = new String(BytesReference.toBytes(request.content()));
+            final String query = new String(BytesReference.toBytes(request.content()), Charset.defaultCharset());
 
             // Validate the query has a QUERY_PLACEHOLDER.
             if(!query.contains(QUERY_PLACEHOLDER)) {
@@ -182,12 +184,12 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
             try {
 
-                final OpenSearchAbstractQuerySetRunner openSearchQuerySetRunner = new OpenSearchAbstractQuerySetRunner(client);
-                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, idField, query, k);
+                final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, searchPipeline, idField, query, k, threshold);
                 openSearchQuerySetRunner.save(querySetRunResult);
 
             } catch (Exception ex) {
-                LOGGER.error("Unable to run query set.", ex);
+                LOGGER.error("Unable to run query set. Verify query set and judgments exist.", ex);
                 return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
             }
 
