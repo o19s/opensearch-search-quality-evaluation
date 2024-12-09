@@ -145,7 +145,7 @@ public class OpenSearchHelper {
         // Get all query IDs matching this user query.
         final Collection<String> queryIds = getQueryIdsHavingUserQuery(userQuery);
 
-        // For each query ID, get the events with action_name = "view" having a match on objectId and rank (position).
+        // For each query ID, get the events with action_name = "impression" having a match on objectId and rank (position).
         for(final String queryId : queryIds) {
 
             //LOGGER.info("userQuery = {}; queryId = {}; objectId = {}; rank = {}", userQuery, queryId, objectId, rank);
@@ -160,7 +160,7 @@ public class OpenSearchHelper {
                     "          },\n" +
                     "          {\n" +
                     "            \"term\": {\n" +
-                    "              \"action_name\": \"view\"\n" +
+                    "              \"action_name\": \"impression\"\n" +
                     "            }\n" +
                     "          },\n" +
                     "          {\n" +
