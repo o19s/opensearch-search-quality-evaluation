@@ -156,7 +156,11 @@ public class CoecClickModel extends ClickModel {
         }
 
         if(parameters.isPersist()) {
-            openSearchHelper.indexJudgments(judgments);
+            if(!judgments.isEmpty()) {
+                openSearchHelper.indexJudgments(judgments);
+            } else {
+                LOGGER.warn("Judgments were not indexed because no judgments were created. Check the events and query source data.");
+            }
         }
 
         LOGGER.debug("Persisted number of judgments: {}", judgments.size());

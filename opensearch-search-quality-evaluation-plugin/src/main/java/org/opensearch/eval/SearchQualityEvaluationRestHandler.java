@@ -221,9 +221,16 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
                     // TODO: Run this in a separate thread.
                     try {
+
                         judgmentCount = coecClickModel.calculateJudgments();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+
+                        if(judgmentCount == 0) {
+                            // TODO: Is Bad Request the appropriate error? Perhaps Conflict is more appropriate?
+                            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"No judgments were created. Check the queries and events data.\"}"));
+                        }
+
+                    } catch (Exception ex) {
+                        throw new RuntimeException("Unable to generate judgments.", ex);
                     }
 
                     final long elapsedTime = System.currentTimeMillis() - startTime;
