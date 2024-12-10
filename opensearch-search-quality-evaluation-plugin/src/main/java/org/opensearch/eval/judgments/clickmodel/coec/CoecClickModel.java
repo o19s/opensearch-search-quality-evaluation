@@ -343,20 +343,21 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        for(int rank = 0; rank < parameters.getMaxRank(); rank++) {
+        // TODO: Should this be LTE or just LT? Is rank zero-based?
+        for(int rank = 0; rank <= parameters.getMaxRank(); rank++) {
 
             if(impressionCounts.containsKey(rank)) {
 
                 if(clickCounts.containsKey(rank)) {
 
                     // Calculate the CTR by dividing the number of clicks by the number of impressions.
-                    LOGGER.debug("Position = {}, Impression Counts = {}, Click Count = {}", rank, impressionCounts.get(rank), clickCounts.get(rank));
+                    LOGGER.info("Position = {}, Impression Counts = {}, Click Count = {}", rank, impressionCounts.get(rank), clickCounts.get(rank));
                     rankAggregatedClickThrough.put(rank, clickCounts.get(rank) / impressionCounts.get(rank));
 
                 } else {
 
                     // This document has impressions but no clicks, so it's CTR is zero.
-                    LOGGER.debug("Position = {}, Impression Counts = {}, No clicks so CTR is 0", rank, clickCounts.get(rank));
+                    LOGGER.info("Position = {}, Impression Counts = {}, No clicks so CTR is 0", rank, clickCounts.get(rank));
                     rankAggregatedClickThrough.put(rank, 0.0);
 
                 }
@@ -364,13 +365,12 @@ public class CoecClickModel extends ClickModel {
             } else {
 
                 // No impressions so the clickthrough rate is 0.
-                LOGGER.debug("No impressions for rank {}, so using CTR of 0", rank);
+                LOGGER.info("No impressions for rank {}, so using CTR of 0", rank);
                 rankAggregatedClickThrough.put(rank, (double) 0);
 
             }
 
         }
-
 
         openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
