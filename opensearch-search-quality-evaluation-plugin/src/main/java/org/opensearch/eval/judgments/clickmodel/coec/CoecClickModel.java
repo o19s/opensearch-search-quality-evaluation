@@ -343,33 +343,34 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        for(final Integer x : clickCounts.keySet()) {
+        for(int rank = 0; rank < parameters.getMaxRank(); rank++) {
 
-            if(impressionCounts.get(x) != null) {
+            if(impressionCounts.containsKey(rank)) {
 
-                if(clickCounts.get(x) != null) {
+                if(clickCounts.containsKey(rank)) {
 
                     // Calculate the CTR by dividing the number of clicks by the number of impressions.
-                    LOGGER.debug("Position = {}, Impression Counts = {}, Click Count = {}", x, impressionCounts.get(x), clickCounts.get(x));
-                    rankAggregatedClickThrough.put(x, clickCounts.get(x) / impressionCounts.get(x));
+                    LOGGER.debug("Position = {}, Impression Counts = {}, Click Count = {}", rank, impressionCounts.get(rank), clickCounts.get(rank));
+                    rankAggregatedClickThrough.put(rank, clickCounts.get(rank) / impressionCounts.get(rank));
 
                 } else {
 
-                    // This document has impressions but no clicks so it's CTR is zero.
-                    LOGGER.debug("Position = {}, Impression Counts = {}, Click Count = {}", x, clickCounts.get(x), clickCounts.get(x));
-                    rankAggregatedClickThrough.put(x, 0.0);
+                    // This document has impressions but no clicks, so it's CTR is zero.
+                    LOGGER.debug("Position = {}, Impression Counts = {}, No clicks so CTR is 0", rank, clickCounts.get(rank));
+                    rankAggregatedClickThrough.put(rank, 0.0);
 
                 }
 
             } else {
 
-                // This will happen in the case where a document has a "click" event but not an "impression." This
-                // likely should not happen, but we will protect against an NPE anyway by setting the CTR to zero.
-                rankAggregatedClickThrough.put(x, (double) 0);
+                // No impressions so the clickthrough rate is 0.
+                LOGGER.debug("No impressions for rank {}, so using CTR of 0", rank);
+                rankAggregatedClickThrough.put(rank, (double) 0);
 
             }
 
         }
+
 
         openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
