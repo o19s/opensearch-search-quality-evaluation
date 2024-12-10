@@ -276,6 +276,7 @@ public class OpenSearchHelper {
                     jsonMap.put("clicks", clickthroughRate.getClicks());
                     jsonMap.put("events", clickthroughRate.getEvents());
                     jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
+                    jsonMap.put("object_id", clickthroughRate.getObjectId());
 
                     final IndexRequest indexRequest = new IndexRequest(INDEX_QUERY_DOC_CTR).id(UUID.randomUUID().toString()).source(jsonMap);
 
