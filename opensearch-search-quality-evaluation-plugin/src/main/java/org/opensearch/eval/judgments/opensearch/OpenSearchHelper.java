@@ -267,12 +267,12 @@ public class OpenSearchHelper {
 
             final BulkRequest request = new BulkRequest();
 
-            for(final String queryId : clickthroughRates.keySet()) {
+            for(final String userQuery : clickthroughRates.keySet()) {
 
-                for(final ClickthroughRate clickthroughRate : clickthroughRates.get(queryId)) {
+                for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
 
                     final Map<String, Object> jsonMap = new HashMap<>();
-                    jsonMap.put("query_id", queryId);
+                    jsonMap.put("user_query", userQuery);
                     jsonMap.put("clicks", clickthroughRate.getClicks());
                     jsonMap.put("events", clickthroughRate.getEvents());
                     jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
