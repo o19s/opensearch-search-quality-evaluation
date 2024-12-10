@@ -92,7 +92,7 @@ public class QuerySetRunResult {
 
             // Calculate and add each metric to the map.
             for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
-                q.put(searchMetric.getName(), String.valueOf(searchMetric.calculate()));
+                q.put(searchMetric.getName(), searchMetric.calculate());
             }
 
             qs.add(q);

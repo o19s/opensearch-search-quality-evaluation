@@ -183,7 +183,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
         // Add each metric to the object to index.
         for (final String metric : result.getSearchMetrics().keySet()) {
-            results.put(metric, String.valueOf(result.getSearchMetrics().get(metric)));
+            results.put(metric, result.getSearchMetrics().get(metric));
         }
 
         final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME)

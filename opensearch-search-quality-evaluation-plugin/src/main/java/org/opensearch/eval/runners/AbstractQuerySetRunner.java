@@ -136,6 +136,8 @@ public abstract class AbstractQuerySetRunner {
 
             final Map<String, Object> j = searchResponse.getHits().getAt(0).getSourceAsMap();
 
+            LOGGER.info("Judgment contains a value: {}", j.get("judgment"));
+
             // TODO: Why does this not exist in some cases?
             if(j.containsKey("judgment")) {
                 judgment = (Double) j.get("judgment");
@@ -178,7 +180,7 @@ public abstract class AbstractQuerySetRunner {
             if(!Double.isNaN(judgmentValue)) {
                 scores.add(judgmentValue);
             } else {
-                LOGGER.info("No score found for document ID {} with judgments {} and query {}", documentId, judgmentsId, query);
+                //LOGGER.info("No score found for document ID {} with judgments {} and query {}", documentId, judgmentsId, query);
             }
 
         }
