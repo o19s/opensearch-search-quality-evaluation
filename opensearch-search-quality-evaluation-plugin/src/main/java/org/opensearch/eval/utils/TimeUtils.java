@@ -13,8 +13,15 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
+/**
+ * This is a utility class.
+ */
 public class TimeUtils {
 
+    /**
+     * Generate a timestamp in the <code>yyyyMMdd'T'HHmmss.SSS'Z'</code> format.
+     * @return A timestamp in the <code>yyyyMMdd'T'HHmmss.SSS'Z'</code> format.
+     */
     public static String getTimestamp() {
 
         final SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss.SSS'Z'", Locale.getDefault());
