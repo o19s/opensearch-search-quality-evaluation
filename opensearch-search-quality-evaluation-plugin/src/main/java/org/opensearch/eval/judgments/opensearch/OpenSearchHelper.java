@@ -98,7 +98,7 @@ public class OpenSearchHelper {
      */
     public UbiQuery getQueryFromQueryId(final String queryId) throws Exception {
 
-        LOGGER.info("Getting query from query ID {}", queryId);
+        LOGGER.debug("Getting query from query ID {}", queryId);
 
         final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
         final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);

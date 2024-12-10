@@ -330,7 +330,7 @@ public class CoecClickModel extends ClickModel {
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.info("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
                     clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
@@ -343,7 +343,7 @@ public class CoecClickModel extends ClickModel {
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.info("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
                     impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
@@ -356,7 +356,7 @@ public class CoecClickModel extends ClickModel {
             if(!(impressionCounts.get(x) == null)) {
 
                 // Calculate the CTR by dividing the number of clicks by the number of impressions.
-                LOGGER.info("Position = {}, Click Count = {}, Event Count = {}", x, clickCounts.get(x), impressionCounts.get(x));
+                LOGGER.debug("Position = {}, Click Count = {}, Event Count = {}", x, clickCounts.get(x), impressionCounts.get(x));
                 rankAggregatedClickThrough.put(x, clickCounts.get(x) / impressionCounts.get(x));
 
             } else {
