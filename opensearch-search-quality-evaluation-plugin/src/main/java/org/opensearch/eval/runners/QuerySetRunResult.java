@@ -89,6 +89,7 @@ public class QuerySetRunResult {
 
             q.put("query", queryResult.getQuery());
             q.put("document_ids", queryResult.getOrderedDocumentIds());
+            q.put("frogs", queryResult.getFrogs());
 
             // Calculate and add each metric to the map.
             for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {

@@ -163,10 +163,13 @@ public abstract class AbstractQuerySetRunner {
      * @return An ordered list of relevance scores for the query / document pairs.
      * @throws Exception Thrown if a judgment cannot be retrieved.
      */
-    protected List<Double> getRelevanceScores(final String judgmentsId, final String query, final List<String> orderedDocumentIds, final int k) throws Exception {
+    protected RelevanceScores getRelevanceScores(final String judgmentsId, final String query, final List<String> orderedDocumentIds, final int k) throws Exception {
 
         // Ordered list of scores.
         final List<Double> scores = new ArrayList<>();
+
+        // Count the number of documents without judgments.
+        int documentsWithoutJudgmentsCount = 0;
 
         // For each document (up to k), get the judgment for the document.
         for (int i = 0; i < k && i < orderedDocumentIds.size(); i++) {
@@ -181,11 +184,19 @@ public abstract class AbstractQuerySetRunner {
                 scores.add(judgmentValue);
             } else {
                 //LOGGER.info("No score found for document ID {} with judgments {} and query {}", documentId, judgmentsId, query);
+                documentsWithoutJudgmentsCount++;
+
             }
 
         }
 
-        return scores;
+        double frogs = ((double) documentsWithoutJudgmentsCount) / orderedDocumentIds.size();
+
+        if(Double.isNaN(frogs)) {
+            frogs = 1.0;
+        }
+
+        return new RelevanceScores(scores, frogs);
 
     }
 

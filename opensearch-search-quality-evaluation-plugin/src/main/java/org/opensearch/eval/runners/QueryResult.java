@@ -22,6 +22,7 @@ public class QueryResult {
     private final List<String> orderedDocumentIds;
     private final int k;
     private final Collection<SearchMetric> searchMetrics;
+    private final double frogs;
 
     /**
      * Creates the search results.
@@ -29,12 +30,15 @@ public class QueryResult {
      * @param orderedDocumentIds A list of ordered document IDs in the same order as they appeared
      *                           in the query.
      * @param k The k used for metrics calculation, i.e. DCG@k.
+     * @param searchMetrics A collection of {@link SearchMetric} for this query.
+     * @param frogs The percentage of documents not having a judgment.
      */
-    public QueryResult(final String query, final List<String> orderedDocumentIds, final int k, final Collection<SearchMetric> searchMetrics) {
+    public QueryResult(final String query, final List<String> orderedDocumentIds, final int k, final Collection<SearchMetric> searchMetrics, final double frogs) {
         this.query = query;
         this.orderedDocumentIds = orderedDocumentIds;
         this.k = k;
         this.searchMetrics = searchMetrics;
+        this.frogs = frogs;
     }
 
     /**
@@ -59,6 +63,10 @@ public class QueryResult {
 
     public Collection<SearchMetric> getSearchMetrics() {
         return searchMetrics;
+    }
+
+    public double getFrogs() {
+        return frogs;
     }
 
 }

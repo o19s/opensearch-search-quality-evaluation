@@ -113,16 +113,16 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                             try {
 
-                                final List<Double> relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
+                                final RelevanceScores relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
 
                                 // Calculate the metrics for this query.
-                                final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores);
-                                final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores);
-                                final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores);
+                                final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores.getRelevanceScores());
+                                final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores.getRelevanceScores());
+                                final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores.getRelevanceScores());
 
                                 final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
 
-                                queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics));
+                                queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics, relevanceScores.getFrogs()));
 
                             } catch (Exception ex) {
                                 LOGGER.error("Unable to get relevance scores for judgments {} and user query {}.", judgmentsId, userQuery, ex);
