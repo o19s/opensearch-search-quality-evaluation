@@ -56,6 +56,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
         searchRequest.source(searchSourceBuilder);
 
+        // TODO: Don't use .get()
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
         final Map<String, Long> queries = new HashMap<>();
