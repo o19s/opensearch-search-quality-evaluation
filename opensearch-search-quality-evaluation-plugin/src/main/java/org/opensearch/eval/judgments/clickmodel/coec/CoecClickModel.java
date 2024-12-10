@@ -23,8 +23,8 @@ import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.judgments.model.ubi.event.UbiEvent;
 import org.opensearch.eval.judgments.opensearch.OpenSearchHelper;
-import org.opensearch.eval.judgments.util.IncrementalUserQueryHash;
-import org.opensearch.eval.judgments.util.MathUtils;
+import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
+import org.opensearch.eval.utils.MathUtils;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
@@ -32,6 +32,7 @@ import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.aggregations.AggregationBuilders;
+import org.opensearch.search.aggregations.BucketOrder;
 import org.opensearch.search.aggregations.bucket.terms.Terms;
 import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -45,6 +46,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 public class CoecClickModel extends ClickModel {
 
@@ -77,7 +79,7 @@ public class CoecClickModel extends ClickModel {
     }
 
     @Override
-    public long calculateJudgments() throws Exception {
+    public String calculateJudgments() throws Exception {
 
         final int maxRank = parameters.getMaxRank();
 
@@ -99,7 +101,7 @@ public class CoecClickModel extends ClickModel {
 
     }
 
-    public long calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
+    public String calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
                                               final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         // Calculate the COEC.
@@ -127,19 +129,12 @@ public class CoecClickModel extends ClickModel {
                     final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(r, 0.0);
                     final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
 
-//                    System.out.println("rank = " + r);
-//                    System.out.println("\tmeanCtrAtRank = " + meanCtrAtRank);
-//                    System.out.println("\tcountOfTimesShownAtRank = " + countOfTimesShownAtRank);
-
                     denominatorSum += (meanCtrAtRank * countOfTimesShownAtRank);
 
                 }
 
                 // Numerator is sum of clicks at all ranks up to the maxRank.
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
-
-//                System.out.println("numerator = " + totalNumberClicksForQueryResult);
-//                System.out.println("denominator = " + denominatorSum);
 
                 // Divide the numerator by the denominator (value).
                 final double judgment = totalNumberClicksForQueryResult / denominatorSum;
@@ -155,17 +150,12 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        if(parameters.isPersist()) {
-            if(!judgments.isEmpty()) {
-                openSearchHelper.indexJudgments(judgments);
-            } else {
-                LOGGER.warn("Judgments were not indexed because no judgments were created. Check the events and query source data.");
-            }
+        LOGGER.debug("Persisting number of judgments: {}", judgments.size());
+        if(!(judgments.isEmpty())) {
+            return openSearchHelper.indexJudgments(judgments);
+        } else {
+            return null;
         }
-
-        LOGGER.debug("Persisted number of judgments: {}", judgments.size());
-
-        return judgments.size();
 
     }
 
@@ -281,9 +271,7 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        if(parameters.isPersist()) {
-            openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
-        }
+        openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
 
         return queriesToClickthroughRates;
 
@@ -303,14 +291,17 @@ public class CoecClickModel extends ClickModel {
         final QueryBuilder findRangeNumber = QueryBuilders.rangeQuery("event_attributes.position.ordinal").lte(parameters.getMaxRank());
         final QueryBuilder queryBuilder = new BoolQueryBuilder().must(findRangeNumber);
 
-        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").size(parameters.getMaxRank());
-        final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).size(parameters.getMaxRank());
+        // Order the aggregations by _id and not by value.
+        final BucketOrder bucketOrder = BucketOrder.key(true);
+
+        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").order(bucketOrder).size(parameters.getMaxRank());
+        final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).order(bucketOrder).size(parameters.getMaxRank());
 
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(queryBuilder);
         searchSourceBuilder.aggregation(actionNameAggregation);
         searchSourceBuilder.from(0);
-        searchSourceBuilder.size(100);
+        searchSourceBuilder.size(0);
 
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
         final SearchResponse searchResponse = client.search(searchRequest).get();
@@ -321,6 +312,8 @@ public class CoecClickModel extends ClickModel {
         final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
         final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
 
+        LOGGER.debug("Aggregation query: {}", searchSourceBuilder.toString());
+
         for(final Terms.Bucket actionBucket : actionBuckets) {
 
             // Handle the "click" bucket.
@@ -330,7 +323,7 @@ public class CoecClickModel extends ClickModel {
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.info("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
                     clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
@@ -343,7 +336,7 @@ public class CoecClickModel extends ClickModel {
                 final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
 
                 for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.info("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
                     impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
@@ -356,7 +349,7 @@ public class CoecClickModel extends ClickModel {
             if(!(impressionCounts.get(x) == null)) {
 
                 // Calculate the CTR by dividing the number of clicks by the number of impressions.
-                LOGGER.info("Position = {}, Click Count = {}, Event Count = {}", x, clickCounts.get(x), impressionCounts.get(x));
+                LOGGER.debug("Position = {}, Click Count = {}, Event Count = {}", x, clickCounts.get(x), impressionCounts.get(x));
                 rankAggregatedClickThrough.put(x, clickCounts.get(x) / impressionCounts.get(x));
 
             } else {
@@ -367,9 +360,7 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        if(parameters.isPersist()) {
-            openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
-        }
+        openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
         return rankAggregatedClickThrough;
 
@@ -382,9 +373,7 @@ public class CoecClickModel extends ClickModel {
             LOGGER.info("user_query: {}", userQuery);
 
             for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
-
                 LOGGER.info("\t - {}", clickthroughRate.toString());
-
             }
 
         }
@@ -394,9 +383,7 @@ public class CoecClickModel extends ClickModel {
     private void showRankAggregatedClickThrough(final Map<Integer, Double> rankAggregatedClickThrough) {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
-
             LOGGER.info("Position: {}, # ctr: {}", position, MathUtils.round(rankAggregatedClickThrough.get(position), parameters.getRoundingDigits()));
-
         }
 
     }

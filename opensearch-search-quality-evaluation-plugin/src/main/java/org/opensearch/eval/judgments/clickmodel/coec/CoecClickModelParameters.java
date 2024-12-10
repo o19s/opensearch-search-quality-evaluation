@@ -15,38 +15,25 @@ import org.opensearch.eval.judgments.clickmodel.ClickModelParameters;
  */
 public class CoecClickModelParameters extends ClickModelParameters {
 
-    private final boolean persist;
     private final int maxRank;
     private int roundingDigits = 3;
 
     /**
      * Creates new parameters.
-     * @param persist Whether to persist the calculated judgments.
      * @param maxRank The max rank to use when calculating the judgments.
      */
-    public CoecClickModelParameters(boolean persist, final int maxRank) {
-        this.persist = persist;
+    public CoecClickModelParameters(final int maxRank) {
         this.maxRank = maxRank;
     }
 
     /**
      * Creates new parameters.
-     * @param persist Whether to persist the calculated judgments.
      * @param maxRank The max rank to use when calculating the judgments.
      * @param roundingDigits The number of decimal places to round calculated values to.
      */
-    public CoecClickModelParameters(boolean persist, final int maxRank, final int roundingDigits) {
-        this.persist = persist;
+    public CoecClickModelParameters(final int maxRank, final int roundingDigits) {
         this.maxRank = maxRank;
         this.roundingDigits = roundingDigits;
-    }
-
-    /**
-     * Gets whether to persist the calculated judgments.
-     * @return Whether to persist the calculated judgments.
-     */
-    public boolean isPersist() {
-        return persist;
     }
 
     /**

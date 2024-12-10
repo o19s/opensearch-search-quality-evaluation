@@ -32,6 +32,7 @@ import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeAbstractQuerySampler;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParameters;
+import org.opensearch.eval.utils.TimeUtils;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
@@ -216,56 +217,59 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
                 if (CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModel)) {
 
-                    final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, maxRank);
+                    final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(maxRank);
                     final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);
+
+                    final String judgmentsId;
 
                     // TODO: Run this in a separate thread.
                     try {
 
-                        judgmentCount = coecClickModel.calculateJudgments();
+                        judgmentsId = coecClickModel.calculateJudgments();
 
-                        if(judgmentCount == 0) {
+                        // judgmentsId will be null if no judgments were created (and indexed).
+                        if(judgmentsId == null) {
                             // TODO: Is Bad Request the appropriate error? Perhaps Conflict is more appropriate?
                             return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"No judgments were created. Check the queries and events data.\"}"));
                         }
+
+                        final long elapsedTime = System.currentTimeMillis() - startTime;
+
+                        final Map<String, Object> job = new HashMap<>();
+                        job.put("name", "manual_generation");
+                        job.put("click_model", clickModel);
+                        job.put("started", startTime);
+                        job.put("duration", elapsedTime);
+                        job.put("invocation", "on_demand");
+                        job.put("judgments_id", judgmentsId);
+                        job.put("max_rank", maxRank);
+
+                        final String jobId = UUID.randomUUID().toString();
+
+                        final IndexRequest indexRequest = new IndexRequest()
+                                .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
+                                .id(jobId)
+                                .source(job)
+                                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+                        client.index(indexRequest, new ActionListener<>() {
+                            @Override
+                            public void onResponse(final IndexResponse indexResponse) {
+                                LOGGER.debug("Click model job completed successfully: {}", jobId);
+                            }
+
+                            @Override
+                            public void onFailure(final Exception ex) {
+                                LOGGER.error("Unable to run job with ID {}", jobId, ex);
+                                throw new RuntimeException("Unable to run job", ex);
+                            }
+                        });
 
                     } catch (Exception ex) {
                         throw new RuntimeException("Unable to generate judgments.", ex);
                     }
 
-                    final long elapsedTime = System.currentTimeMillis() - startTime;
-
-                    final Map<String, Object> job = new HashMap<>();
-                    job.put("name", "manual_generation");
-                    job.put("click_model", clickModel);
-                    job.put("started", startTime);
-                    job.put("duration", elapsedTime);
-                    job.put("judgment_count", judgmentCount);
-                    job.put("invocation", "on_demand");
-                    job.put("max_rank", maxRank);
-
-                    final String jobId = UUID.randomUUID().toString();
-
-                    final IndexRequest indexRequest = new IndexRequest()
-                            .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
-                            .id(jobId)
-                            .source(job)
-                            .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-
-                    client.index(indexRequest, new ActionListener<>() {
-                        @Override
-                        public void onResponse(final IndexResponse indexResponse) {
-                            LOGGER.debug("Click model job completed successfully: {}", jobId);
-                        }
-
-                        @Override
-                        public void onFailure(final Exception ex) {
-                            LOGGER.error("Unable to run job with ID {}", jobId, ex);
-                            throw new RuntimeException("Unable to run job", ex);
-                        }
-                    });
-
-                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + jobId + "\"}"));
+                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"judgments_id\": \"" + judgmentsId + "\"}"));
 
                 } else {
                     return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid click model.\"}"));
@@ -394,14 +398,15 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
                 if(!indicesExistsResponse.isExists()) {
 
-                    // TODO: Read this from a resource file instead.
+                    // TODO: Read this mapping from a resource file instead.
                     final String mapping = "{\n" +
                             "                                                  \"properties\": {\n" +
                             "                                                    \"judgments_id\": { \"type\": \"keyword\" },\n" +
                             "                                                    \"query_id\": { \"type\": \"keyword\" },\n" +
                             "                                                    \"query\": { \"type\": \"keyword\" },\n" +
                             "                                                    \"document_id\": { \"type\": \"keyword\" },\n" +
-                            "                                                    \"judgment\": { \"type\": \"double\" }\n" +
+                            "                                                    \"judgment\": { \"type\": \"double\" },\n" +
+                            "                                                    \"timestamp\": { \"type\": \"date\", \"format\": \"basic_date_time\" }\n" +
                             "                                                  }\n" +
                             "                                              }";
 
@@ -412,7 +417,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     client.admin().indices().create(createIndexRequest, new ActionListener<>() {
                         @Override
                         public void onResponse(CreateIndexResponse createIndexResponse) {
-                            LOGGER.info("Judgments index created: {}", JUDGMENTS_INDEX_NAME);
+                            LOGGER.debug("Judgments index created: {}", JUDGMENTS_INDEX_NAME);
                         }
 
                         @Override
