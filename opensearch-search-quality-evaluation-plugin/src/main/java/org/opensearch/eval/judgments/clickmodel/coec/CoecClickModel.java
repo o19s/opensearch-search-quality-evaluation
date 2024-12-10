@@ -46,7 +46,6 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 public class CoecClickModel extends ClickModel {
 
