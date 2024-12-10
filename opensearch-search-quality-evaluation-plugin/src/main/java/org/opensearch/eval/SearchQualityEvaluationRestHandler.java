@@ -238,7 +238,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                         final Map<String, Object> job = new HashMap<>();
                         job.put("name", "manual_generation");
                         job.put("click_model", clickModel);
-                        job.put("started", TimeUtils.getTimestamp());
+                        job.put("started", startTime);
                         job.put("duration", elapsedTime);
                         job.put("invocation", "on_demand");
                         job.put("judgments_id", judgmentsId);
