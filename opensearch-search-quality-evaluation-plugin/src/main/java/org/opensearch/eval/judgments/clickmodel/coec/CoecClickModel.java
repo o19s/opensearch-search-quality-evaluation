@@ -312,8 +312,7 @@ public class CoecClickModel extends ClickModel {
         final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
         final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
 
-        LOGGER.info("search:");
-        LOGGER.info(searchSourceBuilder.toString());
+        LOGGER.debug("Aggregation query: {}", searchSourceBuilder.toString());
 
         for(final Terms.Bucket actionBucket : actionBuckets) {
 
