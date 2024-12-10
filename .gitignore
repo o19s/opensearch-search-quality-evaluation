@@ -29,5 +29,3 @@ gradle-app.setting
 .project
 .classpath
 
-transformed_data.json
-*.ndjson
