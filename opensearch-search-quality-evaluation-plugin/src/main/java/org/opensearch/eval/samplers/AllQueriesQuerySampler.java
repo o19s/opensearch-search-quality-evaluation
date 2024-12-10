@@ -58,15 +58,11 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
-        // LOGGER.info("Found {} user queries from the ubi_queries index.", searchResponse.getHits().getTotalHits().toString());
-
         final Map<String, Long> queries = new HashMap<>();
         for(final SearchHit hit : searchResponse.getHits().getHits()) {
             final Map<String, Object> fields = hit.getSourceAsMap();
             queries.merge(fields.get("user_query").toString(), 1L, Long::sum);
         }
-
-        // LOGGER.info("Found {} user queries from the ubi_queries index.", queries.size());
 
         return indexQuerySet(client, parameters.getName(), parameters.getDescription(), parameters.getSampling(), queries);
 

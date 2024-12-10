@@ -412,7 +412,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     client.admin().indices().create(createIndexRequest, new ActionListener<>() {
                         @Override
                         public void onResponse(CreateIndexResponse createIndexResponse) {
-                            LOGGER.info("Judgments index created: {}", JUDGMENTS_INDEX_NAME);
+                            LOGGER.debug("Judgments index created: {}", JUDGMENTS_INDEX_NAME);
                         }
 
                         @Override

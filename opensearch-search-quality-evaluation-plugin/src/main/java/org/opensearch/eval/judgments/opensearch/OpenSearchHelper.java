@@ -118,8 +118,6 @@ public class OpenSearchHelper {
         if(response.getHits().getHits() != null & response.getHits().getHits().length > 0) {
 
             final SearchHit hit = response.getHits().getHits()[0];
-
-            //LOGGER.info("Retrieved query from query ID {}", queryId);
             return AccessController.doPrivileged((PrivilegedAction<UbiQuery>) () -> gson.fromJson(hit.getSourceAsString(), UbiQuery.class));
 
         } else {
@@ -165,8 +163,6 @@ public class OpenSearchHelper {
         // For each query ID, get the events with action_name = "impression" having a match on objectId and rank (position).
         for(final String queryId : queryIds) {
 
-            //LOGGER.info("userQuery = {}; queryId = {}; objectId = {}; rank = {}", userQuery, queryId, objectId, rank);
-
             final String query = "{\n" +
                     "    \"bool\": {\n" +
                     "      \"must\": [\n" +
@@ -194,9 +190,6 @@ public class OpenSearchHelper {
                     "      }\n" +
                     "    }";
 
-            //LOGGER.info(query);
-            //LOGGER.info("----------------------------------------------------");
-
             final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
 
             final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -209,18 +202,6 @@ public class OpenSearchHelper {
             final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
             final SearchResponse response = client.search(searchRequest).get();
 
-//            if(queryId.equals("a2151d8c-44b6-4af6-9993-39cd7798671b")) {
-//                if(objectId.equals("B07R1J8TYC")) {
-//                    if(rank == 4) {
-//                        LOGGER.info("This is the one!");
-//                        LOGGER.info("Hits = {}", response.getHits().getTotalHits().value);
-//                        LOGGER.info(response.toString());
-//                    }
-//                }
-//            }
-
-            //LOGGER.info("Query ID: {} --- Count of {} having {} at rank {} = {}", queryId, userQuery, objectId, rank, response.getHits().getTotalHits().value);
-
             // Won't be null as long as trackTotalHits is true.
             if(response.getHits().getTotalHits() != null) {
                 countOfTimesShownAtRank += response.getHits().getTotalHits().value;
@@ -228,41 +209,13 @@ public class OpenSearchHelper {
 
         }
 
-        //LOGGER.info("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
+        LOGGER.debug("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
 
         if(countOfTimesShownAtRank > 0) {
-            //LOGGER.info("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
+            LOGGER.debug("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
         }
 
         return countOfTimesShownAtRank;
-
-        /*
-
-        // This commented block was used to get the value using the ubi_queries index.
-        // We can now just use the ubi_events index.
-
-        final String query = "{\"match\": {\"user_query\": \"" + userQuery + "\" }}";
-        final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
-
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(qb);
-
-        final String[] indexes = {INDEX_UBI_QUERIES};
-
-        final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
-        final SearchResponse response = client.search(searchRequest).get();
-
-        for(final SearchHit searchHit : response.getHits().getHits()) {
-
-            final List<String> queryResponseHidsIds = (List<String>) searchHit.getSourceAsMap().get("query_response_hit_ids");
-
-            if(queryResponseHidsIds.get(rank).equals(objectId)) {
-                countOfTimesShownAtRank++;
-            }
-
-        }
-
-        */
 
     }
 

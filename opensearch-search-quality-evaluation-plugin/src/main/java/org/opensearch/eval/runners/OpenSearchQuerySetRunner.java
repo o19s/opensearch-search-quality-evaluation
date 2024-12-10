@@ -124,7 +124,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                                 queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics));
 
                             } catch (Exception ex) {
-                                LOGGER.error("Unable to get relevance scores.", ex);
+                                LOGGER.error("Unable to get relevance scores for judgments {} and user query {}.", judgmentsId, userQuery, ex);
                             }
 
                         }

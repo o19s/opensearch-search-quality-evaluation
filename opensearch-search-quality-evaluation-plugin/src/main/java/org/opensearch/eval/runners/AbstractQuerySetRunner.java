@@ -139,11 +139,6 @@ public abstract class AbstractQuerySetRunner {
             // TODO: Why does this not exist in some cases?
             if(j.containsKey("judgment")) {
                 judgment = (Double) j.get("judgment");
-
-                if(judgment > 0) {
-                    LOGGER.info("Found a nonzero judgment! = {}, {}", judgment, query);
-                }
-
             }
 
         } else {

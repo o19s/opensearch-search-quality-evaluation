@@ -46,7 +46,7 @@ public class DcgSearchMetric extends SearchMetric {
             final double numerator = Math.pow(2, relevanceScore) - 1.0;
             final double denominator = Math.log(i) / Math.log(i + 2);
 
-            LOGGER.info("numerator = {}, denominator = {}", numerator, denominator);
+            LOGGER.debug("numerator = {}, denominator = {}", numerator, denominator);
             dcg += (numerator / denominator);
 
         }

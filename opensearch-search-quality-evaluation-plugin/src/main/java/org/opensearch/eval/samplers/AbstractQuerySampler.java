@@ -86,8 +86,8 @@ public abstract class AbstractQuerySampler {
             }
 
             @Override
-            public void onFailure(Exception e) {
-                LOGGER.error("Unable to index query set {}", querySetId, e);
+            public void onFailure(Exception ex) {
+                LOGGER.error("Unable to index query set {}", querySetId, ex);
             }
         });
 

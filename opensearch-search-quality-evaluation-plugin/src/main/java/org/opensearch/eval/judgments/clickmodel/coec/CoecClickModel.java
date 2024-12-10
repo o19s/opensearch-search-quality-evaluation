@@ -382,9 +382,7 @@ public class CoecClickModel extends ClickModel {
             LOGGER.info("user_query: {}", userQuery);
 
             for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
-
                 LOGGER.info("\t - {}", clickthroughRate.toString());
-
             }
 
         }
@@ -394,9 +392,7 @@ public class CoecClickModel extends ClickModel {
     private void showRankAggregatedClickThrough(final Map<Integer, Double> rankAggregatedClickThrough) {
 
         for(final int position : rankAggregatedClickThrough.keySet()) {
-
             LOGGER.info("Position: {}, # ctr: {}", position, MathUtils.round(rankAggregatedClickThrough.get(position), parameters.getRoundingDigits()));
-
         }
 
     }
