@@ -21,6 +21,7 @@ import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.judgments.model.ubi.query.UbiQuery;
+import org.opensearch.eval.utils.TimeUtils;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.search.SearchHit;
@@ -29,11 +30,14 @@ import org.opensearch.search.builder.SearchSourceBuilder;
 import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.UUID;
 
 import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
@@ -296,14 +300,15 @@ public class OpenSearchHelper {
     public String indexJudgments(final Collection<Judgment> judgments) throws Exception {
 
         final String judgmentsId = UUID.randomUUID().toString();
+        final String timestamp = TimeUtils.getTimestamp();
 
         final BulkRequest request = new BulkRequest();
 
         for(final Judgment judgment : judgments) {
 
-            // TODO: Add a timestamp.
             final Map<String, Object> j = judgment.getJudgmentAsMap();
             j.put("judgments_id", judgmentsId);
+            j.put("timestamp", timestamp);
 
             final IndexRequest indexRequest = new IndexRequest(JUDGMENTS_INDEX_NAME)
                     .id(UUID.randomUUID().toString())

@@ -8,7 +8,7 @@
  */
 package org.opensearch.eval.judgments.model;
 
-import org.opensearch.eval.judgments.util.MathUtils;
+import org.opensearch.eval.utils.MathUtils;
 
 /**
  * A query result and its number of clicks and total events.

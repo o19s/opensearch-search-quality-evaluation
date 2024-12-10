@@ -16,8 +16,8 @@ import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.core.action.ActionListener;
 import org.opensearch.eval.SearchQualityEvaluationPlugin;
+import org.opensearch.eval.utils.TimeUtils;
 
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -68,7 +68,7 @@ public abstract class AbstractQuerySampler {
         querySet.put("description", description);
         querySet.put("sampling", sampling);
         querySet.put("queries", querySetQueries);
-        querySet.put("created_at", Instant.now().toEpochMilli());
+        querySet.put("timestamp", TimeUtils.getTimestamp());
 
         final String querySetId = UUID.randomUUID().toString();
 

@@ -10,9 +10,8 @@ package org.opensearch.eval.judgments.model;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.eval.judgments.util.MathUtils;
+import org.opensearch.eval.utils.MathUtils;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 

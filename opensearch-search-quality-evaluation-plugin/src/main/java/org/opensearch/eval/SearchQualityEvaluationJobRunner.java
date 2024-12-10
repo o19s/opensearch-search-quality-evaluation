@@ -26,7 +26,6 @@ import org.opensearch.threadpool.ThreadPool;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Job runner for scheduled implicit judgments jobs.
@@ -110,15 +109,15 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     final SearchQualityEvaluationJobParameter searchQualityEvaluationJobParameter = (SearchQualityEvaluationJobParameter) jobParameter;
 
                     final long startTime = System.currentTimeMillis();
-                    final long judgments;
+                    final String judgmentsId;
 
                     if("coec".equalsIgnoreCase(searchQualityEvaluationJobParameter.getClickModel())) {
 
                         LOGGER.info("Beginning implicit judgment generation using clicks-over-expected-clicks.");
-                        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(true, searchQualityEvaluationJobParameter.getMaxRank());
+                        final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(searchQualityEvaluationJobParameter.getMaxRank());
                         final CoecClickModel coecClickModel = new CoecClickModel(client, coecClickModelParameters);
 
-                        judgments = coecClickModel.calculateJudgments();
+                        judgmentsId = coecClickModel.calculateJudgments();
 
                     } else {
 
@@ -135,11 +134,9 @@ public class SearchQualityEvaluationJobRunner implements ScheduledJobRunner {
                     job.put("click_model", searchQualityEvaluationJobParameter.getClickModel());
                     job.put("started", startTime);
                     job.put("duration", elapsedTime);
-                    job.put("judgments", judgments);
+                    job.put("judgments", judgmentsId);
                     job.put("invocation", "scheduled");
                     job.put("max_rank", searchQualityEvaluationJobParameter.getMaxRank());
-
-                    final String judgmentsId = UUID.randomUUID().toString();
 
                     final IndexRequest indexRequest = new IndexRequest()
                             .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)

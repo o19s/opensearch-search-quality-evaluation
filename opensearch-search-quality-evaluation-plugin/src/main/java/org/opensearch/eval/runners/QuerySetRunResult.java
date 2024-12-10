@@ -9,6 +9,7 @@
 package org.opensearch.eval.runners;
 
 import org.opensearch.eval.metrics.SearchMetric;
+import org.opensearch.eval.utils.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,10 +26,12 @@ public class QuerySetRunResult {
     private final String querySetId;
     private final List<QueryResult> queryResults;
     private final Map<String, Double> metrics;
+    private final String timestamp;
 
     /**
      * Creates a new query set run result. A random UUID is generated as the run ID.
      * @param runId A unique identifier for this query set run.
+     * @param querySetId A unique identifier for the query set.
      * @param queryResults A collection of {@link QueryResult} that contains the queries and search results.
      * @param metrics A map of metric name to value.
      */
@@ -37,6 +40,7 @@ public class QuerySetRunResult {
         this.querySetId = querySetId;
         this.queryResults = queryResults;
         this.metrics = metrics;
+        this.timestamp = TimeUtils.getTimestamp();
     }
 
     /**
@@ -69,6 +73,10 @@ public class QuerySetRunResult {
      */
     public Collection<QueryResult> getQueryResults() {
         return queryResults;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
     }
 
     public Collection<Map<String, Object>> getQueryResultsAsMap() {

@@ -6,9 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.judgments.util;
-
-import org.opensearch.eval.judgments.model.UserQueryHash;
+package org.opensearch.eval.judgments.queryhash;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -23,8 +23,8 @@ import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.judgments.model.ubi.event.UbiEvent;
 import org.opensearch.eval.judgments.opensearch.OpenSearchHelper;
-import org.opensearch.eval.judgments.util.IncrementalUserQueryHash;
-import org.opensearch.eval.judgments.util.MathUtils;
+import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
+import org.opensearch.eval.utils.MathUtils;
 import org.opensearch.index.query.BoolQueryBuilder;
 import org.opensearch.index.query.QueryBuilder;
 import org.opensearch.index.query.QueryBuilders;
@@ -45,6 +45,7 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 public class CoecClickModel extends ClickModel {
 
@@ -77,7 +78,7 @@ public class CoecClickModel extends ClickModel {
     }
 
     @Override
-    public long calculateJudgments() throws Exception {
+    public String calculateJudgments() throws Exception {
 
         final int maxRank = parameters.getMaxRank();
 
@@ -99,7 +100,7 @@ public class CoecClickModel extends ClickModel {
 
     }
 
-    public long calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
+    public String calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
                                               final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         // Calculate the COEC.
@@ -148,17 +149,12 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        if(parameters.isPersist()) {
-            if(!judgments.isEmpty()) {
-                openSearchHelper.indexJudgments(judgments);
-            } else {
-                LOGGER.warn("Judgments were not indexed because no judgments were created. Check the events and query source data.");
-            }
+        LOGGER.debug("Persisting number of judgments: {}", judgments.size());
+        if(!(judgments.isEmpty())) {
+            return openSearchHelper.indexJudgments(judgments);
+        } else {
+            return null;
         }
-
-        LOGGER.debug("Persisted number of judgments: {}", judgments.size());
-
-        return judgments.size();
 
     }
 
@@ -274,9 +270,7 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        if(parameters.isPersist()) {
-            openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
-        }
+        openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
 
         return queriesToClickthroughRates;
 
@@ -360,9 +354,7 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        if(parameters.isPersist()) {
-            openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
-        }
+        openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
         return rankAggregatedClickThrough;
 

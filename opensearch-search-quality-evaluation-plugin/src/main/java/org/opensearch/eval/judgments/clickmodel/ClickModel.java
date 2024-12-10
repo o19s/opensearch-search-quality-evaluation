@@ -15,9 +15,9 @@ public abstract class ClickModel {
 
     /**
      * Calculate implicit judgments.
-     * @return The number of implicit judgments created.
+     * @return The judgments ID.
      * @throws Exception Thrown if the judgments cannot be created.
      */
-    public abstract long calculateJudgments() throws Exception;
+    public abstract String calculateJudgments() throws Exception;
 
 }
