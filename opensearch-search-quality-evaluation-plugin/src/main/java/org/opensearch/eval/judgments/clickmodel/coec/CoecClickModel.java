@@ -127,19 +127,12 @@ public class CoecClickModel extends ClickModel {
                     final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(r, 0.0);
                     final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
 
-//                    System.out.println("rank = " + r);
-//                    System.out.println("\tmeanCtrAtRank = " + meanCtrAtRank);
-//                    System.out.println("\tcountOfTimesShownAtRank = " + countOfTimesShownAtRank);
-
                     denominatorSum += (meanCtrAtRank * countOfTimesShownAtRank);
 
                 }
 
                 // Numerator is sum of clicks at all ranks up to the maxRank.
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
-
-//                System.out.println("numerator = " + totalNumberClicksForQueryResult);
-//                System.out.println("denominator = " + denominatorSum);
 
                 // Divide the numerator by the denominator (value).
                 final double judgment = totalNumberClicksForQueryResult / denominatorSum;

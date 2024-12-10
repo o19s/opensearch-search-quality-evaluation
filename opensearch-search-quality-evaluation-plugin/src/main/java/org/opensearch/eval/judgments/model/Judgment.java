@@ -58,47 +58,6 @@ public class Judgment {
 
     }
 
-    /**
-     * A convenience function to output the judgments.
-     * @param judgments A collection of {@link Judgment}.
-     */
-    public static void showJudgments(final Collection<Judgment> judgments) {
-
-        LOGGER.info("query_id, query, document, judgment");
-
-        for(final Judgment judgment : judgments) {
-            LOGGER.info(judgment.toJudgmentString());
-        }
-
-    }
-
-    /**
-     * Find a judgment in a collection of judgments.
-     * @param judgments The collection of {@link Judgment judgments}.
-     * @param query The query to find.
-     * @param documentId The document ID to find.
-     * @return The matching {@link Judgment judgment}.
-     */
-    public static Judgment findJudgment(final Collection<Judgment> judgments, final String query, final String documentId) {
-
-        for(final Judgment judgment : judgments) {
-
-            // LOGGER.info("Comparing {}:{} with {}:{}", judgment.getQuery(), judgment.getDocument(), query, documentId);
-
-            if(judgment.getQuery().equalsIgnoreCase(query) && judgment.getDocument().equalsIgnoreCase(documentId)) {
-                LOGGER.info("Judgment score of {}  for query {} and document {} was found.", judgment.getJudgment(), query, documentId);
-                return judgment;
-            }
-
-        }
-
-        // A judgment for this query and document was not found.
-        LOGGER.warn("A judgment for query {} and document {} was not found.", query, documentId);
-        // TODO: Would this ever happen?
-        return null;
-
-    }
-
     @Override
     public String toString() {
         return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + MathUtils.round(judgment);
