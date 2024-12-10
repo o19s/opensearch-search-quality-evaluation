@@ -83,8 +83,6 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
 
         while (searchHits != null && searchHits.length > 0) {
 
-            LOGGER.info("search hits size = {}", searchHits.length);
-
             for(final SearchHit hit : searchHits) {
                 final Map<String, Object> fields = hit.getSourceAsMap();
                 userQueries.add(fields.get("user_query").toString());
@@ -137,7 +135,10 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         // This may require generating more random numbers than what was requested
         // because removing duplicate user queries will require randomly picking more queries.
         int count = 1;
-        while(querySet.size() < parameters.getQuerySetSize() && count < userQueries.size()) {
+
+        // TODO: How to short-circuit this such that if the same query gets picked over and over, the loop will never end.
+        final int max = 5000;
+        while(querySet.size() < parameters.getQuerySetSize() && count < max) {
 
             // Make a random number not yet used.
             double random;
@@ -160,7 +161,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
             querySet.put(closestQuery, weights.get(closestQuery));
             count++;
 
-            // LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
+            //LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
 
         }
 

@@ -30,14 +30,11 @@ import org.opensearch.search.builder.SearchSourceBuilder;
 import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.UUID;
 
 import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
@@ -263,8 +260,6 @@ public class OpenSearchHelper {
 
         if(!clickthroughRates.isEmpty()) {
 
-            // TODO: Split this into multiple bulk insert requests.
-
             final BulkRequest request = new BulkRequest();
 
             for(final String userQuery : clickthroughRates.keySet()) {
@@ -276,8 +271,11 @@ public class OpenSearchHelper {
                     jsonMap.put("clicks", clickthroughRate.getClicks());
                     jsonMap.put("events", clickthroughRate.getEvents());
                     jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
+                    jsonMap.put("object_id", clickthroughRate.getObjectId());
 
-                    final IndexRequest indexRequest = new IndexRequest(INDEX_QUERY_DOC_CTR).id(UUID.randomUUID().toString()).source(jsonMap);
+                    final IndexRequest indexRequest = new IndexRequest(INDEX_QUERY_DOC_CTR)
+                            .id(UUID.randomUUID().toString())
+                            .source(jsonMap);
 
                     request.add(indexRequest);
 
@@ -285,7 +283,23 @@ public class OpenSearchHelper {
 
             }
 
-            client.bulk(request).get();
+            client.bulk(request, new ActionListener<>() {
+
+                @Override
+                public void onResponse(BulkResponse bulkItemResponses) {
+                    if(bulkItemResponses.hasFailures()) {
+                        LOGGER.error("Clickthrough rates were not all successfully indexed: {}", bulkItemResponses.buildFailureMessage());
+                    } else {
+                        LOGGER.debug("Clickthrough rates has been successfully indexed.");
+                    }
+                }
+
+                @Override
+                public void onFailure(Exception ex) {
+                    LOGGER.error("Indexing the clickthrough rates failed.", ex);
+                }
+
+            });
 
         }
 
