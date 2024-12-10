@@ -166,7 +166,7 @@ public abstract class AbstractQuerySetRunner {
         // Ordered list of scores.
         final List<Double> scores = new ArrayList<>();
 
-        // Go through each document up to k and get the score.
+        // For each document (up to k), get the judgment for the document.
         for (int i = 0; i < k && i < orderedDocumentIds.size(); i++) {
 
             final String documentId = orderedDocumentIds.get(i);
@@ -177,6 +177,8 @@ public abstract class AbstractQuerySetRunner {
             // If a judgment for this query/doc pair is not found, Double.NaN will be returned.
             if(!Double.isNaN(judgmentValue)) {
                 scores.add(judgmentValue);
+            } else {
+                LOGGER.info("No score found for document ID {} with judgments {} and query {}", documentId, judgmentsId, query);
             }
 
         }

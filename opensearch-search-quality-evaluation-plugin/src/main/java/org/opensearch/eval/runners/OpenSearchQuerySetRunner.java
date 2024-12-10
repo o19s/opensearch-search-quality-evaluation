@@ -23,6 +23,7 @@ import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
+import org.opensearch.eval.utils.TimeUtils;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -145,6 +146,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             final Map<String, Double> sumOfMetrics = new HashMap<>();
             for(final QueryResult queryResult : queryResults) {
                 for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+                    //LOGGER.info("Summing: {} - {}", searchMetric.getName(), searchMetric.getValue());
                     sumOfMetrics.merge(searchMetric.getName(), searchMetric.getValue(), Double::sum);
                 }
             }
@@ -152,6 +154,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             // Now divide by the number of queries.
             final Map<String, Double> querySetMetrics = new HashMap<>();
             for(final String metric : sumOfMetrics.keySet()) {
+                //LOGGER.info("Dividing by the query set size: {} / {}", sumOfMetrics.get(metric), querySetSize);
                 querySetMetrics.put(metric, sumOfMetrics.get(metric) / querySetSize);
             }
 
@@ -180,30 +183,33 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
         // Add each metric to the object to index.
         for (final String metric : result.getSearchMetrics().keySet()) {
-            results.put(metric, result.getSearchMetrics().get(metric));
+            results.put(metric, String.valueOf(result.getSearchMetrics().get(metric)));
         }
 
         final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME)
+                .id(UUID.randomUUID().toString())
                 .source(results);
 
-        client.index(indexRequest, new ActionListener<>() {
-            @Override
-            public void onResponse(IndexResponse indexResponse) {
-                LOGGER.debug("Query set results indexed.");
-            }
+        client.index(indexRequest).get();
+//        client.index(indexRequest, new ActionListener<>() {
+//            @Override
+//            public void onResponse(IndexResponse indexResponse) {
+//                LOGGER.debug("Query set results indexed.");
+//            }
+//
+//            @Override
+//            public void onFailure(Exception ex) {
+//                throw new RuntimeException(ex);
+//            }
+//        });
 
-            @Override
-            public void onFailure(Exception ex) {
-                throw new RuntimeException(ex);
-            }
-        });
-
-        // TODO: Index the metrics as expected by the dashboards.
+        // Now, index the metrics as expected by the dashboards.
 
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
 
         final BulkRequest bulkRequest = new BulkRequest();
+        final String timestamp = TimeUtils.getTimestamp();
 
         for(final QueryResult queryResult : result.getQueryResults()) {
 
@@ -211,7 +217,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                 // TODO: Make sure all of these items have values.
                 final Map<String, Object> metrics = new HashMap<>();
-                metrics.put("datetime", "2024-09-01T00:00:00");
+                metrics.put("datetime", timestamp);
                 metrics.put("search_config", "research_1");
                 metrics.put("query_set_id", result.getQuerySetId());
                 metrics.put("query", queryResult.getQuery());
