@@ -290,7 +290,7 @@ public class CoecClickModel extends ClickModel {
         final QueryBuilder findRangeNumber = QueryBuilders.rangeQuery("event_attributes.position.ordinal").lte(parameters.getMaxRank());
         final QueryBuilder queryBuilder = new BoolQueryBuilder().must(findRangeNumber);
 
-        // Order the aggregations by _id and not by value.
+        // Order the aggregations by key and not by value.
         final BucketOrder bucketOrder = BucketOrder.key(true);
 
         final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").order(bucketOrder).size(parameters.getMaxRank());
