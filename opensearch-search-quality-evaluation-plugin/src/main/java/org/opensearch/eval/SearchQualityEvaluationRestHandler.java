@@ -405,7 +405,7 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                             "                                                    \"query_id\": { \"type\": \"keyword\" },\n" +
                             "                                                    \"query\": { \"type\": \"keyword\" },\n" +
                             "                                                    \"document_id\": { \"type\": \"keyword\" },\n" +
-                            "                                                    \"judgment\": { \"type\": \"double\" }\n" +
+                            "                                                    \"judgment\": { \"type\": \"double\" },\n" +
                             "                                                    \"timestamp\": { \"type\": \"date\", \"format\": \"basic_date_time\" }\n" +
                             "                                                  }\n" +
                             "                                              }";

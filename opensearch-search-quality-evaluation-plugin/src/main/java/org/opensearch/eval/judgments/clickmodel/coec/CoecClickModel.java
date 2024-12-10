@@ -32,6 +32,7 @@ import org.opensearch.index.query.WrapperQueryBuilder;
 import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.aggregations.AggregationBuilders;
+import org.opensearch.search.aggregations.BucketOrder;
 import org.opensearch.search.aggregations.bucket.terms.Terms;
 import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -290,14 +291,17 @@ public class CoecClickModel extends ClickModel {
         final QueryBuilder findRangeNumber = QueryBuilders.rangeQuery("event_attributes.position.ordinal").lte(parameters.getMaxRank());
         final QueryBuilder queryBuilder = new BoolQueryBuilder().must(findRangeNumber);
 
-        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").size(parameters.getMaxRank());
-        final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).size(parameters.getMaxRank());
+        // Order the aggregations by _id and not by value.
+        final BucketOrder bucketOrder = BucketOrder.key(true);
+
+        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").order(bucketOrder).size(parameters.getMaxRank());
+        final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).order(bucketOrder).size(parameters.getMaxRank());
 
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(queryBuilder);
         searchSourceBuilder.aggregation(actionNameAggregation);
         searchSourceBuilder.from(0);
-        searchSourceBuilder.size(100);
+        searchSourceBuilder.size(0);
 
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
         final SearchResponse searchResponse = client.search(searchRequest).get();
@@ -307,6 +311,9 @@ public class CoecClickModel extends ClickModel {
 
         final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
         final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
+
+        LOGGER.info("search:");
+        LOGGER.info(searchSourceBuilder.toString());
 
         for(final Terms.Bucket actionBucket : actionBuckets) {
 
