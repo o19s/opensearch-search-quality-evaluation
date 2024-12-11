@@ -89,14 +89,11 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                     LOGGER.info(searchSourceBuilder.toString());
 
-                    if(searchPipeline != null) {
-                        searchSourceBuilder.pipeline(searchPipeline);
-                    }
-
                     final SearchRequest searchRequest = new SearchRequest(index);
                     searchRequest.source(searchSourceBuilder);
 
                     if(searchPipeline != null) {
+                        searchSourceBuilder.pipeline(searchPipeline);
                         searchRequest.pipeline(searchPipeline);
                     }
 
@@ -118,8 +115,8 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                                 if("_id".equals(idField)) {
                                     documentId = hit.getId();
                                 } else {
-                                    final Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                                    documentId = sourceAsMap.get(idField).toString();
+                                    // TODO: Need to check this field actually exists.
+                                    documentId = hit.getSourceAsMap().get(idField).toString();
                                 }
 
                                 orderedDocumentIds.add(documentId);
