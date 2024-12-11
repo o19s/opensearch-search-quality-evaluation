@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-QUERY_SET_ID="8c4f2756-35f5-43f6-bceb-19e7f73911fe"
-JUDGMENTS_ID="7c875d7b-2fb2-46cb-84bd-6863c95f8801"
+QUERY_SET_ID="ff63e289-cf9f-4352-8883-20ab42157625"
+JUDGMENTS_ID="295d6018-21ca-41ef-adba-56b3a937ddac"
 INDEX="ecommerce"
 ID_FIELD="asin"
 K="20"

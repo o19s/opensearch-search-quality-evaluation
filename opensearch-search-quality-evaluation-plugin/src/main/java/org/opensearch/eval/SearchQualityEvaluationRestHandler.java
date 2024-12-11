@@ -400,12 +400,15 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     "                                                    \"query\": { \"type\": \"keyword\" },\n" +
                     "                                                    \"document_id\": { \"type\": \"keyword\" },\n" +
                     "                                                    \"judgment\": { \"type\": \"double\" },\n" +
-                    "                                                    \"timestamp\": { \"type\": \"date\", \"format\": \"basic_date_time\" }\n" +
+                    "                                                    \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" }\n" +
                     "                                                  }\n" +
                     "                                              }";
 
             // Create the judgments index.
             final CreateIndexRequest createIndexRequest = new CreateIndexRequest(JUDGMENTS_INDEX_NAME).mapping(mapping);
+
+            // TODO: Don't use .get()
+            client.admin().indices().create(createIndexRequest).get();
 
         }
 

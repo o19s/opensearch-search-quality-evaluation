@@ -53,16 +53,23 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(parameters.getQuerySetSize());
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
-        searchRequest.source(searchSourceBuilder);
+        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME).source(searchSourceBuilder);
 
         // TODO: Don't use .get()
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
         final Map<String, Long> queries = new HashMap<>();
+
         for(final SearchHit hit : searchResponse.getHits().getHits()) {
+
             final Map<String, Object> fields = hit.getSourceAsMap();
             queries.merge(fields.get("user_query").toString(), 1L, Long::sum);
+
+            // Will be useful for paging once implemented.
+            if(queries.size() > parameters.getQuerySetSize()) {
+                break;
+            }
+
         }
 
         return indexQuerySet(client, parameters.getName(), parameters.getDescription(), parameters.getSampling(), queries);

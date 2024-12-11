@@ -101,7 +101,7 @@ public class CoecClickModel extends ClickModel {
     }
 
     public String calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
-                                              final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
+                                final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         // Calculate the COEC.
         // Numerator is the total number of clicks received by a query/result pair.
@@ -114,19 +114,26 @@ public class CoecClickModel extends ClickModel {
         // Up to Rank R
         final int maxRank = 20;
 
+        LOGGER.info("Count of queries: {}", clickthroughRates.size());
+
         for(final String userQuery : clickthroughRates.keySet()) {
 
-            // The clickthrough rates for this query.
+            // The clickthrough rates for this one query.
+            // A ClickthroughRate is a document with counts of impressions and clicks.
             final Collection<ClickthroughRate> ctrs = clickthroughRates.get(userQuery);
 
+            // Go through each clickthrough rate for this query.
             for(final ClickthroughRate ctr : ctrs) {
 
                 double denominatorSum = 0;
 
-                for(int r = 0; r < maxRank; r++) {
+                for(int rank = 0; rank < maxRank; rank++) {
 
-                    final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(r, 0.0);
-                    final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
+                    // The document's mean CTR at the rank.
+                    final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(rank, 0.0);
+
+                    // The number of times this document was shown as this rank.
+                    final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
 
                     denominatorSum += (meanCtrAtRank * countOfTimesShownAtRank);
 
@@ -136,22 +143,30 @@ public class CoecClickModel extends ClickModel {
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
 
                 // Divide the numerator by the denominator (value).
-                final double judgment = totalNumberClicksForQueryResult / denominatorSum;
+                final double judgmentValue;
+
+                if(denominatorSum == 0) {
+                    judgmentValue = 0.0;
+                } else {
+                    judgmentValue = totalNumberClicksForQueryResult / denominatorSum;
+                }
 
                 // Hash the user query to get a query ID.
                 final int queryId = incrementalUserQueryHash.getHash(userQuery);
 
                 // Add the judgment to the list.
                 // TODO: What to do for query ID when the values are per user_query instead?
-                judgments.add(new Judgment(String.valueOf(queryId), userQuery, ctr.getObjectId(), judgment));
+                final Judgment judgment = new Judgment(String.valueOf(queryId), userQuery, ctr.getObjectId(), judgmentValue);
+                judgments.add(judgment);
 
             }
 
         }
 
-        showJudgments(judgments);
+        LOGGER.info("Count of user queries: {}", clickthroughRates.size());
+        LOGGER.info("Count of judgments: {}", judgments.size());
 
-        LOGGER.debug("Persisting number of judgments: {}", judgments.size());
+        showJudgments(judgments);
 
         if(!(judgments.isEmpty())) {
             return openSearchHelper.indexJudgments(judgments);
@@ -358,7 +373,7 @@ public class CoecClickModel extends ClickModel {
                 } else {
 
                     // This document has impressions but no clicks, so it's CTR is zero.
-                    LOGGER.info("Position = {}, Impression Counts = {}, No clicks so CTR is 0", rank, clickCounts.get(rank));
+                    LOGGER.info("Position = {}, Impression Counts = {}, Impressions but no clicks so CTR is 0", rank, clickCounts.get(rank));
                     rankAggregatedClickThrough.put(rank, 0.0);
 
                 }
