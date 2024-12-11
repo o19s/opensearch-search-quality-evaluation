@@ -39,8 +39,10 @@ public class DcgSearchMetric extends SearchMetric {
 
     protected double calculateDcg(final List<Double> relevanceScores) {
 
+        // k should equal the size of relevanceScores.
+
         double dcg = 0.0;
-        for(int i = 1; i <= relevanceScores.size(); i++) {
+        for(int i = 1; i <= k && i <= relevanceScores.size(); i++) {
 
             final double relevanceScore = relevanceScores.get(i - 1);
             final double numerator = Math.pow(2, relevanceScore) - 1.0;

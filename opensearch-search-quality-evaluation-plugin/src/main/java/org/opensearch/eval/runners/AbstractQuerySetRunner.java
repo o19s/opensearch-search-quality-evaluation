@@ -181,11 +181,11 @@ public abstract class AbstractQuerySetRunner {
 
             // If a judgment for this query/doc pair is not found, Double.NaN will be returned.
             if(!Double.isNaN(judgmentValue)) {
+                LOGGER.info("Score found for document ID {} with judgments {} and query {} = {}", documentId, judgmentsId, query, judgmentValue);
                 scores.add(judgmentValue);
             } else {
                 //LOGGER.info("No score found for document ID {} with judgments {} and query {}", documentId, judgmentsId, query);
                 documentsWithoutJudgmentsCount++;
-
             }
 
         }
@@ -198,6 +198,8 @@ public abstract class AbstractQuerySetRunner {
 
         // Multiply by 100 to be a percentage.
         frogs *= 100;
+
+        LOGGER.info("frogs for query {} = {}", query, frogs);
 
         return new RelevanceScores(scores, frogs);
 
