@@ -77,11 +77,6 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
     public static final String QUERY_SETS_INDEX_NAME = "search_quality_eval_query_sets";
 
     /**
-     * The name of the index that stores the query set run results.
-     */
-    public static final String QUERY_SETS_RUN_RESULTS_INDEX_NAME = "search_quality_eval_query_sets_run_results";
-
-    /**
      * The name of the index that stores the metrics for the dashboard.
      */
     public static final String DASHBOARD_METRICS_INDEX_NAME = "sqe_metrics_sample_data";

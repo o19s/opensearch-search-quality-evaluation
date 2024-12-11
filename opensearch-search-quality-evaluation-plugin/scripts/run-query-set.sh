@@ -7,7 +7,7 @@ ID_FIELD="asin"
 K="20"
 THRESHOLD="1.0" # Default value
 
-curl -s -X DELETE "http://localhost:9200/search_quality_eval_query_sets_run_results,sqe_metrics_sample_data"
+curl -s -X DELETE "http://localhost:9200/sqe_metrics_sample_data"
 
 # Keyword search
 curl -s -X POST "http://localhost:9200/_plugins/search_quality_eval/run?id=${QUERY_SET_ID}&judgments_id=${JUDGMENTS_ID}&index=${INDEX}&id_field=${ID_FIELD}&k=${K}" \

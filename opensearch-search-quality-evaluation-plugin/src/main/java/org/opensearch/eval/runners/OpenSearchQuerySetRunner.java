@@ -12,13 +12,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.action.admin.indices.create.CreateIndexRequest;
 import org.opensearch.action.admin.indices.create.CreateIndexResponse;
-import org.opensearch.action.admin.indices.exists.indices.IndicesExistsAction;
 import org.opensearch.action.admin.indices.exists.indices.IndicesExistsRequest;
 import org.opensearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.index.IndexResponse;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
@@ -40,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
 import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACEHOLDER;
 
 /**
@@ -185,35 +182,6 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
     @Override
     public void save(final QuerySetRunResult result) throws Exception {
-
-        // Index the query results into OpenSearch.
-
-        final Map<String, Object> results = new HashMap<>();
-
-        results.put("run_id", result.getRunId());
-        results.put("query_results", result.getQueryResultsAsMap());
-
-        // Add each metric to the object to index.
-        for (final String metric : result.getSearchMetrics().keySet()) {
-            results.put(metric, result.getSearchMetrics().get(metric));
-        }
-
-        final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME)
-                .id(UUID.randomUUID().toString())
-                .source(results);
-
-        client.index(indexRequest).get();
-//        client.index(indexRequest, new ActionListener<>() {
-//            @Override
-//            public void onResponse(IndexResponse indexResponse) {
-//                LOGGER.debug("Query set results indexed.");
-//            }
-//
-//            @Override
-//            public void onFailure(Exception ex) {
-//                throw new RuntimeException(ex);
-//            }
-//        });
 
         // Now, index the metrics as expected by the dashboards.
 
