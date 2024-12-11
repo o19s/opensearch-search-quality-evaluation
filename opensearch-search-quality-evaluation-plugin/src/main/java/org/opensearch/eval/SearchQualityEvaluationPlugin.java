@@ -77,11 +77,6 @@ public class SearchQualityEvaluationPlugin extends Plugin implements ActionPlugi
     public static final String QUERY_SETS_INDEX_NAME = "search_quality_eval_query_sets";
 
     /**
-     * The name of the index that stores the query set run results.
-     */
-    public static final String QUERY_SETS_RUN_RESULTS_INDEX_NAME = "search_quality_eval_query_sets_run_results";
-
-    /**
      * The name of the index that stores the implicit judgments.
      */
     public static final String JUDGMENTS_INDEX_NAME = "judgments";
