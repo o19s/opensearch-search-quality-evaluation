@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+apply plugin: 'java'
+apply plugin: 'idea'
 apply plugin: 'opensearch.opensearchplugin'
 apply plugin: 'opensearch.yaml-rest-test'
 
@@ -17,6 +19,13 @@ ext {
     projectSubstitutions = [:]
     licenseFile = rootProject.file('LICENSE.txt')
     noticeFile = rootProject.file('NOTICE.txt')
+}
+
+test {
+    include "**/Test*.class"
+    include "**/*Test.class"
+    include "**/*Test.class"
+    include "**/*TestCase.class"
 }
 
 group = 'org.opensearch'

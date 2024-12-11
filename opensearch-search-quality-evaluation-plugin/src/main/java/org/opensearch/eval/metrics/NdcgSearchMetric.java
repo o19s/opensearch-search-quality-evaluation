@@ -8,6 +8,7 @@
  */
 package org.opensearch.eval.metrics;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -43,10 +44,10 @@ public class NdcgSearchMetric extends DcgSearchMetric {
 
         } else {
 
-            // Make the ideal relevance scores by sorting the relevance scores largest to smallest.
-            relevanceScores.sort(Comparator.reverseOrder());
+            final List<Double> idealRelevanceScores = new ArrayList<>(relevanceScores);
+            idealRelevanceScores.sort(Collections.reverseOrder());
 
-            double idcg = super.calculateDcg(relevanceScores);
+            double idcg = super.calculateDcg(idealRelevanceScores);
 
             if(idcg == 0) {
                 return 0;
