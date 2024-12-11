@@ -111,9 +111,6 @@ public class CoecClickModel extends ClickModel {
         // Format: query_id, query, document, judgment
         final Collection<Judgment> judgments = new LinkedList<>();
 
-        // Up to Rank R
-        final int maxRank = 20;
-
         LOGGER.info("Count of queries: {}", clickthroughRates.size());
 
         for(final String userQuery : clickthroughRates.keySet()) {
@@ -127,7 +124,7 @@ public class CoecClickModel extends ClickModel {
 
                 double denominatorSum = 0;
 
-                for(int rank = 0; rank < maxRank; rank++) {
+                for(int rank = 0; rank < parameters.getMaxRank(); rank++) {
 
                     // The document's mean CTR at the rank.
                     final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(rank, 0.0);
