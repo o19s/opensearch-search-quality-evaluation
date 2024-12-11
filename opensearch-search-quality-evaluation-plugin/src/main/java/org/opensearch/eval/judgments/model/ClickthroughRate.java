@@ -17,7 +17,7 @@ public class ClickthroughRate {
 
     private final String objectId;
     private int clicks;
-    private int events;
+    private int impressions;
 
     /**
      * Creates a new clickthrough rate for an object.
@@ -26,24 +26,24 @@ public class ClickthroughRate {
     public ClickthroughRate(final String objectId) {
         this.objectId = objectId;
         this.clicks = 0;
-        this.events = 0;
+        this.impressions = 0;
     }
 
     /**
      * Creates a new clickthrough rate for an object given counts of clicks and events.
      * @param objectId The object ID.
      * @param clicks The count of clicks.
-     * @param events The count of events.
+     * @param impressions The count of events.
      */
-    public ClickthroughRate(final String objectId, final int clicks, final int events) {
+    public ClickthroughRate(final String objectId, final int clicks, final int impressions) {
         this.objectId = objectId;
         this.clicks = clicks;
-        this.events = events;
+        this.impressions = impressions;
     }
 
     @Override
     public String toString() {
-        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + events + ", ctr: " + MathUtils.round(getClickthroughRate());
+        return "object_id: " + objectId + ", clicks: "  + clicks + ", events: " + impressions + ", ctr: " + MathUtils.round(getClickthroughRate());
     }
 
     /**
@@ -52,14 +52,13 @@ public class ClickthroughRate {
      */
     public void logClick() {
         clicks++;
-        events++;
     }
 
     /**
-     * Log an event to this object.
+     * Log an impression to this object.
      */
-    public void logEvent() {
-        events++;
+    public void logImpression() {
+        impressions++;
     }
 
     /**
@@ -67,7 +66,7 @@ public class ClickthroughRate {
      * @return The clickthrough rate as clicks divided by events.
      */
     public double getClickthroughRate() {
-        return (double) clicks / events;
+        return (double) clicks / impressions;
     }
 
     /**
@@ -82,8 +81,8 @@ public class ClickthroughRate {
      * Gets the count of events.
      * @return The count of events.
      */
-    public int getEvents() {
-        return events;
+    public int getImpressions() {
+        return impressions;
     }
 
     /**

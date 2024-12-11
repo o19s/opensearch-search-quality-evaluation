@@ -10,10 +10,13 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.action.admin.indices.create.CreateIndexRequest;
+import org.opensearch.action.admin.indices.create.CreateIndexResponse;
+import org.opensearch.action.admin.indices.exists.indices.IndicesExistsRequest;
+import org.opensearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.index.IndexResponse;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
@@ -76,6 +79,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                     // Build the query from the one that was passed in.
                     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
                     searchSourceBuilder.query(QueryBuilders.wrapperQuery(parsedQuery));
                     searchSourceBuilder.from(0);
                     searchSourceBuilder.size(k);
@@ -84,12 +88,15 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     final String[] excludeFields = new String[]{};
                     searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
-                    if(searchPipeline != null) {
-                        searchSourceBuilder.pipeline(searchPipeline);
-                    }
+                    // LOGGER.info(searchSourceBuilder.toString());
 
                     final SearchRequest searchRequest = new SearchRequest(index);
                     searchRequest.source(searchSourceBuilder);
+
+                    if(searchPipeline != null) {
+                        searchSourceBuilder.pipeline(searchPipeline);
+                        searchRequest.pipeline(searchPipeline);
+                    }
 
                     // This is to keep OpenSearch from rejecting queries.
                     // TODO: Look at using the Workload Management in 2.18.0.
@@ -104,8 +111,14 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                             for (final SearchHit hit : searchResponse.getHits().getHits()) {
 
-                                final Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                                final String documentId = sourceAsMap.get(idField).toString();
+                                final String documentId;
+
+                                if("_id".equals(idField)) {
+                                    documentId = hit.getId();
+                                } else {
+                                    // TODO: Need to check this field actually exists.
+                                    documentId = hit.getSourceAsMap().get(idField).toString();
+                                }
 
                                 orderedDocumentIds.add(documentId);
 
@@ -132,7 +145,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                         @Override
                         public void onFailure(Exception ex) {
-                            LOGGER.error("Unable to search using query: {}", parsedQuery, ex);
+                            LOGGER.error("Unable to search using query: {}", searchSourceBuilder.toString(), ex);
                         }
                     });
 
@@ -174,39 +187,62 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
     @Override
     public void save(final QuerySetRunResult result) throws Exception {
 
-        // Index the query results into OpenSearch.
-
-        final Map<String, Object> results = new HashMap<>();
-
-        results.put("run_id", result.getRunId());
-        results.put("query_results", result.getQueryResultsAsMap());
-
-        // Add each metric to the object to index.
-        for (final String metric : result.getSearchMetrics().keySet()) {
-            results.put(metric, result.getSearchMetrics().get(metric));
-        }
-
-        final IndexRequest indexRequest = new IndexRequest(SearchQualityEvaluationPlugin.QUERY_SETS_RUN_RESULTS_INDEX_NAME)
-                .id(UUID.randomUUID().toString())
-                .source(results);
-
-        client.index(indexRequest).get();
-//        client.index(indexRequest, new ActionListener<>() {
-//            @Override
-//            public void onResponse(IndexResponse indexResponse) {
-//                LOGGER.debug("Query set results indexed.");
-//            }
-//
-//            @Override
-//            public void onFailure(Exception ex) {
-//                throw new RuntimeException(ex);
-//            }
-//        });
-
         // Now, index the metrics as expected by the dashboards.
 
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
+
+        final IndicesExistsRequest indicesExistsRequest = new IndicesExistsRequest(SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME);
+
+        client.admin().indices().exists(indicesExistsRequest, new ActionListener<>() {
+
+            @Override
+            public void onResponse(IndicesExistsResponse indicesExistsResponse) {
+
+                if(!indicesExistsResponse.isExists()) {
+
+                    // Create the index.
+                    // TODO: Read this mapping from a resource file instead.
+                    final String mapping = "{\n" +
+                            "              \"properties\": {\n" +
+                            "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                            "                \"search_config\": { \"type\": \"keyword\" },\n" +
+                            "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
+                            "                \"query\": { \"type\": \"keyword\" },\n" +
+                            "                \"metric\": { \"type\": \"keyword\" },\n" +
+                            "                \"value\": { \"type\": \"double\" },\n" +
+                            "                \"application\": { \"type\": \"keyword\" },\n" +
+                            "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
+                            "              }\n" +
+                            "          }";
+
+                    // Create the judgments index.
+                    final CreateIndexRequest createIndexRequest = new CreateIndexRequest(SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME).mapping(mapping);
+
+                    client.admin().indices().create(createIndexRequest, new ActionListener<>() {
+
+                        @Override
+                        public void onResponse(CreateIndexResponse createIndexResponse) {
+                            LOGGER.info("{} index created.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME);
+                        }
+
+                        @Override
+                        public void onFailure(Exception ex) {
+                            LOGGER.error("Unable to create the {} index.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME, ex);
+                        }
+
+                    });
+
+                }
+
+            }
+
+            @Override
+            public void onFailure(Exception ex) {
+                LOGGER.error("Unable to determine if {} index exists.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME, ex);
+            }
+
+        });
 
         final BulkRequest bulkRequest = new BulkRequest();
         final String timestamp = TimeUtils.getTimestamp();

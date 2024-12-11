@@ -269,7 +269,7 @@ public class OpenSearchHelper {
                     final Map<String, Object> jsonMap = new HashMap<>();
                     jsonMap.put("user_query", userQuery);
                     jsonMap.put("clicks", clickthroughRate.getClicks());
-                    jsonMap.put("events", clickthroughRate.getEvents());
+                    jsonMap.put("events", clickthroughRate.getImpressions());
                     jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
                     jsonMap.put("object_id", clickthroughRate.getObjectId());
 
@@ -316,7 +316,7 @@ public class OpenSearchHelper {
         final String judgmentsId = UUID.randomUUID().toString();
         final String timestamp = TimeUtils.getTimestamp();
 
-        final BulkRequest request = new BulkRequest();
+        final BulkRequest bulkRequest = new BulkRequest();
 
         for(final Judgment judgment : judgments) {
 
@@ -328,21 +328,12 @@ public class OpenSearchHelper {
                     .id(UUID.randomUUID().toString())
                     .source(j);
 
-            request.add(indexRequest);
+            bulkRequest.add(indexRequest);
 
         }
 
-        client.bulk(request, new ActionListener<>() {
-            @Override
-            public void onResponse(BulkResponse bulkItemResponses) {
-                LOGGER.info("Judgments indexed: {}", judgmentsId);
-            }
-
-            @Override
-            public void onFailure(Exception ex) {
-                throw new RuntimeException("Unable to insert judgments.", ex);
-            }
-        });
+        // TODO: Don't use .get()
+        client.bulk(bulkRequest).get();
 
         return judgmentsId;
 

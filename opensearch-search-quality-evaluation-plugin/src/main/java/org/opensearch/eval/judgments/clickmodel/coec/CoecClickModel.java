@@ -101,7 +101,7 @@ public class CoecClickModel extends ClickModel {
     }
 
     public String calculateCoec(final Map<Integer, Double> rankAggregatedClickThrough,
-                                              final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
+                                final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         // Calculate the COEC.
         // Numerator is the total number of clicks received by a query/result pair.
@@ -114,19 +114,26 @@ public class CoecClickModel extends ClickModel {
         // Up to Rank R
         final int maxRank = 20;
 
+        LOGGER.info("Count of queries: {}", clickthroughRates.size());
+
         for(final String userQuery : clickthroughRates.keySet()) {
 
-            // The clickthrough rates for this query.
+            // The clickthrough rates for this one query.
+            // A ClickthroughRate is a document with counts of impressions and clicks.
             final Collection<ClickthroughRate> ctrs = clickthroughRates.get(userQuery);
 
+            // Go through each clickthrough rate for this query.
             for(final ClickthroughRate ctr : ctrs) {
 
                 double denominatorSum = 0;
 
-                for(int r = 0; r < maxRank; r++) {
+                for(int rank = 0; rank < maxRank; rank++) {
 
-                    final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(r, 0.0);
-                    final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), r);
+                    // The document's mean CTR at the rank.
+                    final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(rank, 0.0);
+
+                    // The number of times this document was shown as this rank.
+                    final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
 
                     denominatorSum += (meanCtrAtRank * countOfTimesShownAtRank);
 
@@ -136,20 +143,31 @@ public class CoecClickModel extends ClickModel {
                 final int totalNumberClicksForQueryResult = ctr.getClicks();
 
                 // Divide the numerator by the denominator (value).
-                final double judgment = totalNumberClicksForQueryResult / denominatorSum;
+                final double judgmentValue;
+
+                if(denominatorSum == 0) {
+                    judgmentValue = 0.0;
+                } else {
+                    judgmentValue = totalNumberClicksForQueryResult / denominatorSum;
+                }
 
                 // Hash the user query to get a query ID.
                 final int queryId = incrementalUserQueryHash.getHash(userQuery);
 
                 // Add the judgment to the list.
                 // TODO: What to do for query ID when the values are per user_query instead?
-                judgments.add(new Judgment(String.valueOf(queryId), userQuery, ctr.getObjectId(), judgment));
+                final Judgment judgment = new Judgment(String.valueOf(queryId), userQuery, ctr.getObjectId(), judgmentValue);
+                judgments.add(judgment);
 
             }
 
         }
 
-        LOGGER.debug("Persisting number of judgments: {}", judgments.size());
+        LOGGER.info("Count of user queries: {}", clickthroughRates.size());
+        LOGGER.info("Count of judgments: {}", judgments.size());
+
+        showJudgments(judgments);
+
         if(!(judgments.isEmpty())) {
             return openSearchHelper.indexJudgments(judgments);
         } else {
@@ -221,16 +239,12 @@ public class CoecClickModel extends ClickModel {
 
                 final UbiEvent ubiEvent = AccessController.doPrivileged((PrivilegedAction<UbiEvent>) () -> gson.fromJson(hit.getSourceAsString(), UbiEvent.class));
 
-                //LOGGER.info("event: {}", ubiEvent.toString());
-
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but they are the same search.
                 final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
 
                 // userQuery will be null if there is not a query for this event in ubi_queries.
                 if(userQuery != null) {
-
-                    // LOGGER.debug("user_query = {}", userQuery);
 
                     // Get the clicks for this queryId from the map, or an empty list if this is a new query.
                     final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
@@ -241,9 +255,11 @@ public class CoecClickModel extends ClickModel {
                     if (EVENT_CLICK.equalsIgnoreCase(ubiEvent.getActionName())) {
                         //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
                         clickthroughRate.logClick();
+                    } else if (EVENT_IMPRESSION.equalsIgnoreCase(ubiEvent.getActionName())) {
+                        //LOGGER.info("Logging an IMPRESSION on " + ubiEvent.getEventAttributes().getObject().getObjectId());
+                        clickthroughRate.logImpression();
                     } else {
-                        //LOGGER.info("Logging a VIEW on " + ubiEvent.getEventAttributes().getObject().getObjectId());
-                        clickthroughRate.logEvent();
+                        LOGGER.warn("Invalid event action name: {}", ubiEvent.getActionName());
                     }
 
                     clickthroughRates.add(clickthroughRate);
@@ -296,11 +312,11 @@ public class CoecClickModel extends ClickModel {
         final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").order(bucketOrder).size(parameters.getMaxRank());
         final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).order(bucketOrder).size(parameters.getMaxRank());
 
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(queryBuilder);
-        searchSourceBuilder.aggregation(actionNameAggregation);
-        searchSourceBuilder.from(0);
-        searchSourceBuilder.size(0);
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .query(queryBuilder)
+                .aggregation(actionNameAggregation)
+                .from(0)
+                .size(0);
 
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
         final SearchResponse searchResponse = client.search(searchRequest).get();
@@ -315,6 +331,19 @@ public class CoecClickModel extends ClickModel {
 
         for(final Terms.Bucket actionBucket : actionBuckets) {
 
+            // Handle the "impression" bucket.
+            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
+
+                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
+                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
+
+                for(final Terms.Bucket positionBucket : positionBuckets) {
+                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
+                }
+
+            }
+
             // Handle the "click" bucket.
             if(EVENT_CLICK.equalsIgnoreCase(actionBucket.getKey().toString())) {
 
@@ -324,19 +353,6 @@ public class CoecClickModel extends ClickModel {
                 for(final Terms.Bucket positionBucket : positionBuckets) {
                     LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
                     clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-                }
-
-            }
-
-            // Handle the "impression" bucket.
-            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
-
-                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
-                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-
-                for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
             }
@@ -357,7 +373,7 @@ public class CoecClickModel extends ClickModel {
                 } else {
 
                     // This document has impressions but no clicks, so it's CTR is zero.
-                    LOGGER.info("Position = {}, Impression Counts = {}, No clicks so CTR is 0", rank, clickCounts.get(rank));
+                    LOGGER.info("Position = {}, Impression Counts = {}, Impressions but no clicks so CTR is 0", rank, clickCounts.get(rank));
                     rankAggregatedClickThrough.put(rank, 0.0);
 
                 }
@@ -378,14 +394,22 @@ public class CoecClickModel extends ClickModel {
 
     }
 
+    private void showJudgments(final Collection<Judgment> judgments) {
+
+        for(final Judgment judgment : judgments) {
+            LOGGER.info(judgment.toJudgmentString());
+        }
+
+    }
+
     private void showClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) {
 
         for(final String userQuery : clickthroughRates.keySet()) {
 
-            LOGGER.info("user_query: {}", userQuery);
+            LOGGER.debug("user_query: {}", userQuery);
 
             for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
-                LOGGER.info("\t - {}", clickthroughRate.toString());
+                LOGGER.debug("\t - {}", clickthroughRate.toString());
             }
 
         }
