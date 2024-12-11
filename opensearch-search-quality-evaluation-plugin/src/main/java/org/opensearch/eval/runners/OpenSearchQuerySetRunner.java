@@ -104,8 +104,14 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                             for (final SearchHit hit : searchResponse.getHits().getHits()) {
 
-                                final Map<String, Object> sourceAsMap = hit.getSourceAsMap();
-                                final String documentId = sourceAsMap.get(idField).toString();
+                                final String documentId;
+
+                                if("_id".equals(idField)) {
+                                    documentId = hit.getId();
+                                } else {
+                                    final Map<String, Object> sourceAsMap = hit.getSourceAsMap();
+                                    documentId = sourceAsMap.get(idField).toString();
+                                }
 
                                 orderedDocumentIds.add(documentId);
 
