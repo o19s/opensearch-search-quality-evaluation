@@ -40,7 +40,7 @@ public class PrecisionSearchMetric extends SearchMetric {
     @Override
     public double calculate() {
 
-        int numberOfRelevantItems = 0;
+        double numberOfRelevantItems = 0;
 
         for(final double relevanceScore : relevanceScores) {
             if(relevanceScore >= threshold) {
@@ -48,7 +48,7 @@ public class PrecisionSearchMetric extends SearchMetric {
             }
         }
 
-        return (double) numberOfRelevantItems / (double) k;
+        return numberOfRelevantItems / (double) k;
 
     }
 

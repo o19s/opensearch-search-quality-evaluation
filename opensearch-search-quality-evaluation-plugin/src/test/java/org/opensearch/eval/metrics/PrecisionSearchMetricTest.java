@@ -12,17 +12,18 @@ import org.opensearch.test.OpenSearchTestCase;
 
 import java.util.List;
 
-public class NdcgSearchMetricTest extends OpenSearchTestCase {
+public class PrecisionSearchMetricTest extends OpenSearchTestCase {
 
     public void testCalculate() {
 
         final int k = 5;
+        final double threshold = 1.0;
         final List<Double> relevanceScores = List.of(1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 0.0);
 
-        final NdcgSearchMetric ndcgSearchMetric = new NdcgSearchMetric(k, relevanceScores);
-        final double ndcg = ndcgSearchMetric.calculate();
+        final PrecisionSearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores);
+        final double precision = precisionSearchMetric.calculate();
 
-        assertEquals(0.7151195094457645, ndcg, 0.0);
+        assertEquals(1.8, precision, 0.0);
 
     }
 
