@@ -269,7 +269,7 @@ public class OpenSearchHelper {
                     final Map<String, Object> jsonMap = new HashMap<>();
                     jsonMap.put("user_query", userQuery);
                     jsonMap.put("clicks", clickthroughRate.getClicks());
-                    jsonMap.put("events", clickthroughRate.getEvents());
+                    jsonMap.put("events", clickthroughRate.getImpressions());
                     jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
                     jsonMap.put("object_id", clickthroughRate.getObjectId());
 

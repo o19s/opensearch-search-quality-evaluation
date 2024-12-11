@@ -224,16 +224,12 @@ public class CoecClickModel extends ClickModel {
 
                 final UbiEvent ubiEvent = AccessController.doPrivileged((PrivilegedAction<UbiEvent>) () -> gson.fromJson(hit.getSourceAsString(), UbiEvent.class));
 
-                //LOGGER.info("event: {}", ubiEvent.toString());
-
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but they are the same search.
                 final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
 
                 // userQuery will be null if there is not a query for this event in ubi_queries.
                 if(userQuery != null) {
-
-                    // LOGGER.debug("user_query = {}", userQuery);
 
                     // Get the clicks for this queryId from the map, or an empty list if this is a new query.
                     final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
@@ -244,9 +240,11 @@ public class CoecClickModel extends ClickModel {
                     if (EVENT_CLICK.equalsIgnoreCase(ubiEvent.getActionName())) {
                         //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
                         clickthroughRate.logClick();
+                    } else if (EVENT_IMPRESSION.equalsIgnoreCase(ubiEvent.getActionName())) {
+                        //LOGGER.info("Logging an IMPRESSION on " + ubiEvent.getEventAttributes().getObject().getObjectId());
+                        clickthroughRate.logImpression();
                     } else {
-                        //LOGGER.info("Logging a VIEW on " + ubiEvent.getEventAttributes().getObject().getObjectId());
-                        clickthroughRate.logEvent();
+                        LOGGER.warn("Invalid event action name: {}", ubiEvent.getActionName());
                     }
 
                     clickthroughRates.add(clickthroughRate);
