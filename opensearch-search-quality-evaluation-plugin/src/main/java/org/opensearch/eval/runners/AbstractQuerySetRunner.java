@@ -196,6 +196,9 @@ public abstract class AbstractQuerySetRunner {
             frogs = 1.0;
         }
 
+        // Multiply by 100 to be a percentage.
+        frogs *= 100;
+
         return new RelevanceScores(scores, frogs);
 
     }

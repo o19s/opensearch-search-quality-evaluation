@@ -212,7 +212,8 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                             "                \"metric\": { \"type\": \"keyword\" },\n" +
                             "                \"value\": { \"type\": \"double\" },\n" +
                             "                \"application\": { \"type\": \"keyword\" },\n" +
-                            "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
+                            "                \"evaluation_id\": { \"type\": \"keyword\" },\n" +
+                            "                \"frogs_percent\": { \"type\": \"double\" }\n" +
                             "              }\n" +
                             "          }";
 
@@ -261,6 +262,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                 metrics.put("value", searchMetric.getValue());
                 metrics.put("application", "sample_data");
                 metrics.put("evaluation_id", result.getRunId());
+                metrics.put("frogs_percent", queryResult.getFrogs());
 
                 // TODO: This is using the index name from the sample data.
                 bulkRequest.add(new IndexRequest("sqe_metrics_sample_data").source(metrics));
