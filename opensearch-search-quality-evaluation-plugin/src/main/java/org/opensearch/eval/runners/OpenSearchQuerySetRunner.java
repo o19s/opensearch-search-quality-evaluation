@@ -87,12 +87,18 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     final String[] excludeFields = new String[]{};
                     searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
+                    LOGGER.info(searchSourceBuilder.toString());
+
                     if(searchPipeline != null) {
                         searchSourceBuilder.pipeline(searchPipeline);
                     }
 
                     final SearchRequest searchRequest = new SearchRequest(index);
                     searchRequest.source(searchSourceBuilder);
+
+                    if(searchPipeline != null) {
+                        searchRequest.pipeline(searchPipeline);
+                    }
 
                     // This is to keep OpenSearch from rejecting queries.
                     // TODO: Look at using the Workload Management in 2.18.0.
@@ -141,7 +147,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                         @Override
                         public void onFailure(Exception ex) {
-                            LOGGER.error("Unable to search using query: {}", parsedQuery, ex);
+                            LOGGER.error("Unable to search using query: {}", searchSourceBuilder.toString(), ex);
                         }
                     });
 
