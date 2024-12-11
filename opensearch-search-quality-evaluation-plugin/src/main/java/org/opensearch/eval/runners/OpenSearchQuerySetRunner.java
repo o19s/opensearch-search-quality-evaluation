@@ -10,6 +10,11 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.action.admin.indices.create.CreateIndexRequest;
+import org.opensearch.action.admin.indices.create.CreateIndexResponse;
+import org.opensearch.action.admin.indices.exists.indices.IndicesExistsAction;
+import org.opensearch.action.admin.indices.exists.indices.IndicesExistsRequest;
+import org.opensearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.opensearch.action.bulk.BulkRequest;
 import org.opensearch.action.bulk.BulkResponse;
 import org.opensearch.action.index.IndexRequest;
@@ -35,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
 import static org.opensearch.eval.SearchQualityEvaluationRestHandler.QUERY_PLACEHOLDER;
 
 /**
@@ -207,6 +213,58 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
+
+        final IndicesExistsRequest indicesExistsRequest = new IndicesExistsRequest(SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME);
+
+        client.admin().indices().exists(indicesExistsRequest, new ActionListener<>() {
+
+            @Override
+            public void onResponse(IndicesExistsResponse indicesExistsResponse) {
+
+                if(!indicesExistsResponse.isExists()) {
+
+                    // Create the index.
+                    // TODO: Read this mapping from a resource file instead.
+                    final String mapping = "{\n" +
+                            "              \"properties\": {\n" +
+                            "                \"datetime\": { \"type\": \"date\", \"format\": \"basic_date_time\" },\n" +
+                            "                \"search_config\": { \"type\": \"keyword\" },\n" +
+                            "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
+                            "                \"query\": { \"type\": \"keyword\" },\n" +
+                            "                \"metric\": { \"type\": \"keyword\" },\n" +
+                            "                \"value\": { \"type\": \"double\" },\n" +
+                            "                \"application\": { \"type\": \"keyword\" },\n" +
+                            "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
+                            "              }\n" +
+                            "          }";
+
+                    // Create the judgments index.
+                    final CreateIndexRequest createIndexRequest = new CreateIndexRequest(SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME).mapping(mapping);
+
+                    client.admin().indices().create(createIndexRequest, new ActionListener<>() {
+
+                        @Override
+                        public void onResponse(CreateIndexResponse createIndexResponse) {
+                            LOGGER.info("{} index created.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME);
+                        }
+
+                        @Override
+                        public void onFailure(Exception ex) {
+                            LOGGER.error("Unable to create the {} index.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME, ex);
+                        }
+
+                    });
+
+                }
+
+            }
+
+            @Override
+            public void onFailure(Exception ex) {
+                LOGGER.error("Unable to determine if {} index exists.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME, ex);
+            }
+
+        });
 
         final BulkRequest bulkRequest = new BulkRequest();
         final String timestamp = TimeUtils.getTimestamp();
