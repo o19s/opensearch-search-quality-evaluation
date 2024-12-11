@@ -227,7 +227,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     // TODO: Read this mapping from a resource file instead.
                     final String mapping = "{\n" +
                             "              \"properties\": {\n" +
-                            "                \"datetime\": { \"type\": \"date\", \"format\": \"basic_date_time\" },\n" +
+                            "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
                             "                \"search_config\": { \"type\": \"keyword\" },\n" +
                             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
                             "                \"query\": { \"type\": \"keyword\" },\n" +

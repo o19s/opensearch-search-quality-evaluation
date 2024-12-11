@@ -19,12 +19,12 @@ import java.util.TimeZone;
 public class TimeUtils {
 
     /**
-     * Generate a timestamp in the <code>yyyyMMdd'T'HHmmss.SSS'Z'</code> format.
-     * @return A timestamp in the <code>yyyyMMdd'T'HHmmss.SSS'Z'</code> format.
+     * Generate a timestamp in the <code>yyyy-MM-ddTHH:mm:ss.SSSZ</code> format.
+     * @return A timestamp in the <code>yyyy-MM-ddTHH:mm:ss.SSSZ</code> format.
      */
     public static String getTimestamp() {
 
-        final SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd'T'HHmmss.SSS'Z'", Locale.getDefault());
+        final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault());
         formatter.setTimeZone(TimeZone.getTimeZone("UTC"));
 
         final Date date = new Date();
