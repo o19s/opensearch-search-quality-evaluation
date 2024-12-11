@@ -4,7 +4,7 @@ QUERY_SET_ID="ca3c8091-ad48-4978-a16f-58e2cc5698b3"
 JUDGMENTS_ID="97021d5d-d8c6-4147-a2f0-bbdacfe89b8a"
 INDEX="ecommerce"
 ID_FIELD="asin"
-K="20"
+K="10"
 THRESHOLD="1.0" # Default value
 
 curl -s -X DELETE "http://localhost:9200/sqe_metrics_sample_data"
