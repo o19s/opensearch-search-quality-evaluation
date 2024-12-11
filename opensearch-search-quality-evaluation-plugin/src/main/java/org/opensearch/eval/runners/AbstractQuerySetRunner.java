@@ -199,7 +199,7 @@ public abstract class AbstractQuerySetRunner {
         // Multiply by 100 to be a percentage.
         frogs *= 100;
 
-        LOGGER.info("frogs for query {} = {}", query, frogs);
+        LOGGER.info("frogs for query {} = {} ------- {} / {}", query, frogs, documentsWithoutJudgmentsCount, orderedDocumentIds.size());
 
         return new RelevanceScores(scores, frogs);
 
