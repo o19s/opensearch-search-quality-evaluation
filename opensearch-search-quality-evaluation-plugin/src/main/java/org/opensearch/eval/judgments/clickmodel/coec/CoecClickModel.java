@@ -149,7 +149,10 @@ public class CoecClickModel extends ClickModel {
 
         }
 
+        showJudgments(judgments);
+
         LOGGER.debug("Persisting number of judgments: {}", judgments.size());
+
         if(!(judgments.isEmpty())) {
             return openSearchHelper.indexJudgments(judgments);
         } else {
@@ -296,11 +299,11 @@ public class CoecClickModel extends ClickModel {
         final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").order(bucketOrder).size(parameters.getMaxRank());
         final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).order(bucketOrder).size(parameters.getMaxRank());
 
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(queryBuilder);
-        searchSourceBuilder.aggregation(actionNameAggregation);
-        searchSourceBuilder.from(0);
-        searchSourceBuilder.size(0);
+        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+                .query(queryBuilder)
+                .aggregation(actionNameAggregation)
+                .from(0)
+                .size(0);
 
         final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
         final SearchResponse searchResponse = client.search(searchRequest).get();
@@ -315,6 +318,19 @@ public class CoecClickModel extends ClickModel {
 
         for(final Terms.Bucket actionBucket : actionBuckets) {
 
+            // Handle the "impression" bucket.
+            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
+
+                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
+                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
+
+                for(final Terms.Bucket positionBucket : positionBuckets) {
+                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
+                }
+
+            }
+
             // Handle the "click" bucket.
             if(EVENT_CLICK.equalsIgnoreCase(actionBucket.getKey().toString())) {
 
@@ -324,19 +340,6 @@ public class CoecClickModel extends ClickModel {
                 for(final Terms.Bucket positionBucket : positionBuckets) {
                     LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
                     clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-                }
-
-            }
-
-            // Handle the "impression" bucket.
-            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
-
-                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
-                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-
-                for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
                 }
 
             }
@@ -378,14 +381,22 @@ public class CoecClickModel extends ClickModel {
 
     }
 
+    private void showJudgments(final Collection<Judgment> judgments) {
+
+        for(final Judgment judgment : judgments) {
+            LOGGER.info(judgment.toJudgmentString());
+        }
+
+    }
+
     private void showClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) {
 
         for(final String userQuery : clickthroughRates.keySet()) {
 
-            LOGGER.info("user_query: {}", userQuery);
+            LOGGER.debug("user_query: {}", userQuery);
 
             for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
-                LOGGER.info("\t - {}", clickthroughRate.toString());
+                LOGGER.debug("\t - {}", clickthroughRate.toString());
             }
 
         }

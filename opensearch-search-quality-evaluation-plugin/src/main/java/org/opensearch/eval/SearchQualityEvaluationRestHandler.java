@@ -32,7 +32,6 @@ import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeAbstractQuerySampler;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParameters;
-import org.opensearch.eval.utils.TimeUtils;
 import org.opensearch.jobscheduler.spi.schedule.IntervalSchedule;
 import org.opensearch.rest.BaseRestHandler;
 import org.opensearch.rest.BytesRestResponse;
@@ -43,10 +42,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
 
@@ -207,13 +205,9 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
             if (request.method().equals(RestRequest.Method.POST)) {
 
-                // Create the judgments index.
-                createJudgmentsIndex(client);
-
-                final long startTime = System.currentTimeMillis();
+                //final long startTime = System.currentTimeMillis();
                 final String clickModel = request.param("click_model", "coec");
                 final int maxRank = Integer.parseInt(request.param("max_rank", "20"));
-                final long judgmentCount;
 
                 if (CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModel)) {
 
@@ -225,6 +219,9 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                     // TODO: Run this in a separate thread.
                     try {
 
+                        // Create the judgments index.
+                        createJudgmentsIndex(client);
+
                         judgmentsId = coecClickModel.calculateJudgments();
 
                         // judgmentsId will be null if no judgments were created (and indexed).
@@ -233,37 +230,37 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
                             return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"No judgments were created. Check the queries and events data.\"}"));
                         }
 
-                        final long elapsedTime = System.currentTimeMillis() - startTime;
-
-                        final Map<String, Object> job = new HashMap<>();
-                        job.put("name", "manual_generation");
-                        job.put("click_model", clickModel);
-                        job.put("started", startTime);
-                        job.put("duration", elapsedTime);
-                        job.put("invocation", "on_demand");
-                        job.put("judgments_id", judgmentsId);
-                        job.put("max_rank", maxRank);
-
-                        final String jobId = UUID.randomUUID().toString();
-
-                        final IndexRequest indexRequest = new IndexRequest()
-                                .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
-                                .id(jobId)
-                                .source(job)
-                                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-
-                        client.index(indexRequest, new ActionListener<>() {
-                            @Override
-                            public void onResponse(final IndexResponse indexResponse) {
-                                LOGGER.debug("Click model job completed successfully: {}", jobId);
-                            }
-
-                            @Override
-                            public void onFailure(final Exception ex) {
-                                LOGGER.error("Unable to run job with ID {}", jobId, ex);
-                                throw new RuntimeException("Unable to run job", ex);
-                            }
-                        });
+//                        final long elapsedTime = System.currentTimeMillis() - startTime;
+//
+//                        final Map<String, Object> job = new HashMap<>();
+//                        job.put("name", "manual_generation");
+//                        job.put("click_model", clickModel);
+//                        job.put("started", startTime);
+//                        job.put("duration", elapsedTime);
+//                        job.put("invocation", "on_demand");
+//                        job.put("judgments_id", judgmentsId);
+//                        job.put("max_rank", maxRank);
+//
+//                        final String jobId = UUID.randomUUID().toString();
+//
+//                        final IndexRequest indexRequest = new IndexRequest()
+//                                .index(SearchQualityEvaluationPlugin.COMPLETED_JOBS_INDEX_NAME)
+//                                .id(jobId)
+//                                .source(job)
+//                                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+//
+//                        client.index(indexRequest, new ActionListener<>() {
+//                            @Override
+//                            public void onResponse(final IndexResponse indexResponse) {
+//                                LOGGER.debug("Click model job completed successfully: {}", jobId);
+//                            }
+//
+//                            @Override
+//                            public void onFailure(final Exception ex) {
+//                                LOGGER.error("Unable to run job with ID {}", jobId, ex);
+//                                throw new RuntimeException("Unable to run job", ex);
+//                            }
+//                        });
 
                     } catch (Exception ex) {
                         throw new RuntimeException("Unable to generate judgments.", ex);
@@ -386,55 +383,31 @@ public class SearchQualityEvaluationRestHandler extends BaseRestHandler {
 
     }
 
-    private void createJudgmentsIndex(final NodeClient client) {
+    private void createJudgmentsIndex(final NodeClient client) throws Exception {
 
         // If the judgments index does not exist we need to create it.
         final IndicesExistsRequest indicesExistsRequest = new IndicesExistsRequest(JUDGMENTS_INDEX_NAME);
 
-        client.admin().indices().exists(indicesExistsRequest, new ActionListener<>() {
+        final IndicesExistsResponse indicesExistsResponse = client.admin().indices().exists(indicesExistsRequest).get();
 
-            @Override
-            public void onResponse(final IndicesExistsResponse indicesExistsResponse) {
+        if(!indicesExistsResponse.isExists()) {
 
-                if(!indicesExistsResponse.isExists()) {
+            // TODO: Read this mapping from a resource file instead.
+            final String mapping = "{\n" +
+                    "                                                  \"properties\": {\n" +
+                    "                                                    \"judgments_id\": { \"type\": \"keyword\" },\n" +
+                    "                                                    \"query_id\": { \"type\": \"keyword\" },\n" +
+                    "                                                    \"query\": { \"type\": \"keyword\" },\n" +
+                    "                                                    \"document_id\": { \"type\": \"keyword\" },\n" +
+                    "                                                    \"judgment\": { \"type\": \"double\" },\n" +
+                    "                                                    \"timestamp\": { \"type\": \"date\", \"format\": \"basic_date_time\" }\n" +
+                    "                                                  }\n" +
+                    "                                              }";
 
-                    // TODO: Read this mapping from a resource file instead.
-                    final String mapping = "{\n" +
-                            "                                                  \"properties\": {\n" +
-                            "                                                    \"judgments_id\": { \"type\": \"keyword\" },\n" +
-                            "                                                    \"query_id\": { \"type\": \"keyword\" },\n" +
-                            "                                                    \"query\": { \"type\": \"keyword\" },\n" +
-                            "                                                    \"document_id\": { \"type\": \"keyword\" },\n" +
-                            "                                                    \"judgment\": { \"type\": \"double\" },\n" +
-                            "                                                    \"timestamp\": { \"type\": \"date\", \"format\": \"basic_date_time\" }\n" +
-                            "                                                  }\n" +
-                            "                                              }";
+            // Create the judgments index.
+            final CreateIndexRequest createIndexRequest = new CreateIndexRequest(JUDGMENTS_INDEX_NAME).mapping(mapping);
 
-                    // Create the judgments index.
-                    final CreateIndexRequest createIndexRequest = new CreateIndexRequest(JUDGMENTS_INDEX_NAME);
-                    createIndexRequest.mapping(mapping);
-
-                    client.admin().indices().create(createIndexRequest, new ActionListener<>() {
-                        @Override
-                        public void onResponse(CreateIndexResponse createIndexResponse) {
-                            LOGGER.debug("Judgments index created: {}", JUDGMENTS_INDEX_NAME);
-                        }
-
-                        @Override
-                        public void onFailure(Exception ex) {
-                            throw new RuntimeException("Unable to create judgments index: " + JUDGMENTS_INDEX_NAME, ex);
-                        }
-                    });
-
-                }
-            }
-
-            @Override
-            public void onFailure(Exception ex) {
-                throw new RuntimeException("Unable to determine if the judgments index exists.", ex);
-            }
-
-        });
+        }
 
     }
 

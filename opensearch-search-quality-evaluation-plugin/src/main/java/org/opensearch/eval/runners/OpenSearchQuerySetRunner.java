@@ -79,6 +79,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                     // Build the query from the one that was passed in.
                     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+
                     searchSourceBuilder.query(QueryBuilders.wrapperQuery(parsedQuery));
                     searchSourceBuilder.from(0);
                     searchSourceBuilder.size(k);
@@ -87,7 +88,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     final String[] excludeFields = new String[]{};
                     searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
-                    LOGGER.info(searchSourceBuilder.toString());
+                    // LOGGER.info(searchSourceBuilder.toString());
 
                     final SearchRequest searchRequest = new SearchRequest(index);
                     searchRequest.source(searchSourceBuilder);
