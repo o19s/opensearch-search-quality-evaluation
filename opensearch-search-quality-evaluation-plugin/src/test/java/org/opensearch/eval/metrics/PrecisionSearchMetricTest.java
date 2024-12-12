@@ -16,14 +16,14 @@ public class PrecisionSearchMetricTest extends OpenSearchTestCase {
 
     public void testCalculate() {
 
-        final int k = 5;
+        final int k = 10;
         final double threshold = 1.0;
         final List<Double> relevanceScores = List.of(1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 1.0, 2.0, 3.0, 0.0);
 
         final PrecisionSearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores);
         final double precision = precisionSearchMetric.calculate();
 
-        assertEquals(1.8, precision, 0.0);
+        assertEquals(0.9, precision, 0.0);
 
     }
 
