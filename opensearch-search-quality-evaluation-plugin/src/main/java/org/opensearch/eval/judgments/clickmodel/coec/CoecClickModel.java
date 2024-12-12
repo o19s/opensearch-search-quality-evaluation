@@ -356,8 +356,7 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        // TODO: Should this be LTE or just LT? Is rank zero-based?
-        for(int rank = 0; rank <= parameters.getMaxRank(); rank++) {
+        for(int rank = 0; rank < parameters.getMaxRank(); rank++) {
 
             if(impressionCounts.containsKey(rank)) {
 
