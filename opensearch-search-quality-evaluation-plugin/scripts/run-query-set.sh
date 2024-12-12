@@ -1,10 +1,10 @@
 #!/bin/bash -e
 
-QUERY_SET_ID="dcbf3db4-56ea-47cd-87ea-3d13d067ae7a"
-JUDGMENTS_ID="78f0e4e4-1cbf-47b4-9737-5feef65dad4d"
+QUERY_SET_ID="09fc2a69-9bc0-49ea-9747-aefd66528858"
+JUDGMENTS_ID="cd7b72c9-21fa-4500-abf3-722438ab3ad4"
 INDEX="ecommerce"
 ID_FIELD="asin"
-K="10"
+K="50"
 THRESHOLD="1.0" # Default value
 
 curl -s -X DELETE "http://localhost:9200/sqe_metrics_sample_data"

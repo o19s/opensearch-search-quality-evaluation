@@ -90,7 +90,7 @@ public class CoecClickModel extends ClickModel {
 
         // Calculate and index the click-through rate for query/doc pairs.
         LOGGER.info("Beginning calculation of clickthrough rates.");
-        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate(maxRank);
+        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate();
         LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
         showClickthroughRates(clickthroughRates);
 
@@ -175,11 +175,10 @@ public class CoecClickModel extends ClickModel {
 
     /**
      * Gets the clickthrough rates for each query and its results.
-     * @param maxRank The maximum rank position to consider.
      * @return A map of user_query to the clickthrough rate for each query result.
      * @throws IOException Thrown when a problem accessing OpenSearch.
      */
-    private Map<String, Set<ClickthroughRate>> getClickthroughRate(final int maxRank) throws Exception {
+    private Map<String, Set<ClickthroughRate>> getClickthroughRate() throws Exception {
 
         // For each query:
         // - Get each document returned in that query (in the QueryResponse object).
@@ -205,7 +204,7 @@ public class CoecClickModel extends ClickModel {
                 "                    {\n" +
                 "                      \"range\": {\n" +
                 "                        \"event_attributes.position.ordinal\": {\n" +
-                "                          \"lte\": " + maxRank + "\n" +
+                "                          \"lte\": " + parameters.getMaxRank() + "\n" +
                 "                        }\n" +
                 "                      }\n" +
                 "                    }\n" +
