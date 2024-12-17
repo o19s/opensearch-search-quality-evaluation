@@ -15,7 +15,7 @@ import org.opensearch.action.index.IndexResponse;
 import org.opensearch.action.support.WriteRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.core.action.ActionListener;
-import org.opensearch.eval.SearchQualityEvaluationPlugin;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.utils.TimeUtils;
 
 import java.util.ArrayList;
@@ -73,7 +73,7 @@ public abstract class AbstractQuerySampler {
         final String querySetId = UUID.randomUUID().toString();
 
         // TODO: Create a mapping for the query set index.
-        final IndexRequest indexRequest = new IndexRequest().index(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME)
+        final IndexRequest indexRequest = new IndexRequest().index(Constants.QUERY_SETS_INDEX_NAME)
                 .id(querySetId)
                 .source(querySet)
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);

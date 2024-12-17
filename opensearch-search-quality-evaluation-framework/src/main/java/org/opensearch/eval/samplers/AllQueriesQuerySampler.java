@@ -11,7 +11,7 @@ package org.opensearch.eval.samplers;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.node.NodeClient;
-import org.opensearch.eval.SearchQualityEvaluationPlugin;
+import org.opensearch.eval.Constants;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -53,7 +53,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(parameters.getQuerySetSize());
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME).source(searchSourceBuilder);
+        final SearchRequest searchRequest = new SearchRequest(Constants.UBI_QUERIES_INDEX_NAME).source(searchSourceBuilder);
 
         // TODO: Don't use .get()
         final SearchResponse searchResponse = client.search(searchRequest).get();

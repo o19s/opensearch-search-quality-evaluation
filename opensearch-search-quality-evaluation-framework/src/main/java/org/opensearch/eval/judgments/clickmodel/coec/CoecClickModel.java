@@ -17,7 +17,6 @@ import org.opensearch.action.search.SearchScrollRequest;
 import org.opensearch.client.Client;
 import org.opensearch.client.Requests;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;

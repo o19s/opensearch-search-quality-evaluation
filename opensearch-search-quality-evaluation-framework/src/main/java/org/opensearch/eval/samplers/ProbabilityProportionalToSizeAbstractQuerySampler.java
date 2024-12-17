@@ -15,7 +15,7 @@ import org.opensearch.action.search.SearchResponse;
 import org.opensearch.action.search.SearchScrollRequest;
 import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.unit.TimeValue;
-import org.opensearch.eval.SearchQualityEvaluationPlugin;
+import org.opensearch.eval.Constants;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
@@ -69,7 +69,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
         searchSourceBuilder.size(10000);
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME);
+        final SearchRequest searchRequest = new SearchRequest(Constants.UBI_QUERIES_INDEX_NAME);
         searchRequest.scroll(scroll);
         searchRequest.source(searchSourceBuilder);
 

@@ -21,7 +21,6 @@ import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
 import org.opensearch.core.action.ActionListener;
-import org.opensearch.eval.SearchQualityEvaluationPlugin;
 import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
