@@ -10,11 +10,10 @@ package org.opensearch.eval.samplers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.index.IndexResponse;
-import org.opensearch.action.support.WriteRequest;
-import org.opensearch.client.node.NodeClient;
-import org.opensearch.core.action.ActionListener;
+
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -46,7 +45,7 @@ public abstract class AbstractQuerySampler {
     /**
      * Index the query set.
      */
-    protected String indexQuerySet(final NodeClient client, final String name, final String description, final String sampling, Map<String, Long> queries) throws Exception {
+    protected String indexQuerySet(final OpenSearchClient client, final String name, final String description, final String sampling, Map<String, Long> queries) throws Exception {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
@@ -73,23 +72,33 @@ public abstract class AbstractQuerySampler {
         final String querySetId = UUID.randomUUID().toString();
 
         // TODO: Create a mapping for the query set index.
-        final IndexRequest indexRequest = new IndexRequest().index(Constants.QUERY_SETS_INDEX_NAME)
+
+        final IndexData indexData = new IndexData("Document 1", "Text for document 1");
+
+        final IndexRequest indexRequest = new IndexRequest.Builder<IndexData>().index(Constants.QUERY_SETS_INDEX_NAME)
                 .id(querySetId)
-                .source(querySet)
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+                .document(indexData)
+                .source(querySet);
 
-        client.index(indexRequest, new ActionListener<>() {
-
-            @Override
-            public void onResponse(IndexResponse indexResponse) {
-                LOGGER.info("Indexed query set {} having name {}", querySetId, name);
-            }
-
-            @Override
-            public void onFailure(Exception ex) {
-                LOGGER.error("Unable to index query set {}", querySetId, ex);
-            }
-        });
+        client.index(indexRequest);
+//
+//        final IndexRequest indexRequest = new IndexRequest().index(Constants.QUERY_SETS_INDEX_NAME)
+//                .id(querySetId)
+//                .source(querySet)
+//                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+//
+//        client.index(indexRequest, new ActionListener<>() {
+//
+//            @Override
+//            public void onResponse(IndexResponse indexResponse) {
+//                LOGGER.info("Indexed query set {} having name {}", querySetId, name);
+//            }
+//
+//            @Override
+//            public void onFailure(Exception ex) {
+//                LOGGER.error("Unable to index query set {}", querySetId, ex);
+//            }
+//        });
 
         return querySetId;
 
