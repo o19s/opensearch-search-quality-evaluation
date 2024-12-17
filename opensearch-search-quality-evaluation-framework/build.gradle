@@ -6,12 +6,6 @@
 apply plugin: 'java'
 apply plugin: 'idea'
 
-ext {
-    projectSubstitutions = [:]
-    licenseFile = rootProject.file('LICENSE.txt')
-    noticeFile = rootProject.file('NOTICE.txt')
-}
-
 test {
     include "**/Test*.class"
     include "**/*Test.class"
@@ -29,16 +23,11 @@ buildscript {
         mavenCentral()
         maven { url "https://plugins.gradle.org/m2/" }
     }
-
-    dependencies {
-        classpath "org.opensearch.gradle:build-tools:${opensearchVersion}"
-    }
 }
 
 repositories {
     mavenLocal()
     mavenCentral()
-    maven { url "https://aws.oss.sonatype.org/content/repositories/snapshots" }
 }
 
 dependencies {

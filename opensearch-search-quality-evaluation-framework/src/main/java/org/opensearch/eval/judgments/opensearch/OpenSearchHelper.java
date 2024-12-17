@@ -17,7 +17,7 @@ import org.opensearch.action.index.IndexRequest;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.client.Client;
-import org.opensearch.core.action.ActionListener;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
 import org.opensearch.eval.judgments.model.ubi.query.UbiQuery;
@@ -28,7 +28,6 @@ import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,9 +36,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.opensearch.eval.SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME;
-import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME;
-import static org.opensearch.eval.SearchQualityEvaluationPlugin.UBI_QUERIES_INDEX_NAME;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
 
@@ -110,7 +106,7 @@ public class OpenSearchHelper {
         searchSourceBuilder.from(0);
         searchSourceBuilder.size(1);
 
-        final String[] indexes = {UBI_QUERIES_INDEX_NAME};
+        final String[] indexes = {Constants.UBI_QUERIES_INDEX_NAME};
 
         final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
         final SearchResponse response = client.search(searchRequest).get();
@@ -119,7 +115,7 @@ public class OpenSearchHelper {
         if(response.getHits().getHits() != null & response.getHits().getHits().length > 0) {
 
             final SearchHit hit = response.getHits().getHits()[0];
-            return AccessController.doPrivileged((PrivilegedAction<UbiQuery>) () -> gson.fromJson(hit.getSourceAsString(), UbiQuery.class));
+            return gson.fromJson(hit.getSourceAsString(), UbiQuery.class);
 
         } else {
 
@@ -138,7 +134,7 @@ public class OpenSearchHelper {
         final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(qb);
 
-        final String[] indexes = {UBI_QUERIES_INDEX_NAME};
+        final String[] indexes = {Constants.UBI_QUERIES_INDEX_NAME};
 
         final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
         final SearchResponse response = client.search(searchRequest).get();
@@ -198,7 +194,7 @@ public class OpenSearchHelper {
             searchSourceBuilder.trackTotalHits(true);
             searchSourceBuilder.size(0);
 
-            final String[] indexes = {UBI_EVENTS_INDEX_NAME};
+            final String[] indexes = {Constants.UBI_EVENTS_INDEX_NAME};
 
             final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
             final SearchResponse response = client.search(searchRequest).get();
@@ -324,7 +320,7 @@ public class OpenSearchHelper {
             j.put("judgments_id", judgmentsId);
             j.put("timestamp", timestamp);
 
-            final IndexRequest indexRequest = new IndexRequest(JUDGMENTS_INDEX_NAME)
+            final IndexRequest indexRequest = new IndexRequest(Constants.JUDGMENTS_INDEX_NAME)
                     .id(UUID.randomUUID().toString())
                     .source(j);
 

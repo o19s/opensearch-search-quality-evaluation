@@ -16,7 +16,7 @@ import org.opensearch.action.search.SearchResponse;
 import org.opensearch.action.search.SearchScrollRequest;
 import org.opensearch.client.Client;
 import org.opensearch.client.Requests;
-import org.opensearch.common.unit.TimeValue;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.model.ClickthroughRate;
 import org.opensearch.eval.judgments.model.Judgment;
@@ -216,7 +216,7 @@ public class CoecClickModel extends ClickModel {
         final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
 
         final SearchRequest searchRequest = Requests
-                .searchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME)
+                .searchRequest(Constants.UBI_EVENTS_INDEX_NAME)
                 .source(searchSourceBuilder)
                 .scroll(scroll);
 
@@ -313,7 +313,7 @@ public class CoecClickModel extends ClickModel {
                 .from(0)
                 .size(0);
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
+        final SearchRequest searchRequest = new SearchRequest(Constants.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
         final SearchResponse searchResponse = client.search(searchRequest).get();
 
         final Map<Integer, Double> clickCounts = new HashMap<>();

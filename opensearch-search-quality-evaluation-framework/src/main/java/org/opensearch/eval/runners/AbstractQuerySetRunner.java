@@ -10,7 +10,12 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.client.Client;
+import org.opensearch.client.OpenSearchClient;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.eval.Constants;
+import org.opensearch.index.query.BoolQueryBuilder;
+import org.opensearch.index.query.QueryBuilders;
+import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,9 +30,9 @@ public abstract class AbstractQuerySetRunner {
 
     private static final Logger LOGGER = LogManager.getLogger(AbstractQuerySetRunner.class);
 
-    protected final Client client;
+    protected final OpenSearchClient client;
 
-    public AbstractQuerySetRunner(final Client client) {
+    public AbstractQuerySetRunner(final OpenSearchClient client) {
         this.client = client;
     }
 
@@ -71,7 +76,7 @@ public abstract class AbstractQuerySetRunner {
         sourceBuilder.from(0);
         sourceBuilder.size(1);
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.QUERY_SETS_INDEX_NAME).source(sourceBuilder);
+        final SearchRequest searchRequest = new SearchRequest(Constants.QUERY_SETS_INDEX_NAME).source(sourceBuilder);
 
         // TODO: Don't use .get()
         final SearchResponse searchResponse = client.search(searchRequest).get();
@@ -120,7 +125,7 @@ public abstract class AbstractQuerySetRunner {
         final String[] excludeFields = new String[] {};
         searchSourceBuilder.fetchSource(includeFields, excludeFields);
 
-        final SearchRequest searchRequest = new SearchRequest(SearchQualityEvaluationPlugin.JUDGMENTS_INDEX_NAME).source(searchSourceBuilder);
+        final SearchRequest searchRequest = new SearchRequest(Constants.JUDGMENTS_INDEX_NAME).source(searchSourceBuilder);
 
         Double judgment = Double.NaN;
 
