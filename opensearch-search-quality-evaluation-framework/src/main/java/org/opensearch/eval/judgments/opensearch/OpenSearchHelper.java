@@ -9,26 +9,16 @@
 package org.opensearch.eval.judgments.opensearch;
 
 import com.google.gson.Gson;
+import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.action.bulk.BulkRequest;
-import org.opensearch.action.bulk.BulkResponse;
-import org.opensearch.action.index.IndexRequest;
-import org.opensearch.action.search.SearchRequest;
-import org.opensearch.action.search.SearchResponse;
-import org.opensearch.client.Client;
-import org.opensearch.eval.Constants;
-import org.opensearch.eval.judgments.model.ClickthroughRate;
-import org.opensearch.eval.judgments.model.Judgment;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.transport.OpenSearchTransport;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.eval.judgments.model.ubi.query.UbiQuery;
-import org.opensearch.eval.utils.TimeUtils;
-import org.opensearch.index.query.QueryBuilders;
-import org.opensearch.index.query.WrapperQueryBuilder;
-import org.opensearch.search.SearchHit;
-import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -47,14 +37,25 @@ public class OpenSearchHelper {
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchHelper.class.getName());
 
-    private final Client client;
+    private final OpenSearchClient client;
     private final Gson gson = new Gson();
 
     // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
     private static final Map<String, String> userQueryCache = new HashMap<>();
 
-    public OpenSearchHelper(final Client client) {
-        this.client = client;
+    public OpenSearchHelper() {
+
+        final HttpHost[] hosts = new HttpHost[] {
+                new HttpHost("http", "localhost", 9200)
+        };
+
+        final OpenSearchTransport transport = ApacheHttpClient5TransportBuilder
+                .builder(hosts)
+                .setMapper(new JacksonJsonpMapper())
+                .build();
+
+        this.client = new OpenSearchClient(transport);
+
     }
 
     /**

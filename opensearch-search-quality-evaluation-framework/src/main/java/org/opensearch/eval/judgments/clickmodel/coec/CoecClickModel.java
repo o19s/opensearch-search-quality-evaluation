@@ -11,11 +11,7 @@ package org.opensearch.eval.judgments.clickmodel.coec;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.action.search.SearchRequest;
-import org.opensearch.action.search.SearchResponse;
-import org.opensearch.action.search.SearchScrollRequest;
-import org.opensearch.client.Client;
-import org.opensearch.client.Requests;
+
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.model.ClickthroughRate;
@@ -24,21 +20,8 @@ import org.opensearch.eval.judgments.model.ubi.event.UbiEvent;
 import org.opensearch.eval.judgments.opensearch.OpenSearchHelper;
 import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
 import org.opensearch.eval.utils.MathUtils;
-import org.opensearch.index.query.BoolQueryBuilder;
-import org.opensearch.index.query.QueryBuilder;
-import org.opensearch.index.query.QueryBuilders;
-import org.opensearch.index.query.WrapperQueryBuilder;
-import org.opensearch.search.Scroll;
-import org.opensearch.search.SearchHit;
-import org.opensearch.search.aggregations.AggregationBuilders;
-import org.opensearch.search.aggregations.BucketOrder;
-import org.opensearch.search.aggregations.bucket.terms.Terms;
-import org.opensearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
-import org.opensearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -232,7 +215,7 @@ public class CoecClickModel extends ClickModel {
 
             for (final SearchHit hit : searchHits) {
 
-                final UbiEvent ubiEvent = AccessController.doPrivileged((PrivilegedAction<UbiEvent>) () -> gson.fromJson(hit.getSourceAsString(), UbiEvent.class));
+                final UbiEvent ubiEvent = gson.fromJson(hit.getSourceAsString(), UbiEvent.class);
 
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but they are the same search.
