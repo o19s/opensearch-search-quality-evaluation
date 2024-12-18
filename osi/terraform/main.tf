@@ -100,6 +100,11 @@ resource "aws_iam_policy" "ubi" {
         Action   = ["es:ESHttp*"]
         Effect   = "Allow"
         Resource = "arn:aws:es:${data.aws_region.current.name}:${local.account_id}:domain/osi-ubi-domain/*"
+      },
+      {
+        Action   = ["s3:PutObject"]
+        Effect   = "Allow"
+        Resource = "arn:aws:s3:::${aws_s3_bucket.ubi_queries_events_bucket.id}/*"
       }
     ]
   })
@@ -119,11 +124,7 @@ resource "aws_cloudwatch_log_group" "ubi" {
 }
 
 resource "aws_s3_bucket" "ubi_queries_events_bucket" {
-  bucket = "my-tf-test-bucket"
-
-  tags = {
-    Name = "ubi-queries-events-sink"
-  }
+  bucket = "ubi-queries-events-sink"
 }
 
 resource "aws_osis_pipeline" "ubi_events_pipeline" {
@@ -149,11 +150,11 @@ resource "aws_osis_pipeline" "ubi_events_pipeline" {
                     aws:
                       sts_role_arn: "${aws_iam_role.ubi.arn}"
                       region: "${data.aws_region.current.name}"
-                    bucket: aws_s3_bucket.ubi_queries_events_bucket.name
+                    bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
                     object_key:
                       path_prefix: ubi_events/
                     threshold:
-                      event_collect_timeout: "10s"
+                      event_collect_timeout: "60s"
                     codec:
                       ndjson:
         EOT
