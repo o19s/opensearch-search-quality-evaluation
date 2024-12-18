@@ -4,6 +4,7 @@ Description: AWS CloudFormation Template for OpenSearch Service
 
 Parameters:
 
+
   OpenSearchUserName:
     Description: OpenSearch username
     Type: String
@@ -25,7 +26,7 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: mtnfog-ubi
+      BucketName: !Sub "${AWS::StackName}-ubi-queries-events"
 
   IngestionLogGroup: 
     Type: AWS::Logs::LogGroup
@@ -58,13 +59,13 @@ Resources:
         VolumeType: gp2
         VolumeSize: 10
       AccessPolicies:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Effect: Allow
             Principal:
-              AWS: '*'
-            Action: 'es:*'
-            Resource: '*'
+              AWS: "*"
+            Action: "es:*"
+            Resource: "*"
 
   OsisRole:
     Type: AWS::IAM::Role
@@ -94,10 +95,10 @@ Resources:
                           - Arn
                       - "*"
               - Effect: Allow
-                Action: 'es:ESHttp*'
+                Action: "es:ESHttp*"
                 Resource:
                   Fn::Join:
-                    - ':/'
+                    - ":/"
                     - - Fn::GetAtt:
                           - OpenSearchDomain
                           - Arn
