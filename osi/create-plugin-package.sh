@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# https://docs.aws.amazon.com/opensearch-service/latest/developerguide/custom-plugins.html
+# Note that custom plugins cannot implement ActionPlugin.
+
 FILE_NAME="search-quality-evaluation-plugin-0.0.1.zip"
 
 wget -O ${FILE_NAME} https://github.com/o19s/opensearch-search-quality-evaluation/releases/download/0.0.1/${FILE_NAME}
