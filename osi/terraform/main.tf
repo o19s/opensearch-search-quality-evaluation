@@ -167,6 +167,6 @@ resource "aws_osis_pipeline" "ubi_events_pipeline" {
     }
   }
   tags = {
-    Name = "AWS Blog OSIS Pipeline ubi"
+    Name = "UBI OpenSearch Ingestion Pipeline for UBI"
   }
 }
