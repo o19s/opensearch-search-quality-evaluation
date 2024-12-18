@@ -10,5 +10,5 @@ awscurl \
 	--profile mtnfog \
 	-X POST \
 	-H "Content-Type: application/json" \
-	-d '[{"type": "event", "action_name": "click", "query_id": "00112233-4455-6677-8899-aabbccddeeff", "event_attributes": {"position": {"ordinal": 1}, "object": {"object_id": "1234", "object_id_field": "ean", "user_id": "abc"}}}]' \
+	-d '[{"type": "query", "user_query": "computer", "query_id": "00112233-4455-6677-8899-aabbccddeeff"}]' \
 	https://${OSIS_PIPELINE_ENDPOINT_URL}/ubi

@@ -134,11 +134,14 @@ resource "aws_osis_pipeline" "ubi_events_pipeline" {
             ubi-pipeline:
               source:
                 http:
-                  path: "/ubi_events"
+                  path: "/ubi"
               processor:
                 - date:
                     from_time_received: true
                     destination: "@timestamp"
+              route:
+                - ubi-events: '/type == "event"'
+                - ubi-queries: '/type == "query"'
               sink:
                 - opensearch:
                     hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
@@ -146,6 +149,7 @@ resource "aws_osis_pipeline" "ubi_events_pipeline" {
                     aws:
                       sts_role_arn: "${aws_iam_role.ubi.arn}"   
                       region: "${data.aws_region.current.name}"
+                    routes: [ubi-events]
                 - s3:
                     aws:
                       sts_role_arn: "${aws_iam_role.ubi.arn}"
@@ -157,6 +161,26 @@ resource "aws_osis_pipeline" "ubi_events_pipeline" {
                       event_collect_timeout: "60s"
                     codec:
                       ndjson:
+                    routes: [ubi-events]
+                - opensearch:
+                    hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
+                    index: "ubi_queries"
+                    aws:
+                      sts_role_arn: "${aws_iam_role.ubi.arn}"   
+                      region: "${data.aws_region.current.name}"
+                    routes: [ubi-queries]
+                - s3:
+                    aws:
+                      sts_role_arn: "${aws_iam_role.ubi.arn}"
+                      region: "${data.aws_region.current.name}"
+                    bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
+                    object_key:
+                      path_prefix: ubi_queries/
+                    threshold:
+                      event_collect_timeout: "60s"
+                    codec:
+                      ndjson:
+                    routes: [ubi-queries]                    
         EOT
   max_units                   = 1
   min_units                   = 1
