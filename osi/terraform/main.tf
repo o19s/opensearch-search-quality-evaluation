@@ -117,9 +117,9 @@ resource "aws_iam_role_policy_attachment" "ubi" {
 
 resource "aws_cloudwatch_log_group" "ubi" {
   name              = "/aws/vendedlogs/OpenSearchIngestion/ubi-pipeline"
-  retention_in_days = 365
+  retention_in_days = 14
   tags = {
-    Name = "UBI OSIS Pipeline"
+    Name = "UBI OSIS Pipeline Log Group"
   }
 }
 
