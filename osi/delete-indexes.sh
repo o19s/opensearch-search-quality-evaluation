@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-. stck.properties
+. stack.properties
 
 OPENSEARCH_ENDPOINT=`terraform output "opensearch_domain_endpoint" | jq -r .`
 
