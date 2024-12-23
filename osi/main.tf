@@ -11,7 +11,7 @@ terraform {
 
 provider "aws" {
   region  = "us-east-1"
-  profile = "TODO_PUT_YOUR_AWS_PROFILE_NAME_HERE"
+  profile = "mtnfog"
 }
 
 data "aws_region" "current" {}
@@ -81,7 +81,7 @@ resource "aws_opensearch_domain" "opensearch_ubi" {
     volume_size = 10
   }
 
-  access_policies = data.aws_iam_policy_document.access_policy.json
+  #access_policies = data.aws_iam_policy_document.access_policy.json
 }
 
 resource "aws_iam_policy" "ubi" {
@@ -192,4 +192,12 @@ resource "aws_osis_pipeline" "ubi_events_pipeline" {
   tags = {
     Name = "UBI OpenSearch Ingestion Pipeline for UBI"
   }
+}
+
+output "opensearch_domain_endpoint" {
+  value = aws_opensearch_domain.opensearch_ubi.endpoint
+}
+
+output "opensearch_ingest_pipeline_endpoint" {
+  value = aws_osis_pipeline.ubi_events_pipeline.ingest_endpoint_urls
 }

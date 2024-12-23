@@ -1,13 +1,12 @@
 #!/bin/bash -e
 
-# pip install awscurl
+. stck.properties
 
-# Get from the Terraform output or the AWS Console
-OPENSEARCH_ENDPOINT="search-osi-ubi-domain-pjju5yl7neorgz4jcsqhq5o7fq.us-east-1.es.amazonaws.com"
+OPENSEARCH_ENDPOINT=`terraform output "opensearch_domain_endpoint" | jq -r .`
 
 awscurl \
   "https://${OPENSEARCH_ENDPOINT}/ubi_events,ubi_queries" \
   -X DELETE \
-  --region us-east-1 \
+  --region ${AWS_REGION} \
   --service es \
-  --profile TODO_PUT_YOUR_AWS_PROFILE_NAME_HERE
+  --profile ${AWS_PROFILE}
