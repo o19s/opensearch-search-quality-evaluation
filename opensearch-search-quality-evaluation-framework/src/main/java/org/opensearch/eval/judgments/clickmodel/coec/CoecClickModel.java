@@ -15,7 +15,7 @@ import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.Judgment;
+import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
 import org.opensearch.eval.utils.MathUtils;

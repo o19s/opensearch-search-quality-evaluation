@@ -15,20 +15,26 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.mapping.IntegerNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.ScrollRequest;
+import org.opensearch.client.opensearch.core.ScrollResponse;
+import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.Judgment;
+import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -36,6 +42,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -99,15 +106,30 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
-    @Override
-    public String indexJudgment(String index, String id, Judgment judgment) throws IOException {
+    public Collection<Judgment> getJudgments(final String index) throws IOException {
 
-        if(id == null) {
-            id = UUID.randomUUID().toString();
+        final Collection<Judgment> judgments = new ArrayList<>();
+
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(index).size(1000).scroll(Time.of(t -> t.offset(1000))), Judgment.class);
+
+        String scrollId = searchResponse.scrollId();
+        List<Hit<Judgment>> searchHits = searchResponse.hits().hits();
+
+        while (searchHits != null && !searchHits.isEmpty()) {
+
+            for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
+                judgments.add(searchResponse.hits().hits().get(i).source());
+            }
+
+            final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
+            final ScrollResponse<Judgment> scrollResponse = client.scroll(scrollRequest, Judgment.class);
+
+            scrollId = scrollResponse.scrollId();
+            searchHits = scrollResponse.hits().hits();
+
         }
 
-        final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(index).id(id).document(judgment).build();
-        return client.index(indexRequest).id();
+        return judgments;
 
     }
 

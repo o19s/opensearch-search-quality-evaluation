@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.model;
+package org.opensearch.eval.model.data;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * A judgment of a search result's quality for a given query.
  */
-public class Judgment {
+public class Judgment extends AbstractData {
 
     private static final Logger LOGGER = LogManager.getLogger(Judgment.class.getName());
 

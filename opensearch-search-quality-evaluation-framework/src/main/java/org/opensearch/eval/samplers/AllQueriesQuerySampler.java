@@ -10,8 +10,8 @@ package org.opensearch.eval.samplers;
 
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
-import org.opensearch.client.node.NodeClient;
 import org.opensearch.eval.Constants;
+import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.SearchHit;
 import org.opensearch.search.builder.SearchSourceBuilder;
@@ -26,15 +26,15 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
     public static final String NAME = "none";
 
-    private final NodeClient client;
+    private final SearchEngine searchEngine;
     private final AllQueriesQuerySamplerParameters parameters;
 
     /**
      * Creates a new sampler.
-     * @param client The OpenSearch {@link NodeClient client}.
+     * @param searchEngine The OpenSearch {@link SearchEngine engine}.
      */
-    public AllQueriesQuerySampler(final NodeClient client, final AllQueriesQuerySamplerParameters parameters) {
-        this.client = client;
+    public AllQueriesQuerySampler(final SearchEngine searchEngine, final AllQueriesQuerySamplerParameters parameters) {
+        this.searchEngine = searchEngine;
         this.parameters = parameters;
     }
 
@@ -72,7 +72,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
         }
 
-        return indexQuerySet(client, parameters.getName(), parameters.getDescription(), parameters.getSampling(), queries);
+        return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), queries);
 
     }
 

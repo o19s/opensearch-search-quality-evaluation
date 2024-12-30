@@ -15,6 +15,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.eval.Constants;
+import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.utils.TimeUtils;
 
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public abstract class AbstractQuerySampler {
     /**
      * Index the query set.
      */
-    protected String indexQuerySet(final OpenSearchClient client, final String name, final String description, final String sampling, Map<String, Long> queries) throws Exception {
+    protected String indexQuerySet(final SearchEngine searchEngine, final String name, final String description, final String sampling, Map<String, Long> queries) throws Exception {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
@@ -73,15 +74,6 @@ public abstract class AbstractQuerySampler {
 
         // TODO: Create a mapping for the query set index.
 
-        final IndexData indexData = new IndexData("Document 1", "Text for document 1");
-
-        final IndexRequest indexRequest = new IndexRequest.Builder<IndexData>().index(Constants.QUERY_SETS_INDEX_NAME)
-                .id(querySetId)
-                .document(indexData)
-                .source(querySet);
-
-        client.index(indexRequest);
-//
 //        final IndexRequest indexRequest = new IndexRequest().index(Constants.QUERY_SETS_INDEX_NAME)
 //                .id(querySetId)
 //                .source(querySet)

@@ -13,9 +13,9 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.action.search.SearchRequest;
 import org.opensearch.action.search.SearchResponse;
 import org.opensearch.action.search.SearchScrollRequest;
-import org.opensearch.client.node.NodeClient;
 import org.opensearch.common.unit.TimeValue;
 import org.opensearch.eval.Constants;
+import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.index.query.QueryBuilders;
 import org.opensearch.search.Scroll;
 import org.opensearch.search.SearchHit;
@@ -39,16 +39,16 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
 
     private static final Logger LOGGER = LogManager.getLogger(ProbabilityProportionalToSizeAbstractQuerySampler.class);
 
-    private final NodeClient client;
+    private final SearchEngine searchEngine;
     private final ProbabilityProportionalToSizeParameters parameters;
 
     /**
      * Creates a new PPTSS sampler.
-     * @param client The OpenSearch {@link NodeClient client}.
+     * @param searchEngine The OpenSearch {@link SearchEngine engine}.
      * @param parameters The {@link ProbabilityProportionalToSizeParameters parameters} for the sampling.
      */
-    public ProbabilityProportionalToSizeAbstractQuerySampler(final NodeClient client, final ProbabilityProportionalToSizeParameters parameters) {
-        this.client = client;
+    public ProbabilityProportionalToSizeAbstractQuerySampler(final SearchEngine searchEngine, final ProbabilityProportionalToSizeParameters parameters) {
+        this.searchEngine = searchEngine;
         this.parameters = parameters;
     }
 
@@ -165,7 +165,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
 
         }
 
-        return indexQuerySet(client, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+        return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
     }
 
