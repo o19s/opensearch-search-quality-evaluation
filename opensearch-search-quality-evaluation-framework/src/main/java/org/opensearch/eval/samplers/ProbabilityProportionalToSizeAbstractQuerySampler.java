@@ -10,21 +10,13 @@ package org.opensearch.eval.samplers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.action.search.SearchRequest;
-import org.opensearch.action.search.SearchResponse;
-import org.opensearch.action.search.SearchScrollRequest;
-import org.opensearch.common.unit.TimeValue;
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
-import org.opensearch.index.query.QueryBuilders;
-import org.opensearch.search.Scroll;
-import org.opensearch.search.SearchHit;
-import org.opensearch.search.builder.SearchSourceBuilder;
+import org.opensearch.eval.model.ubi.query.UbiQuery;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -60,45 +52,11 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
     @Override
     public String sample() throws Exception {
 
-        // TODO: Can this be changed to an aggregation?
-        // An aggregation is limited (?) to 10,000 which could miss some queries.
+        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
-        // Get queries from the UBI queries index.
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-        searchSourceBuilder.size(10000);
-        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
-
-        final SearchRequest searchRequest = new SearchRequest(Constants.UBI_QUERIES_INDEX_NAME);
-        searchRequest.scroll(scroll);
-        searchRequest.source(searchSourceBuilder);
-
-        // TODO: Don't use .get()
-        SearchResponse searchResponse = client.search(searchRequest).get();
-
-        String scrollId = searchResponse.getScrollId();
-        SearchHit[] searchHits = searchResponse.getHits().getHits();
-
-        final Collection<String> userQueries = new ArrayList<>();
-
-        while (searchHits != null && searchHits.length > 0) {
-
-            for(final SearchHit hit : searchHits) {
-                final Map<String, Object> fields = hit.getSourceAsMap();
-                userQueries.add(fields.get("user_query").toString());
-              //  LOGGER.info("user queries count: {} user query: {}", userQueries.size(), fields.get("user_query").toString());
-            }
-
-            final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-            scrollRequest.scroll(scroll);
-
-            // TODO: Don't use .get()
-            searchResponse = client.searchScroll(scrollRequest).get();
-
-            scrollId = searchResponse.getScrollId();
-            searchHits = searchResponse.getHits().getHits();
-
-        }
+        final List<String> userQueries = ubiQueries.stream()
+                .map(UbiQuery::getUserQuery)
+                .toList();
 
         // LOGGER.info("User queries found: {}", userQueries);
 

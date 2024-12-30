@@ -2,6 +2,7 @@ package org.opensearch.eval.engine;
 
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.Judgment;
+import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
 import java.io.IOException;
@@ -25,5 +26,8 @@ public abstract class SearchEngine {
     public abstract boolean bulkIndex(String index, Map<String, Object> documents) throws IOException;
 
     public abstract Collection<Judgment> getJudgments(final String index) throws IOException;
+
+    public abstract String indexQuerySet(QuerySet querySet) throws IOException;
+    public abstract Collection<UbiQuery> getUbiQueries() throws IOException;
 
 }

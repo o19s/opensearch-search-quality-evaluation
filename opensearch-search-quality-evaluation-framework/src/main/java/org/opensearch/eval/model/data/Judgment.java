@@ -26,15 +26,19 @@ public class Judgment extends AbstractData {
     private final String query;
     private final String document;
     private final double judgment;
+    private String judgmentsId;
+    private String timestamp;
 
     /**
      * Creates a new judgment.
+     * @param id The judgment ID.
      * @param queryId The query ID for the judgment.
      * @param query The query for the judgment.
-     * @param document The document in the jdugment.
+     * @param document The document in the judgment.
      * @param judgment The judgment value.
      */
-    public Judgment(final String queryId, final String query, final String document, final double judgment) {
+    public Judgment(final String id, final String queryId, final String query, final String document, final double judgment) {
+        super(id);
         this.queryId = queryId;
         this.query = query;
         this.document = document;
@@ -92,6 +96,22 @@ public class Judgment extends AbstractData {
      */
     public double getJudgment() {
         return judgment;
+    }
+
+    public String getJudgmentsId() {
+        return judgmentsId;
+    }
+
+    public void setJudgmentsId(String judgmentsId) {
+        this.judgmentsId = judgmentsId;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 
 }

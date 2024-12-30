@@ -10,19 +10,14 @@ package org.opensearch.eval.samplers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.core.IndexRequest;
-import org.opensearch.client.opensearch.indices.CreateIndexRequest;
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.utils.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * An interface for sampling UBI queries.
@@ -63,14 +58,14 @@ public abstract class AbstractQuerySampler {
 
         }
 
-        final Map<String, Object> querySet = new HashMap<>();
-        querySet.put("name", name);
-        querySet.put("description", description);
-        querySet.put("sampling", sampling);
-        querySet.put("queries", querySetQueries);
-        querySet.put("timestamp", TimeUtils.getTimestamp());
+        final QuerySet querySet = new QuerySet();
+        querySet.setName(name);
+        querySet.setDescription(description);
+        querySet.setSampling(sampling);
+        querySet.setQuerySetQueries(querySetQueries);
+        querySet.setTimestamp(TimeUtils.getTimestamp());
 
-        final String querySetId = UUID.randomUUID().toString();
+        final String querySetId = searchEngine.indexQuerySet(querySet);
 
         // TODO: Create a mapping for the query set index.
 

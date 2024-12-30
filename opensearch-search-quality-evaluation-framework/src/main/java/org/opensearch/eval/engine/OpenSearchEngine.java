@@ -34,7 +34,10 @@ import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.data.ClickThroughRate;
 import org.opensearch.eval.model.data.Judgment;
+import org.opensearch.eval.model.data.QuerySet;
+import org.opensearch.eval.model.data.RankAggregatedClickThrough;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -103,6 +106,45 @@ public class OpenSearchEngine extends SearchEngine {
     public boolean deleteIndex(String index) throws IOException {
 
         return client.indices().delete(s -> s.index(index)).acknowledged();
+
+    }
+
+    @Override
+    public String indexQuerySet(final QuerySet querySet) throws IOException {
+
+        final String index = Constants.QUERY_SETS_INDEX_NAME;
+        final String id = querySet.getId();
+
+        final IndexRequest<QuerySet> indexRequest = new IndexRequest.Builder<QuerySet>().index(index).id(id).document(querySet).build();
+        return client.index(indexRequest).id();
+
+    }
+
+    @Override
+    public Collection<UbiQuery> getUbiQueries() throws IOException {
+
+        final Collection<UbiQuery> ubiQueries = new ArrayList<>();
+
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(Time.of(t -> t.offset(1000))), UbiQuery.class);
+
+        String scrollId = searchResponse.scrollId();
+        List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
+
+        while (searchHits != null && !searchHits.isEmpty()) {
+
+            for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
+                ubiQueries.add(searchResponse.hits().hits().get(i).source());
+            }
+
+            final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
+            final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
+
+            scrollId = scrollResponse.scrollId();
+            searchHits = scrollResponse.hits().hits();
+
+        }
+
+        return ubiQueries;
 
     }
 
@@ -326,23 +368,20 @@ public class OpenSearchEngine extends SearchEngine {
 
         if(!rankAggregatedClickThrough.isEmpty()) {
 
-            // TODO: Split this into multiple bulk insert requests.
-
-            final BulkRequest request = new BulkRequest();
+            // TODO: Use bulk indexing.
 
             for (final int position : rankAggregatedClickThrough.keySet()) {
 
-                final Map<String, Object> jsonMap = new HashMap<>();
-                jsonMap.put("position", position);
-                jsonMap.put("ctr", rankAggregatedClickThrough.get(position));
+                final String id = UUID.randomUUID().toString();
 
-                final IndexRequest indexRequest = new IndexRequest(INDEX_RANK_AGGREGATED_CTR).id(UUID.randomUUID().toString()).source(jsonMap);
+                final RankAggregatedClickThrough r = new RankAggregatedClickThrough(id);
+                r.setPosition(position);
+                r.setCtr(rankAggregatedClickThrough.get(position));
 
-                request.add(indexRequest);
+                final IndexRequest<RankAggregatedClickThrough> indexRequest = new IndexRequest.Builder<RankAggregatedClickThrough>().index(INDEX_RANK_AGGREGATED_CTR).id(id).document(r).build();
+                client.index(indexRequest);
 
             }
-
-            client.bulk(request).get();
 
         }
 
@@ -358,46 +397,27 @@ public class OpenSearchEngine extends SearchEngine {
 
         if(!clickthroughRates.isEmpty()) {
 
-            final BulkRequest request = new BulkRequest();
+            // TODO: Use bulk inserts.
 
-            for(final String userQuery : clickthroughRates.keySet()) {
+            for (final String userQuery : clickthroughRates.keySet()) {
 
-                for(final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
+                for (final ClickthroughRate clickthroughRate : clickthroughRates.get(userQuery)) {
 
-                    final Map<String, Object> jsonMap = new HashMap<>();
-                    jsonMap.put("user_query", userQuery);
-                    jsonMap.put("clicks", clickthroughRate.getClicks());
-                    jsonMap.put("events", clickthroughRate.getImpressions());
-                    jsonMap.put("ctr", clickthroughRate.getClickthroughRate());
-                    jsonMap.put("object_id", clickthroughRate.getObjectId());
+                    final String id = UUID.randomUUID().toString();
 
-                    final IndexRequest indexRequest = new IndexRequest(INDEX_QUERY_DOC_CTR)
-                            .id(UUID.randomUUID().toString())
-                            .source(jsonMap);
+                    final ClickThroughRate clickThroughRate = new ClickThroughRate();
+                    clickThroughRate.setUserQuery(userQuery);
+                    clickThroughRate.setClicks(clickthroughRate.getClicks());
+                    clickThroughRate.setEvents(clickthroughRate.getImpressions());
+                    clickThroughRate.setCtr(clickthroughRate.getClickthroughRate());
+                    clickThroughRate.setObjectId(clickthroughRate.getObjectId());
 
-                    request.add(indexRequest);
+                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(INDEX_QUERY_DOC_CTR).id(id).document(clickThroughRate).build();
+                    client.index(indexRequest);
 
                 }
 
             }
-
-            client.bulk(request, new ActionListener<>() {
-
-                @Override
-                public void onResponse(BulkResponse bulkItemResponses) {
-                    if(bulkItemResponses.hasFailures()) {
-                        LOGGER.error("Clickthrough rates were not all successfully indexed: {}", bulkItemResponses.buildFailureMessage());
-                    } else {
-                        LOGGER.debug("Clickthrough rates has been successfully indexed.");
-                    }
-                }
-
-                @Override
-                public void onFailure(Exception ex) {
-                    LOGGER.error("Indexing the clickthrough rates failed.", ex);
-                }
-
-            });
 
         }
 
@@ -415,24 +435,17 @@ public class OpenSearchEngine extends SearchEngine {
         final String judgmentsId = UUID.randomUUID().toString();
         final String timestamp = TimeUtils.getTimestamp();
 
-        final BulkRequest bulkRequest = new BulkRequest();
+        // TODO: Use bulk imports.
 
         for(final Judgment judgment : judgments) {
 
-            final Map<String, Object> j = judgment.getJudgmentAsMap();
-            j.put("judgments_id", judgmentsId);
-            j.put("timestamp", timestamp);
+            judgment.setJudgmentsId(judgmentsId);
+            judgment.setTimestamp(timestamp);
 
-            final IndexRequest indexRequest = new IndexRequest(Constants.JUDGMENTS_INDEX_NAME)
-                    .id(UUID.randomUUID().toString())
-                    .source(j);
-
-            bulkRequest.add(indexRequest);
+            final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(Constants.JUDGMENTS_INDEX_NAME).id(judgment.getId()).document(judgment).build();
+            client.index(indexRequest);
 
         }
-
-        // TODO: Don't use .get()
-        client.bulk(bulkRequest).get();
 
         return judgmentsId;
 
