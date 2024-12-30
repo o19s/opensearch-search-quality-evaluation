@@ -11,13 +11,12 @@ package org.opensearch.eval.judgments.clickmodel.coec;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
 import org.opensearch.eval.Constants;
+import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
-import org.opensearch.eval.judgments.model.ClickthroughRate;
-import org.opensearch.eval.judgments.model.Judgment;
-import org.opensearch.eval.judgments.model.ubi.event.UbiEvent;
-import org.opensearch.eval.judgments.opensearch.OpenSearchHelper;
+import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.Judgment;
+import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
 import org.opensearch.eval.utils.MathUtils;
 
@@ -43,19 +42,16 @@ public class CoecClickModel extends ClickModel {
 
     private final CoecClickModelParameters parameters;
 
-    private final OpenSearchHelper openSearchHelper;
-
     private final IncrementalUserQueryHash incrementalUserQueryHash = new IncrementalUserQueryHash();
     private final Gson gson = new Gson();
-    private final Client client;
+    private final SearchEngine searchEngine;
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
 
-    public CoecClickModel(final Client client, final CoecClickModelParameters parameters) {
+    public CoecClickModel(final SearchEngine searchEngine, final CoecClickModelParameters parameters) {
 
         this.parameters = parameters;
-        this.openSearchHelper = new OpenSearchHelper(client);
-        this.client = client;
+        this.searchEngine = searchEngine;
 
     }
 
@@ -112,7 +108,7 @@ public class CoecClickModel extends ClickModel {
                     final double meanCtrAtRank = rankAggregatedClickThrough.getOrDefault(rank, 0.0);
 
                     // The number of times this document was shown as this rank.
-                    final long countOfTimesShownAtRank = openSearchHelper.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
+                    final long countOfTimesShownAtRank = searchEngine.getCountOfQueriesForUserQueryHavingResultInRankR(userQuery, ctr.getObjectId(), rank);
 
                     denominatorSum += (meanCtrAtRank * countOfTimesShownAtRank);
 
@@ -148,7 +144,7 @@ public class CoecClickModel extends ClickModel {
         showJudgments(judgments);
 
         if(!(judgments.isEmpty())) {
-            return openSearchHelper.indexJudgments(judgments);
+            return searchEngine.indexJudgments(judgments);
         } else {
             return null;
         }
@@ -219,7 +215,7 @@ public class CoecClickModel extends ClickModel {
 
                 // We need to the hash of the query_id because two users can both search
                 // for "computer" and those searches will have different query IDs, but they are the same search.
-                final String userQuery = openSearchHelper.getUserQuery(ubiEvent.getQueryId());
+                final String userQuery = searchEngine.getUserQuery(ubiEvent.getQueryId());
 
                 // userQuery will be null if there is not a query for this event in ubi_queries.
                 if(userQuery != null) {
@@ -264,7 +260,7 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        openSearchHelper.indexClickthroughRates(queriesToClickthroughRates);
+        searchEngine.indexClickthroughRates(queriesToClickthroughRates);
 
         return queriesToClickthroughRates;
 
@@ -365,7 +361,7 @@ public class CoecClickModel extends ClickModel {
 
         }
 
-        openSearchHelper.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
+        searchEngine.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
         return rankAggregatedClickThrough;
 

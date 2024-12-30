@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.judgments.opensearch;
+package org.opensearch.eval.engine;
 
 import com.google.gson.Gson;
 import org.apache.hc.core5.http.HttpHost;
@@ -14,9 +14,23 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.mapping.IntegerNumberProperty;
+import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.opensearch.client.opensearch.core.bulk.IndexOperation;
+import org.opensearch.client.opensearch.indices.CreateIndexRequest;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
-import org.opensearch.eval.judgments.model.ubi.query.UbiQuery;
+import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.Judgment;
+import org.opensearch.eval.model.ubi.query.UbiQuery;
+import org.opensearch.eval.utils.TimeUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,11 +45,10 @@ import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX
 
 /**
  * Functionality for interacting with OpenSearch.
- * TODO: Move these functions out of this class.
  */
-public class OpenSearchHelper {
+public class OpenSearchEngine extends SearchEngine {
 
-    private static final Logger LOGGER = LogManager.getLogger(OpenSearchHelper.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
 
     private final OpenSearchClient client;
     private final Gson gson = new Gson();
@@ -43,7 +56,7 @@ public class OpenSearchHelper {
     // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
     private static final Map<String, String> userQueryCache = new HashMap<>();
 
-    public OpenSearchHelper() {
+    public OpenSearchEngine() {
 
         final HttpHost[] hosts = new HttpHost[] {
                 new HttpHost("http", "localhost", 9200)
@@ -58,12 +71,74 @@ public class OpenSearchHelper {
 
     }
 
+    @Override
+    public boolean doesIndexExist(final String index) throws IOException {
+
+        return client.indices().exists(ExistsRequest.of(s -> s.index(index))).value();
+
+    }
+
+    @Override
+    public boolean createIndex(String index, Map<String, Object> mapping) throws IOException {
+
+        // TODO: Build the mapping.
+        final TypeMapping mapping2 = new TypeMapping.Builder()
+                .properties("age", new Property.Builder().integer(new IntegerNumberProperty.Builder().build()).build())
+                .build();
+
+        final CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder().index(index).mappings(mapping2).build();
+
+        return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
+
+    }
+
+    @Override
+    public boolean deleteIndex(String index) throws IOException {
+
+        return client.indices().delete(s -> s.index(index)).acknowledged();
+
+    }
+
+    @Override
+    public String indexJudgment(String index, String id, Judgment judgment) throws IOException {
+
+        if(id == null) {
+            id = UUID.randomUUID().toString();
+        }
+
+        final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(index).id(id).document(judgment).build();
+        return client.index(indexRequest).id();
+
+    }
+
+    @Override
+    public boolean bulkIndex(String index, Map<String, Object> documents) throws IOException {
+
+        final ArrayList<BulkOperation> bulkOperations = new ArrayList<>();
+
+        for(final String id : documents.keySet()) {
+            final Object document = documents.get(id);
+            bulkOperations.add(new BulkOperation.Builder().index(IndexOperation.of(io -> io.index(index).id(id).document(document))).build());
+        }
+
+        final BulkRequest.Builder bulkReq = new BulkRequest.Builder()
+                .index(index)
+                .operations(bulkOperations)
+                .refresh(Refresh.WaitFor);
+
+        final BulkResponse bulkResponse = client.bulk(bulkReq.build());
+
+        return !bulkResponse.errors();
+
+    }
+
     /**
      * Gets the user query for a given query ID.
      * @param queryId The query ID.
      * @return The user query.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
+    @Override
     public String getUserQuery(final String queryId) throws Exception {
 
         // If it's in the cache just get it and return it.
@@ -94,6 +169,7 @@ public class OpenSearchHelper {
      * @return A {@link UbiQuery} object for the given query ID.
      * @throws Exception Thrown if the query cannot be retrieved.
      */
+    @Override
     public UbiQuery getQueryFromQueryId(final String queryId) throws Exception {
 
         LOGGER.debug("Getting query from query ID {}", queryId);
@@ -151,6 +227,7 @@ public class OpenSearchHelper {
 
     }
 
+    @Override
     public long getCountOfQueriesForUserQueryHavingResultInRankR(final String userQuery, final String objectId, final int rank) throws Exception {
 
         long countOfTimesShownAtRank = 0;
@@ -222,6 +299,7 @@ public class OpenSearchHelper {
      * @param rankAggregatedClickThrough A map of position to clickthrough values.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
+    @Override
     public void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws Exception {
 
         if(!rankAggregatedClickThrough.isEmpty()) {
@@ -253,6 +331,7 @@ public class OpenSearchHelper {
      * @param clickthroughRates A map of query IDs to a collection of {@link ClickthroughRate} objects.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
+    @Override
     public void indexClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
         if(!clickthroughRates.isEmpty()) {
@@ -308,6 +387,7 @@ public class OpenSearchHelper {
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      * @return The ID of the indexed judgments.
      */
+    @Override
     public String indexJudgments(final Collection<Judgment> judgments) throws Exception {
 
         final String judgmentsId = UUID.randomUUID().toString();

@@ -10,7 +10,7 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.eval.engine.SearchEngine;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,10 +25,10 @@ public abstract class AbstractQuerySetRunner {
 
     private static final Logger LOGGER = LogManager.getLogger(AbstractQuerySetRunner.class);
 
-    protected final OpenSearchClient client;
+    protected final SearchEngine searchEngine;
 
-    public AbstractQuerySetRunner(final OpenSearchClient client) {
-        this.client = client;
+    public AbstractQuerySetRunner(final SearchEngine searchEngine) {
+        this.searchEngine = searchEngine;
     }
 
     /**

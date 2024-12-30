@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.judgments.model;
+package org.opensearch.eval.model;
 
 public class QuerySetQuery {
 

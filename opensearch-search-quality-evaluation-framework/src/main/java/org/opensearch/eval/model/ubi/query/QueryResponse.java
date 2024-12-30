@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.judgments.model.ubi.query;
+package org.opensearch.eval.model.ubi.query;
 
 import java.util.List;
 
