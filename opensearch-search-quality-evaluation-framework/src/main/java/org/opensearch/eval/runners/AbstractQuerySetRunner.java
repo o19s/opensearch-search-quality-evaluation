@@ -10,6 +10,9 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
 
 import java.util.ArrayList;
