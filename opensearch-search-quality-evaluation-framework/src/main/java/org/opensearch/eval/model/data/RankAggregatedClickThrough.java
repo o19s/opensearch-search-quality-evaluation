@@ -23,7 +23,6 @@ public class RankAggregatedClickThrough extends AbstractData {
         super(UUID.randomUUID().toString());
     }
 
-
     public int getPosition() {
         return position;
     }

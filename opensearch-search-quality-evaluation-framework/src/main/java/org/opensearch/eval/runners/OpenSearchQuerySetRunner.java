@@ -10,12 +10,12 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
+import org.opensearch.eval.model.data.QueryResultMetric;
 import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -25,6 +25,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static org.opensearch.eval.Constants.DASHBOARD_METRICS_INDEX_NAME;
 
 /**
  * A {@link AbstractQuerySetRunner} for Amazon OpenSearch.
@@ -180,7 +182,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
 
-        final boolean dashboardMetricsIndexExists = searchEngine.doesIndexExist(Constants.DASHBOARD_METRICS_INDEX_NAME);
+        final boolean dashboardMetricsIndexExists = searchEngine.doesIndexExist(DASHBOARD_METRICS_INDEX_NAME);
 
         if (!dashboardMetricsIndexExists) {
 
@@ -200,64 +202,35 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     "              }\n" +
                     "          }";
 
-            // Create the judgments index.
-            final CreateIndexRequest createIndexRequest = new CreateIndexRequest(SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME).mapping(mapping);
-
-            client.admin().indices().create(createIndexRequest, new ActionListener<>() {
-
-                @Override
-                public void onResponse(CreateIndexResponse createIndexResponse) {
-                    LOGGER.info("{} index created.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME);
-                }
-
-                @Override
-                public void onFailure(Exception ex) {
-                    LOGGER.error("Unable to create the {} index.", SearchQualityEvaluationPlugin.DASHBOARD_METRICS_INDEX_NAME, ex);
-                }
-
-            });
+            // TODO: Make sure the index gets created successfully.
+            searchEngine.createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
 
         }
 
-        final BulkRequest bulkRequest = new BulkRequest();
         final String timestamp = TimeUtils.getTimestamp();
 
         for(final QueryResult queryResult : result.getQueryResults()) {
 
             for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
-                // TODO: Make sure all of these items have values.
-                final Map<String, Object> metrics = new HashMap<>();
-                metrics.put("datetime", timestamp);
-                metrics.put("search_config", "research_1");
-                metrics.put("query_set_id", result.getQuerySetId());
-                metrics.put("query", queryResult.getQuery());
-                metrics.put("metric", searchMetric.getName());
-                metrics.put("value", searchMetric.getValue());
-                metrics.put("application", "sample_data");
-                metrics.put("evaluation_id", result.getRunId());
-                metrics.put("frogs_percent", queryResult.getFrogs());
+                final QueryResultMetric queryResultMetric = new QueryResultMetric();
+                queryResultMetric.setDatetime(timestamp);
+                queryResultMetric.setSearchConfig("research_1");
+                queryResultMetric.setQuerySetId(result.getQuerySetId());
+                queryResultMetric.setQuery(queryResult.getQuery());
+                queryResultMetric.setMetric(searchMetric.getName());
+                queryResultMetric.setValue(searchMetric.getValue());
+                queryResultMetric.setApplication("sample_data");
+                queryResultMetric.setEvaluationId(result.getRunId());
+                queryResultMetric.setFrogsPercent(queryResult.getFrogs());
 
-                // TODO: This is using the index name from the sample data.
-                bulkRequest.add(new IndexRequest("sqe_metrics_sample_data").source(metrics));
+                searchEngine.indexQueryResultMetric(queryResultMetric);
 
             }
 
         }
 
-        client.bulk(bulkRequest, new ActionListener<>() {
 
-            @Override
-            public void onResponse(BulkResponse bulkItemResponses) {
-                LOGGER.info("Successfully indexed {} metrics.", bulkItemResponses.getItems().length);
-            }
-
-            @Override
-            public void onFailure(Exception ex) {
-                LOGGER.error("Unable to bulk index metrics.", ex);
-            }
-
-        });
 
     }
 

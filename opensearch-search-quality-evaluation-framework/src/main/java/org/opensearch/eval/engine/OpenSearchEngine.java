@@ -23,7 +23,6 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -41,14 +40,17 @@ import org.opensearch.eval.Constants;
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.ClickThroughRate;
 import org.opensearch.eval.model.data.Judgment;
+import org.opensearch.eval.model.data.QueryResultMetric;
 import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.model.data.RankAggregatedClickThrough;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.utils.TimeUtils;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -91,6 +93,22 @@ public class OpenSearchEngine extends SearchEngine {
     public boolean doesIndexExist(final String index) throws IOException {
 
         return client.indices().exists(ExistsRequest.of(s -> s.index(index))).value();
+
+    }
+
+    @Override
+    public boolean createIndex(final String index, final String mappingJson) throws IOException {
+
+        final InputStream stream = new ByteArrayInputStream(mappingJson.getBytes(StandardCharsets.UTF_8));
+
+        final CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder()
+                .index(index)
+                .mappings(m -> m.withJson(stream))
+                .build();
+
+        stream.close();
+
+        return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
 
     }
 
@@ -467,6 +485,20 @@ public class OpenSearchEngine extends SearchEngine {
             }
 
         }
+
+    }
+
+    @Override
+    public void indexQueryResultMetric(final QueryResultMetric queryResultMetric) throws Exception {
+
+        // TODO: Use bulk imports.
+
+        final IndexRequest<QueryResultMetric> indexRequest = new IndexRequest.Builder<QueryResultMetric>()
+                .index(Constants.DASHBOARD_METRICS_INDEX_NAME)
+                .id(queryResultMetric.getId())
+                .document(queryResultMetric).build();
+
+        client.index(indexRequest);
 
     }
 
