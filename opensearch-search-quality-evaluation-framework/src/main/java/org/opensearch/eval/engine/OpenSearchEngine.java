@@ -14,11 +14,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.mapping.IntegerNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -43,6 +48,7 @@ import org.opensearch.eval.utils.TimeUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -117,6 +123,47 @@ public class OpenSearchEngine extends SearchEngine {
 
         final IndexRequest<QuerySet> indexRequest = new IndexRequest.Builder<QuerySet>().index(index).id(id).document(querySet).build();
         return client.index(indexRequest).id();
+
+    }
+
+    @Override
+    public QuerySet getQuerySet(String querySetId) throws IOException {
+
+        final Query query = Query.of(q -> q.term(m -> m.field("_id").value(FieldValue.of(querySetId))));
+
+        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).query(query).size(1), QuerySet.class);
+
+        // TODO: Handle the query set not being found.
+
+        return searchResponse.hits().hits().get(0).source();
+
+    }
+
+    @Override
+    public Double getJudgmentValue(final String judgmentsId, final String userQuery, final String documentId) throws Exception {
+
+        var boolQuery = BoolQuery.of(bq -> bq
+                .must(
+                        List.of(
+                            MatchQuery.of(mq -> mq.query(FieldValue.of("judgments_id")).field(judgmentsId)).toQuery(),
+                            MatchQuery.of(mq -> mq.query(FieldValue.of("query")).field(userQuery)).toQuery(),
+                            MatchQuery.of(mq -> mq.query(FieldValue.of("document_id")).field(documentId)).toQuery()
+                        )
+                )
+        );
+
+        final Query query = Query.of(q -> q.bool(boolQuery));
+
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME)
+                .query(query)
+                .from(0)
+                .size(1), Judgment.class);
+
+        if(searchResponse.hits().hits().isEmpty()) {
+            return Double.NaN;
+        } else {
+            return searchResponse.hits().hits().get(0).source().getJudgment();
+        }
 
     }
 

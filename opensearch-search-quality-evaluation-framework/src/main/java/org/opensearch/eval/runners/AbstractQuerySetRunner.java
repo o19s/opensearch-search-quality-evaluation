@@ -10,15 +10,10 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Base class for query set runners. Classes that extend this class
@@ -59,99 +54,6 @@ public abstract class AbstractQuerySetRunner {
     abstract void save(QuerySetRunResult result) throws Exception;
 
     /**
-     * Gets a query set from the index.
-     * @param querySetId The ID of the query set to get.
-     * @return The query set as a collection of maps of query to frequency
-     * @throws Exception Thrown if the query set cannot be retrieved.
-     */
-    public final Collection<Map<String, Long>> getQuerySet(final String querySetId) throws Exception {
-
-        // Get the query set.
-        final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-        sourceBuilder.query(QueryBuilders.matchQuery("_id", querySetId));
-
-        // Will be at most one match.
-        sourceBuilder.from(0);
-        sourceBuilder.size(1);
-
-        final SearchRequest searchRequest = new SearchRequest(Constants.QUERY_SETS_INDEX_NAME).source(sourceBuilder);
-
-        // TODO: Don't use .get()
-        final SearchResponse searchResponse = client.search(searchRequest).get();
-
-        if(searchResponse.getHits().getHits().length > 0) {
-
-            // The queries from the query set that will be run.
-            return (Collection<Map<String, Long>>) searchResponse.getHits().getAt(0).getSourceAsMap().get("queries");
-
-        } else {
-
-            LOGGER.error("Unable to get query set with ID {}", querySetId);
-
-            // The query set was not found.
-            throw new RuntimeException("The query set with ID " + querySetId + " was not found.");
-
-        }
-
-    }
-
-    /**
-     * Get a judgment from the index.
-     * @param judgmentsId The ID of the judgments to find.
-     * @param query The user query.
-     * @param documentId The document ID.
-     * @return The value of the judgment, or <code>NaN</code> if the judgment cannot be found.
-     */
-    public Double getJudgmentValue(final String judgmentsId, final String query, final String documentId) throws Exception {
-
-        // Find a judgment that matches the judgments_id, query_id, and document_id fields in the index.
-
-        final BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        boolQueryBuilder.must(QueryBuilders.termQuery("judgments_id", judgmentsId));
-        boolQueryBuilder.must(QueryBuilders.termQuery("query", query));
-        boolQueryBuilder.must(QueryBuilders.termQuery("document_id", documentId));
-
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(boolQueryBuilder);
-
-        // Will be a max of 1 result since we are getting the judgments by ID.
-        searchSourceBuilder.from(0);
-        searchSourceBuilder.size(1);
-
-        // Only include the judgment field in the response.
-        final String[] includeFields = new String[] {"judgment"};
-        final String[] excludeFields = new String[] {};
-        searchSourceBuilder.fetchSource(includeFields, excludeFields);
-
-        final SearchRequest searchRequest = new SearchRequest(Constants.JUDGMENTS_INDEX_NAME).source(searchSourceBuilder);
-
-        Double judgment = Double.NaN;
-
-        final SearchResponse searchResponse = client.search(searchRequest).get();
-
-        if (searchResponse.getHits().getHits().length > 0) {
-
-            final Map<String, Object> j = searchResponse.getHits().getAt(0).getSourceAsMap();
-
-            // LOGGER.debug("Judgment contains a value: {}", j.get("judgment"));
-
-            // TODO: Why does this not exist in some cases?
-            if(j.containsKey("judgment")) {
-                judgment = (Double) j.get("judgment");
-            }
-
-        } else {
-
-            // No judgment for this query/doc pair exists.
-            judgment = Double.NaN;
-
-        }
-
-        return judgment;
-
-    }
-
-    /**
      * Gets the judgments for a query / document pairs.
      * @param judgmentsId The judgments collection for which the judgment to retrieve belongs.
      * @param query The user query.
@@ -174,7 +76,7 @@ public abstract class AbstractQuerySetRunner {
             final String documentId = orderedDocumentIds.get(i);
 
             // Find the judgment value for this combination of query and documentId from the index.
-            final Double judgmentValue = getJudgmentValue(judgmentsId, query, documentId);
+            final Double judgmentValue = searchEngine.getJudgmentValue(judgmentsId, query, documentId);
 
             // If a judgment for this query/doc pair is not found, Double.NaN will be returned.
             if(!Double.isNaN(judgmentValue)) {

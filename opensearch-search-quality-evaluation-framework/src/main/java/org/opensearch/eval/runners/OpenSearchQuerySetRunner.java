@@ -16,6 +16,7 @@ import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
+import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.utils.TimeUtils;
 
 import java.util.ArrayList;
@@ -48,15 +49,15 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                                  final String searchPipeline, final String idField, final String query,
                                  final int k, final double threshold) throws Exception {
 
-        final Collection<Map<String, Long>> querySet = getQuerySet(querySetId);
-        LOGGER.info("Found {} queries in query set {}", querySet.size(), querySetId);
+        final QuerySet querySet = searchEngine.getQuerySet(querySetId);
+        LOGGER.info("Found {} queries in query set {}", querySet.getQuerySetQueries().size(), querySetId);
 
         try {
 
             // The results of each query.
             final List<QueryResult> queryResults = new ArrayList<>();
 
-            for (Map<String, Long> queryMap : querySet) {
+            for (Map<String, Long> queryMap : querySet.getQuerySetQueries()) {
 
                 // Loop over each query in the map and run each one.
                 for (final String userQuery : queryMap.keySet()) {

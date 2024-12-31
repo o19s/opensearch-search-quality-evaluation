@@ -30,4 +30,21 @@ public abstract class SearchEngine {
     public abstract String indexQuerySet(QuerySet querySet) throws IOException;
     public abstract Collection<UbiQuery> getUbiQueries() throws IOException;
 
+    /**
+     * Gets a query set from the index.
+     * @param querySetId The ID of the query set to get.
+     * @return The query set as a collection of maps of query to frequency
+     * @throws IOException Thrown if the query set cannot be retrieved.
+     */
+    public abstract QuerySet getQuerySet(String querySetId) throws IOException;
+
+    /**
+     * Get a judgment from the index.
+     * @param judgmentsId The ID of the judgments to find.
+     * @param query The user query.
+     * @param documentId The document ID.
+     * @return The value of the judgment, or <code>NaN</code> if the judgment cannot be found.
+     */
+    public abstract Double getJudgmentValue(final String judgmentsId, final String query, final String documentId) throws Exception;
+
 }
