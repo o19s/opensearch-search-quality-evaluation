@@ -59,11 +59,14 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
+import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
 import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHOLDER;
@@ -351,7 +354,6 @@ public class OpenSearchEngine extends SearchEngine {
                 .size(k)
                 .build();
 
-
         // TODO: Handle the searchPipeline if it is not null.
         // TODO: Only return the idField since that's all we need.
 
@@ -378,6 +380,119 @@ public class OpenSearchEngine extends SearchEngine {
         return orderedDocumentIds;
 
     }
+
+    @Override
+    public Map<String, Set<ClickthroughRate>> getClickthroughRate(final int maxRank) throws Exception {
+
+        final Map<String, Set<ClickthroughRate>> queriesToClickthroughRates = new HashMap<>();
+
+        // For each query:
+        // - Get each document returned in that query (in the QueryResponse object).
+        // - Calculate the click-through rate for the document. (clicks/impressions)
+
+        // TODO: Allow for a time period and for a specific application.
+
+        final String query = "{\n" +
+                "                \"bool\": {\n" +
+                "                  \"should\": [\n" +
+                "                    {\n" +
+                "                      \"term\": {\n" +
+                "                        \"action_name\": \"click\"\n" +
+                "                      }\n" +
+                "                    },\n" +
+                "                    {\n" +
+                "                      \"term\": {\n" +
+                "                        \"action_name\": \"impression\"\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  ],\n" +
+                "                  \"must\": [\n" +
+                "                    {\n" +
+                "                      \"range\": {\n" +
+                "                        \"event_attributes.position.ordinal\": {\n" +
+                "                          \"lte\": " + maxRank + "\n" +
+                "                        }\n" +
+                "                      }\n" +
+                "                    }\n" +
+                "                  ]\n" +
+                "                }\n" +
+                "              }";
+
+        final String encodedQuery = Base64.getEncoder().encodeToString(query.getBytes(StandardCharsets.UTF_8));
+
+        final WrapperQuery wrapperQuery = new WrapperQuery.Builder()
+                .query(encodedQuery)
+                .build();
+
+        final SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(Constants.UBI_EVENTS_INDEX_NAME)
+                .query(q -> q.wrapper(wrapperQuery))
+                .from(0)
+                .size(1000)
+                .scroll(Time.of(t -> t.offset(1000)))
+                .build();
+
+        final SearchResponse<UbiEvent> searchResponse = client.search(searchRequest, UbiEvent.class);
+
+        String scrollId = searchResponse.scrollId();
+        List<Hit<UbiEvent>> searchHits = searchResponse.hits().hits();
+
+        while (searchHits != null && !searchHits.isEmpty()) {
+
+            for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
+
+                final UbiEvent ubiEvent = searchResponse.hits().hits().get(i).source();
+
+                // We need to the hash of the query_id because two users can both search
+                // for "computer" and those searches will have different query IDs, but they are the same search.
+                final String userQuery = getUserQuery(ubiEvent.getQueryId());
+
+                // userQuery will be null if there is not a query for this event in ubi_queries.
+                if (userQuery != null) {
+
+                    // Get the clicks for this queryId from the map, or an empty list if this is a new query.
+                    final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
+
+                    // Get the ClickthroughRate object for the object that was interacted with.
+                    final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
+
+                    if (EVENT_CLICK.equalsIgnoreCase(ubiEvent.getActionName())) {
+                        //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
+                        clickthroughRate.logClick();
+                    } else if (EVENT_IMPRESSION.equalsIgnoreCase(ubiEvent.getActionName())) {
+                        //LOGGER.info("Logging an IMPRESSION on " + ubiEvent.getEventAttributes().getObject().getObjectId());
+                        clickthroughRate.logImpression();
+                    } else {
+                        LOGGER.warn("Invalid event action name: {}", ubiEvent.getActionName());
+                    }
+
+                    clickthroughRates.add(clickthroughRate);
+                    queriesToClickthroughRates.put(userQuery, clickthroughRates);
+                    // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
+
+                }
+
+            }
+
+            //LOGGER.info("Doing scroll to next results");
+            // TODO: Getting a warning in the log that "QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour"
+            // I don't remember seeing this prior to 2.18.0 but it's possible I just didn't see it.
+            // https://github.com/opensearch-project/OpenSearch/blob/f105e4eb2ede1556b5dd3c743bea1ab9686ebccf/server/src/main/java/org/opensearch/wlm/QueryGroupTask.java#L73
+
+            final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
+            final ScrollResponse<UbiEvent> scrollResponse = client.scroll(scrollRequest, UbiEvent.class);
+
+            scrollId = scrollResponse.scrollId();
+            searchHits = scrollResponse.hits().hits();
+
+        }
+
+        indexClickthroughRates(queriesToClickthroughRates);
+
+        return queriesToClickthroughRates;
+
+    }
+
 
     private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 

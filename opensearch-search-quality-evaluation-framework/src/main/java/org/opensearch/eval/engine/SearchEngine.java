@@ -53,4 +53,11 @@ public abstract class SearchEngine {
      */
     public abstract Double getJudgmentValue(final String judgmentsId, final String query, final String documentId) throws Exception;
 
+    /**
+     * Gets the clickthrough rates for each query and its results.
+     * @return A map of user_query to the clickthrough rate for each query result.
+     * @throws IOException Thrown when a problem accessing OpenSearch.
+     */
+    public abstract Map<String, Set<ClickthroughRate>> getClickthroughRate(final int maxRank) throws Exception;
+
 }

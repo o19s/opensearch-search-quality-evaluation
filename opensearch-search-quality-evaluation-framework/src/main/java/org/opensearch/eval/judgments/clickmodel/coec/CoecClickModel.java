@@ -68,7 +68,7 @@ public class CoecClickModel extends ClickModel {
 
         // Calculate and index the click-through rate for query/doc pairs.
         LOGGER.info("Beginning calculation of clickthrough rates.");
-        final Map<String, Set<ClickthroughRate>> clickthroughRates = getClickthroughRate();
+        final Map<String, Set<ClickthroughRate>> clickthroughRates = searchEngine.getClickthroughRate(maxRank);
         LOGGER.info("Clickthrough rates for number of queries: {}", clickthroughRates.size());
         showClickthroughRates(clickthroughRates);
 
@@ -151,120 +151,6 @@ public class CoecClickModel extends ClickModel {
 
     }
 
-    /**
-     * Gets the clickthrough rates for each query and its results.
-     * @return A map of user_query to the clickthrough rate for each query result.
-     * @throws IOException Thrown when a problem accessing OpenSearch.
-     */
-    private Map<String, Set<ClickthroughRate>> getClickthroughRate() throws Exception {
-
-        // For each query:
-        // - Get each document returned in that query (in the QueryResponse object).
-        // - Calculate the click-through rate for the document. (clicks/impressions)
-
-        // TODO: Allow for a time period and for a specific application.
-
-        final String query = "{\n" +
-                "                \"bool\": {\n" +
-                "                  \"should\": [\n" +
-                "                    {\n" +
-                "                      \"term\": {\n" +
-                "                        \"action_name\": \"click\"\n" +
-                "                      }\n" +
-                "                    },\n" +
-                "                    {\n" +
-                "                      \"term\": {\n" +
-                "                        \"action_name\": \"impression\"\n" +
-                "                      }\n" +
-                "                    }\n" +
-                "                  ],\n" +
-                "                  \"must\": [\n" +
-                "                    {\n" +
-                "                      \"range\": {\n" +
-                "                        \"event_attributes.position.ordinal\": {\n" +
-                "                          \"lte\": " + parameters.getMaxRank() + "\n" +
-                "                        }\n" +
-                "                      }\n" +
-                "                    }\n" +
-                "                  ]\n" +
-                "                }\n" +
-                "              }";
-
-        final BoolQueryBuilder queryBuilder = new BoolQueryBuilder().must(new WrapperQueryBuilder(query));
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).size(1000);
-        final Scroll scroll = new Scroll(TimeValue.timeValueMinutes(10L));
-
-        final SearchRequest searchRequest = Requests
-                .searchRequest(Constants.UBI_EVENTS_INDEX_NAME)
-                .source(searchSourceBuilder)
-                .scroll(scroll);
-
-        // TODO Don't use .get()
-        SearchResponse searchResponse = client.search(searchRequest).get();
-
-        String scrollId = searchResponse.getScrollId();
-        SearchHit[] searchHits = searchResponse.getHits().getHits();
-
-        final Map<String, Set<ClickthroughRate>> queriesToClickthroughRates = new HashMap<>();
-
-        while (searchHits != null && searchHits.length > 0) {
-
-            for (final SearchHit hit : searchHits) {
-
-                final UbiEvent ubiEvent = gson.fromJson(hit.getSourceAsString(), UbiEvent.class);
-
-                // We need to the hash of the query_id because two users can both search
-                // for "computer" and those searches will have different query IDs, but they are the same search.
-                final String userQuery = searchEngine.getUserQuery(ubiEvent.getQueryId());
-
-                // userQuery will be null if there is not a query for this event in ubi_queries.
-                if(userQuery != null) {
-
-                    // Get the clicks for this queryId from the map, or an empty list if this is a new query.
-                    final Set<ClickthroughRate> clickthroughRates = queriesToClickthroughRates.getOrDefault(userQuery, new LinkedHashSet<>());
-
-                    // Get the ClickthroughRate object for the object that was interacted with.
-                    final ClickthroughRate clickthroughRate = clickthroughRates.stream().filter(p -> p.getObjectId().equals(ubiEvent.getEventAttributes().getObject().getObjectId())).findFirst().orElse(new ClickthroughRate(ubiEvent.getEventAttributes().getObject().getObjectId()));
-
-                    if (EVENT_CLICK.equalsIgnoreCase(ubiEvent.getActionName())) {
-                        //LOGGER.info("Logging a CLICK on " + ubiEvent.getEventAttributes().getObject().getObjectId());
-                        clickthroughRate.logClick();
-                    } else if (EVENT_IMPRESSION.equalsIgnoreCase(ubiEvent.getActionName())) {
-                        //LOGGER.info("Logging an IMPRESSION on " + ubiEvent.getEventAttributes().getObject().getObjectId());
-                        clickthroughRate.logImpression();
-                    } else {
-                        LOGGER.warn("Invalid event action name: {}", ubiEvent.getActionName());
-                    }
-
-                    clickthroughRates.add(clickthroughRate);
-                    queriesToClickthroughRates.put(userQuery, clickthroughRates);
-                    // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
-
-                }
-
-            }
-
-            final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId);
-            scrollRequest.scroll(scroll);
-
-            //LOGGER.info("Doing scroll to next results");
-            // TODO: Getting a warning in the log that "QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour"
-            // I don't remember seeing this prior to 2.18.0 but it's possible I just didn't see it.
-            // https://github.com/opensearch-project/OpenSearch/blob/f105e4eb2ede1556b5dd3c743bea1ab9686ebccf/server/src/main/java/org/opensearch/wlm/QueryGroupTask.java#L73
-            searchResponse = client.searchScroll(scrollRequest).get();
-            //LOGGER.info("Scroll complete.");
-
-            scrollId = searchResponse.getScrollId();
-
-            searchHits = searchResponse.getHits().getHits();
-
-        }
-
-        searchEngine.indexClickthroughRates(queriesToClickthroughRates);
-
-        return queriesToClickthroughRates;
-
-    }
 
     /**
      * Calculate the rank-aggregated click through from the UBI events.
