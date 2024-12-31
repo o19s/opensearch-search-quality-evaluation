@@ -8,6 +8,7 @@ import org.opensearch.eval.model.ubi.query.UbiQuery;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,8 @@ public abstract class SearchEngine {
     public abstract boolean bulkIndex(String index, Map<String, Object> documents) throws IOException;
 
     public abstract Collection<Judgment> getJudgments(final String index) throws IOException;
+
+    public abstract List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField) throws IOException;
 
     public abstract String indexQuerySet(QuerySet querySet) throws IOException;
     public abstract Collection<UbiQuery> getUbiQueries() throws IOException;

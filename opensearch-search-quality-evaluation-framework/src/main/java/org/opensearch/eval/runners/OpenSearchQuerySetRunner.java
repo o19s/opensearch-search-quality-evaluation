@@ -64,80 +64,28 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                 // Loop over each query in the map and run each one.
                 for (final String userQuery : queryMap.keySet()) {
 
-                    // Replace the query placeholder with the user query.
-                    final String parsedQuery = query.replace(QUERY_PLACEHOLDER, userQuery);
-
-                    // Build the query from the one that was passed in.
-                    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-
-                    searchSourceBuilder.query(QueryBuilders.wrapperQuery(parsedQuery));
-                    searchSourceBuilder.from(0);
-                    searchSourceBuilder.size(k);
-
-                    final String[] includeFields = new String[]{idField};
-                    final String[] excludeFields = new String[]{};
-                    searchSourceBuilder.fetchSource(includeFields, excludeFields);
-
-                    // LOGGER.info(searchSourceBuilder.toString());
-
-                    final SearchRequest searchRequest = new SearchRequest(index);
-                    searchRequest.source(searchSourceBuilder);
-
-                    if (searchPipeline != null) {
-                        searchSourceBuilder.pipeline(searchPipeline);
-                        searchRequest.pipeline(searchPipeline);
-                    }
-
                     // This is to keep OpenSearch from rejecting queries.
                     // TODO: Look at using the Workload Management in 2.18.0.
                     Thread.sleep(50);
 
-                    client.search(searchRequest, new ActionListener<>() {
+                    final List<String> orderedDocumentIds = searchEngine.runQuery(index, query, k, userQuery, idField);
 
-                        @Override
-                        public void onResponse(final SearchResponse searchResponse) {
+                    try {
 
-                            final List<String> orderedDocumentIds = new ArrayList<>();
+                        final RelevanceScores relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
 
-                            for (final SearchHit hit : searchResponse.getHits().getHits()) {
+                        // Calculate the metrics for this query.
+                        final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores.getRelevanceScores());
+                        final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores.getRelevanceScores());
+                        final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores.getRelevanceScores());
 
-                                final String documentId;
+                        final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
 
-                                if ("_id".equals(idField)) {
-                                    documentId = hit.getId();
-                                } else {
-                                    // TODO: Need to check this field actually exists.
-                                    documentId = hit.getSourceAsMap().get(idField).toString();
-                                }
+                        queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics, relevanceScores.getFrogs()));
 
-                                orderedDocumentIds.add(documentId);
-
-                            }
-
-                            try {
-
-                                final RelevanceScores relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
-
-                                // Calculate the metrics for this query.
-                                final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores.getRelevanceScores());
-                                final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores.getRelevanceScores());
-                                final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores.getRelevanceScores());
-
-                                final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
-
-                                queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics, relevanceScores.getFrogs()));
-
-                            } catch (Exception ex) {
-                                LOGGER.error("Unable to get relevance scores for judgments {} and user query {}.", judgmentsId, userQuery, ex);
-                            }
-
-                        }
-
-                        @Override
-                        public void onFailure(Exception ex) {
-                            LOGGER.error("Unable to search using query: {}", searchSourceBuilder.toString(), ex);
-                        }
-                    });
+                    } catch (Exception ex) {
+                        LOGGER.error("Unable to get relevance scores for judgments {} and user query {}.", judgmentsId, userQuery, ex);
+                    }
 
                 }
 

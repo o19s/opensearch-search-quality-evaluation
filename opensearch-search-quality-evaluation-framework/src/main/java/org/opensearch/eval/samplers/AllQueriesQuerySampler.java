@@ -8,9 +8,10 @@
  */
 package org.opensearch.eval.samplers;
 
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.ubi.query.UbiQuery;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,24 +42,13 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
     @Override
     public String sample() throws Exception {
 
-        // Get queries from the UBI queries index.
-        // TODO: This needs to use scroll or something else.
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(QueryBuilders.matchAllQuery());
-        searchSourceBuilder.from(0);
-        searchSourceBuilder.size(parameters.getQuerySetSize());
-
-        final SearchRequest searchRequest = new SearchRequest(Constants.UBI_QUERIES_INDEX_NAME).source(searchSourceBuilder);
-
-        // TODO: Don't use .get()
-        final SearchResponse searchResponse = client.search(searchRequest).get();
+        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
         final Map<String, Long> queries = new HashMap<>();
 
-        for(final SearchHit hit : searchResponse.getHits().getHits()) {
+        for(final UbiQuery ubiQuery : ubiQueries) {
 
-            final Map<String, Object> fields = hit.getSourceAsMap();
-            queries.merge(fields.get("user_query").toString(), 1L, Long::sum);
+            queries.merge(ubiQuery.getUserQuery(), 1L, Long::sum);
 
             // Will be useful for paging once implemented.
             if(queries.size() > parameters.getQuerySetSize()) {

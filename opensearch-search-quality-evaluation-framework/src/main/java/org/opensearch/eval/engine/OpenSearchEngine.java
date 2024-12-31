@@ -8,6 +8,7 @@
  */
 package org.opensearch.eval.engine;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
@@ -23,15 +24,18 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.core.search.TrackHits;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
@@ -43,6 +47,7 @@ import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.data.QueryResultMetric;
 import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.model.data.RankAggregatedClickThrough;
+import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -51,6 +56,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +66,7 @@ import java.util.UUID;
 
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
+import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHOLDER;
 
 /**
  * Functionality for interacting with OpenSearch.
@@ -303,25 +310,18 @@ public class OpenSearchEngine extends SearchEngine {
 
         LOGGER.debug("Getting query from query ID {}", queryId);
 
-        final String query = "{\"match\": {\"query_id\": \"" + queryId + "\" }}";
-        final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
+        final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("query_id").query(FieldValue.of(queryId))))
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .from(0)
+                .size(1)
+                .build();
 
-        // The query_id should be unique anyway, but we are limiting it to a single result anyway.
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(qb);
-        searchSourceBuilder.from(0);
-        searchSourceBuilder.size(1);
-
-        final String[] indexes = {Constants.UBI_QUERIES_INDEX_NAME};
-
-        final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
-        final SearchResponse response = client.search(searchRequest).get();
+        final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
 
         // If this does not return a query then we cannot calculate the judgments. Each even should have a query associated with it.
-        if(response.getHits().getHits() != null & response.getHits().getHits().length > 0) {
+        if(searchResponse.hits().hits() != null & !searchResponse.hits().hits().isEmpty()) {
 
-            final SearchHit hit = response.getHits().getHits()[0];
-            return gson.fromJson(hit.getSourceAsString(), UbiQuery.class);
+            return searchResponse.hits().hits().get(0).source();
 
         } else {
 
@@ -332,24 +332,65 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
+    @Override
+    public List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField) throws IOException {
+
+        // Replace the query placeholder with the user query.
+        final String parsedQuery = query.replace(QUERY_PLACEHOLDER, userQuery);
+
+        final String encodedQuery = Base64.getEncoder().encodeToString(parsedQuery.getBytes(StandardCharsets.UTF_8));
+
+        final WrapperQuery wrapperQuery = new WrapperQuery.Builder()
+                .query(encodedQuery)
+                .build();
+
+        final SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(index)
+                .query(q -> q.wrapper(wrapperQuery))
+                .from(0)
+                .size(k)
+                .build();
+
+
+        // TODO: Handle the searchPipeline if it is not null.
+        // TODO: Only return the idField since that's all we need.
+
+        final SearchResponse<ObjectNode> searchResponse = client.search(searchRequest, ObjectNode.class);
+
+        final List<String> orderedDocumentIds = new ArrayList<>();
+
+        for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
+
+            final String documentId;
+
+            if ("_id".equals(idField)) {
+                documentId = searchResponse.hits().hits().get(i).id();
+            } else {
+                // TODO: Need to check this field actually exists.
+                // TODO: Does this work?
+                documentId = searchResponse.hits().hits().get(i).fields().get(idField).toString();
+            }
+
+            orderedDocumentIds.add(documentId);
+
+        }
+
+        return orderedDocumentIds;
+
+    }
+
     private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 
-        final String query = "{\"match\": {\"user_query\": \"" + userQuery + "\" }}";
-        final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
+        final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("user_query").query(FieldValue.of(userQuery))))
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .build();
 
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-        searchSourceBuilder.query(qb);
-
-        final String[] indexes = {Constants.UBI_QUERIES_INDEX_NAME};
-
-        final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
-        final SearchResponse response = client.search(searchRequest).get();
+        final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
 
         final Collection<String> queryIds = new ArrayList<>();
 
-        for(final SearchHit hit : response.getHits().getHits()) {
-            final String queryId = hit.getSourceAsMap().get("query_id").toString();
-            queryIds.add(queryId);
+        for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
+            queryIds.add(searchResponse.hits().hits().get(i).source().getQueryId());
         }
 
         return queryIds;
@@ -394,22 +435,22 @@ public class OpenSearchEngine extends SearchEngine {
                     "      }\n" +
                     "    }";
 
-            final WrapperQueryBuilder qb = QueryBuilders.wrapperQuery(query);
+            final String encodedQuery = Base64.getEncoder().encodeToString(query.getBytes(StandardCharsets.UTF_8));
 
-            final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-            searchSourceBuilder.query(qb);
-            searchSourceBuilder.trackTotalHits(true);
-            searchSourceBuilder.size(0);
+            final WrapperQuery wrapperQuery = new WrapperQuery.Builder()
+                    .query(encodedQuery)
+                    .build();
 
-            final String[] indexes = {Constants.UBI_EVENTS_INDEX_NAME};
+            final SearchRequest searchRequest = new SearchRequest.Builder()
+                    .index(Constants.UBI_EVENTS_INDEX_NAME)
+                    .query(q -> q.wrapper(wrapperQuery))
+                    .size(0)
+                    .trackTotalHits(TrackHits.of(t -> t.enabled(true)))
+                    .build();
 
-            final SearchRequest searchRequest = new SearchRequest(indexes, searchSourceBuilder);
-            final SearchResponse response = client.search(searchRequest).get();
+            final SearchResponse<UbiEvent> searchResponse = client.search(searchRequest, UbiEvent.class);
 
-            // Won't be null as long as trackTotalHits is true.
-            if(response.getHits().getTotalHits() != null) {
-                countOfTimesShownAtRank += response.getHits().getTotalHits().value;
-            }
+            countOfTimesShownAtRank += searchResponse.hits().total().value();
 
         }
 
