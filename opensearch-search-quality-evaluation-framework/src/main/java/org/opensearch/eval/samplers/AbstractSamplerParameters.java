@@ -10,12 +10,14 @@ package org.opensearch.eval.samplers;
 
 public class AbstractSamplerParameters {
 
+    private final String sampler;
     private final String name;
     private final String description;
     private final String sampling;
     private final int querySetSize;
 
-    public AbstractSamplerParameters(final String name, final String description, final String sampling, final int querySetSize) {
+    public AbstractSamplerParameters(final String sampler, final String name, final String description, final String sampling, final int querySetSize) {
+        this.sampler = sampler;
         this.name = name;
         this.description = description;
         this.sampling = sampling;
@@ -36,6 +38,10 @@ public class AbstractSamplerParameters {
 
     public int getQuerySetSize() {
         return querySetSize;
+    }
+
+    public String getSampler() {
+        return sampler;
     }
 
 }

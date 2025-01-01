@@ -9,6 +9,9 @@
 package org.opensearch.eval;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -22,6 +25,10 @@ import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.RunQuerySetParameters;
+import org.opensearch.eval.samplers.AllQueriesQuerySampler;
+import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
+import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParameters;
+import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -39,6 +46,7 @@ public class App {
 
         final Options options = new Options();
         options.addOption("c", true, "create a click model");
+        options.addOption("s", true, "create a query set using sampling");
         options.addOption("r", true, "run a query set");
 
         final CommandLineParser parser = new DefaultParser();
@@ -81,6 +89,51 @@ public class App {
             } else {
                 System.err.println("The query set run parameters file does not exist.");
             }
+
+        } else if (cmd.hasOption("s")) {
+
+            final String samplerOptionsFile = cmd.getOptionValue("s");
+            final File file = new File(samplerOptionsFile);
+
+            if(file.exists()) {
+
+                final String jsonString = Files.readString(file.toPath(), StandardCharsets.UTF_8);
+                final JsonElement jsonElement = JsonParser.parseString(jsonString);
+                final JsonObject jsonObject = jsonElement.getAsJsonObject();
+                final String samplerType = jsonObject.get("sampler").getAsString();
+
+                if("all".equalsIgnoreCase(samplerType)) {
+
+                    final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
+
+                    final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
+                    final String querySetId = sampler.sample();
+
+                    System.out.println("Query set created: " + querySetId);
+
+                } else if("pptss".equalsIgnoreCase(samplerType)) {
+
+                    final ProbabilityProportionalToSizeParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeParameters.class);
+
+                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
+                    final String querySetId = sampler.sample();
+
+                    System.out.println("Query set created: " + querySetId);
+
+                } else {
+
+                    System.err.println("Invalid sampler.");
+
+                }
+
+            } else {
+                System.err.println("The query set run parameters file does not exist.");
+            }
+
+
+        } else {
+
+            System.err.println("Invalid options.");
 
         }
 
@@ -125,37 +178,7 @@ public class App {
 //                    } catch(Exception ex) {
 //                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, "{\"error\": \"" + ex.getMessage() + "\"}"));
 //                    }
-//
-//
-//                // Create a query set by using PPTSS sampling.
-//                } else if (ProbabilityProportionalToSizeAbstractQuerySampler.NAME.equalsIgnoreCase(sampling)) {
-//
-//                    LOGGER.info("Creating query set using PPTSS");
-//
-//                    final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters(name, description, sampling, querySetSize);
-//                    final ProbabilityProportionalToSizeAbstractQuerySampler sampler = new ProbabilityProportionalToSizeAbstractQuerySampler(client, parameters);
-//
-//                    try {
-//
-//                        // Sample and index the queries.
-//                        final String querySetId = sampler.sample();
-//
-//                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"query_set\": \"" + querySetId + "\"}"));
-//
-//                    } catch(Exception ex) {
-//                        return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, "{\"error\": \"" + ex.getMessage() + "\"}"));
-//                    }
-//
-//                } else {
-//                    // An Invalid sampling method was provided in the request.
-//                    return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Invalid sampling method: " + sampling + "\"}"));
-//                }
-//
-//            } else {
-//                // Invalid HTTP method for this endpoint.
-//                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, "{\"error\": \"" + request.method() + " is not allowed.\"}"));
-//            }
-//
+
 
 //        // Handle the on-demand creation of implicit judgments.
 //        } else if(IMPLICIT_JUDGMENTS_URL.equalsIgnoreCase(request.path())) {

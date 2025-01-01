@@ -25,11 +25,11 @@ import java.util.Set;
  * See https://opensourceconnections.com/blog/2022/10/13/how-to-succeed-with-explicit-relevance-evaluation-using-probability-proportional-to-size-sampling/
  * for more information on PPTSS.
  */
-public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQuerySampler {
+public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySampler {
 
     public static final String NAME = "pptss";
 
-    private static final Logger LOGGER = LogManager.getLogger(ProbabilityProportionalToSizeAbstractQuerySampler.class);
+    private static final Logger LOGGER = LogManager.getLogger(ProbabilityProportionalToSizeQuerySampler.class);
 
     private final SearchEngine searchEngine;
     private final ProbabilityProportionalToSizeParameters parameters;
@@ -39,7 +39,7 @@ public class ProbabilityProportionalToSizeAbstractQuerySampler extends AbstractQ
      * @param searchEngine The OpenSearch {@link SearchEngine engine}.
      * @param parameters The {@link ProbabilityProportionalToSizeParameters parameters} for the sampling.
      */
-    public ProbabilityProportionalToSizeAbstractQuerySampler(final SearchEngine searchEngine, final ProbabilityProportionalToSizeParameters parameters) {
+    public ProbabilityProportionalToSizeQuerySampler(final SearchEngine searchEngine, final ProbabilityProportionalToSizeParameters parameters) {
         this.searchEngine = searchEngine;
         this.parameters = parameters;
     }

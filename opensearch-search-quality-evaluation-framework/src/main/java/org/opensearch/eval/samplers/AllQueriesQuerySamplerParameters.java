@@ -11,7 +11,7 @@ package org.opensearch.eval.samplers;
 public class AllQueriesQuerySamplerParameters extends AbstractSamplerParameters {
 
     public AllQueriesQuerySamplerParameters(final String name, final String description, final String sampling, final int querySetSize) {
-        super(name, description, sampling, querySetSize);
+        super("all", name, description, sampling, querySetSize);
     }
 
 }
