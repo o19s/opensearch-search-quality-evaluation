@@ -8,11 +8,11 @@
  */
 package org.opensearch.eval;
 
+import com.google.gson.Gson;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.OpenSearchEngine;
@@ -20,34 +20,67 @@ import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
+import org.opensearch.eval.runners.RunQuerySetParameters;
 
-public class SearchQualityEvaluationFrameworkApp {
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 
-    private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationFrameworkApp.class);
+public class App {
+
+    private static final Logger LOGGER = LogManager.getLogger(App.class);
 
     public static void main(String[] args) throws Exception {
 
         System.out.println("Search Quality Evaluation Framework");
 
+        final Gson gson = new Gson();
+
         final Options options = new Options();
-        options.addOption("c", false, "create a click model");
-        options.addOption("q", true, "run a query set");
+        options.addOption("c", true, "create a click model");
+        options.addOption("r", true, "run a query set");
 
         final CommandLineParser parser = new DefaultParser();
         final CommandLine cmd = parser.parse(options, args);
+
+        final SearchEngine searchEngine = new OpenSearchEngine();
 
         if(cmd.hasOption("c")) {
 
             //final String clickModel = cmd.getOptionValue("c");
             System.out.println("Creating click model...");
 
-            final SearchEngine searchEngine = new OpenSearchEngine();
-            final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(10);
+            final String clickModelType = cmd.getOptionValue("c");
 
-            final ClickModel cm = new CoecClickModel(searchEngine, coecClickModelParameters);
-            cm.calculateJudgments();
+            if(CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModelType)) {
 
-        } else {
+                final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(10);
+
+                final ClickModel cm = new CoecClickModel(searchEngine, coecClickModelParameters);
+                cm.calculateJudgments();
+
+            } else {
+                System.err.println("Invalid click model type. Valid models are 'coec'.");
+            }
+
+        } else if (cmd.hasOption("r")) {
+
+            System.out.println("Running query set...");
+
+            final String querySetOptionsFile = cmd.getOptionValue("q");
+            final File file = new File(querySetOptionsFile);
+
+            if(file.exists()) {
+
+                final RunQuerySetParameters runQuerySetParameters = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), RunQuerySetParameters.class);
+
+                final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(searchEngine);
+                openSearchQuerySetRunner.run(runQuerySetParameters);
+
+            } else {
+                System.err.println("The query set run parameters file does not exist.");
+            }
 
         }
 
@@ -123,50 +156,7 @@ public class SearchQualityEvaluationFrameworkApp {
 //                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.METHOD_NOT_ALLOWED, "{\"error\": \"" + request.method() + " is not allowed.\"}"));
 //            }
 //
-//        // Handle running query sets.
-//        } else if(QUERYSET_RUN_URL.equalsIgnoreCase(request.path())) {
-//
-//            final String querySetId = request.param("id");
-//            final String judgmentsId = request.param("judgments_id");
-//            final String index = request.param("index");
-//            final String searchPipeline = request.param("search_pipeline", null);
-//            final String idField = request.param("id_field", "_id");
-//            final int k = Integer.parseInt(request.param("k", "10"));
-//            final double threshold = Double.parseDouble(request.param("threshold", "1.0"));
-//
-//            if(querySetId == null || querySetId.isEmpty() || judgmentsId == null || judgmentsId.isEmpty() || index == null || index.isEmpty()) {
-//                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing required parameters.\"}"));
-//            }
-//
-//            if(k < 1) {
-//                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"k must be a positive integer.\"}"));
-//            }
-//
-//            if(!request.hasContent()) {
-//                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing query in body.\"}"));
-//            }
-//
-//            // Get the query JSON from the content.
-//            final String query = new String(BytesReference.toBytes(request.content()), Charset.defaultCharset());
-//
-//            // Validate the query has a QUERY_PLACEHOLDER.
-//            if(!query.contains(QUERY_PLACEHOLDER)) {
-//                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.BAD_REQUEST, "{\"error\": \"Missing query placeholder in query.\"}"));
-//            }
-//
-//            try {
-//
-//                final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(client);
-//                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetId, judgmentsId, index, searchPipeline, idField, query, k, threshold);
-//                openSearchQuerySetRunner.save(querySetRunResult);
-//
-//            } catch (Exception ex) {
-//                LOGGER.error("Unable to run query set. Verify query set and judgments exist.", ex);
-//                return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
-//            }
-//
-//            return restChannel -> restChannel.sendResponse(new BytesRestResponse(RestStatus.OK, "{\"message\": \"Run initiated for query set " + querySetId + "\"}"));
-//
+
 //        // Handle the on-demand creation of implicit judgments.
 //        } else if(IMPLICIT_JUDGMENTS_URL.equalsIgnoreCase(request.path())) {
 //

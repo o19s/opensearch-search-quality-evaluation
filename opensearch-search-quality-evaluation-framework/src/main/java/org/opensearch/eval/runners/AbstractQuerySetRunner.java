@@ -31,21 +31,10 @@ public abstract class AbstractQuerySetRunner {
 
     /**
      * Runs the query set.
-     * @param querySetId The ID of the query set to run.
-     * @param judgmentsId The ID of the judgments set to use for search metric calculation.
-     * @param index The name of the index to run the query sets against.
-     * @param searchPipeline The name of the search pipeline to use, or <code>null</code> to not use a search pipeline.
-     * @param idField The field in the index that is used to uniquely identify a document.
-     * @param query The query that will be used to run the query set.
-     * @param k The k used for metrics calculation, i.e. DCG@k.
-     * @param threshold The cutoff for binary judgments. A judgment score greater than or equal
-     *                  to this value will be assigned a binary judgment value of 1. A judgment score
-     *                  less than this value will be assigned a binary judgment value of 0.
+     * @param querySetParameters A {@link RunQuerySetParameters parameters}.
      * @return The query set {@link QuerySetRunResult results} and calculated metrics.
      */
-    abstract QuerySetRunResult run(String querySetId, final String judgmentsId, final String index, final String searchPipeline,
-                                   final String idField, final String query, final int k,
-                                   final double threshold) throws Exception;
+    abstract QuerySetRunResult run(RunQuerySetParameters querySetParameters) throws Exception;
 
     /**
      * Saves the query set results to a persistent store, which may be the search engine itself.

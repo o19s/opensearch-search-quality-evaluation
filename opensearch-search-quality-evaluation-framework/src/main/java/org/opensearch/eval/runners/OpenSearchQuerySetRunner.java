@@ -47,12 +47,10 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
     }
 
     @Override
-    public QuerySetRunResult run(final String querySetId, final String judgmentsId, final String index,
-                                 final String searchPipeline, final String idField, final String query,
-                                 final int k, final double threshold) throws Exception {
+    public QuerySetRunResult run(final RunQuerySetParameters querySetParameters) throws Exception {
 
-        final QuerySet querySet = searchEngine.getQuerySet(querySetId);
-        LOGGER.info("Found {} queries in query set {}", querySet.getQuerySetQueries().size(), querySetId);
+        final QuerySet querySet = searchEngine.getQuerySet(querySetParameters.getQuerySetId());
+        LOGGER.info("Found {} queries in query set {}", querySet.getQuerySetQueries().size(), querySetParameters.getQuerySetId());
 
         try {
 
@@ -68,23 +66,29 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     // TODO: Look at using the Workload Management in 2.18.0.
                     Thread.sleep(50);
 
-                    final List<String> orderedDocumentIds = searchEngine.runQuery(index, query, k, userQuery, idField);
+                    final List<String> orderedDocumentIds = searchEngine.runQuery(
+                            querySetParameters.getIndex(),
+                            querySetParameters.getQuery(),
+                            querySetParameters.getK(),
+                            userQuery,
+                            querySetParameters.getIdField());
 
                     try {
 
-                        final RelevanceScores relevanceScores = getRelevanceScores(judgmentsId, userQuery, orderedDocumentIds, k);
+                        final int k = querySetParameters.getK();
+                        final RelevanceScores relevanceScores = getRelevanceScores(querySetParameters.getJudgmentsId(), userQuery, orderedDocumentIds, k);
 
                         // Calculate the metrics for this query.
                         final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores.getRelevanceScores());
                         final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores.getRelevanceScores());
-                        final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, threshold, relevanceScores.getRelevanceScores());
+                        final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, querySetParameters.getThreshold(), relevanceScores.getRelevanceScores());
 
                         final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
 
                         queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics, relevanceScores.getFrogs()));
 
                     } catch (Exception ex) {
-                        LOGGER.error("Unable to get relevance scores for judgments {} and user query {}.", judgmentsId, userQuery, ex);
+                        LOGGER.error("Unable to get relevance scores for judgments {} and user query {}.", querySetParameters.getJudgmentsId(), userQuery, ex);
                     }
 
                 }
@@ -110,7 +114,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             }
 
             final String querySetRunId = UUID.randomUUID().toString();
-            final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetId, queryResults, querySetMetrics);
+            final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetParameters.getQuerySetId(), queryResults, querySetMetrics);
 
             LOGGER.info("Query set run complete: {}", querySetRunId);
 

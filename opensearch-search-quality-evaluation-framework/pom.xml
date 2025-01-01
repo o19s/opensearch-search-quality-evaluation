@@ -19,7 +19,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>org.opensearch.eval.SearchQualityEvaluationFrameworkApp</mainClass>
+                            <mainClass>org.opensearch.eval.App</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>

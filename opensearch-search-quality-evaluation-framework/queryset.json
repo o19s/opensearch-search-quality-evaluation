@@ -1,0 +1,10 @@
+{
+  "query_set_id": "",
+  "judgments_id": "",
+  "index": "",
+  "search_pipeline": "",
+  "id_field": "",
+  "k": 10,
+  "threshold": 1.0,
+  "query": {}
+}
