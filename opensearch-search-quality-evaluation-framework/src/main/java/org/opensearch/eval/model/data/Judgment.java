@@ -14,6 +14,7 @@ import org.opensearch.eval.utils.MathUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * A judgment of a search result's quality for a given query.
@@ -39,6 +40,21 @@ public class Judgment extends AbstractData {
      */
     public Judgment(final String id, final String queryId, final String query, final String document, final double judgment) {
         super(id);
+        this.queryId = queryId;
+        this.query = query;
+        this.document = document;
+        this.judgment = judgment;
+    }
+
+    /**
+     * Creates a new judgment.
+     * @param queryId The query ID for the judgment.
+     * @param query The query for the judgment.
+     * @param document The document in the judgment.
+     * @param judgment The judgment value.
+     */
+    public Judgment(final String queryId, final String query, final String document, final double judgment) {
+        super(UUID.randomUUID().toString());
         this.queryId = queryId;
         this.query = query;
         this.document = document;

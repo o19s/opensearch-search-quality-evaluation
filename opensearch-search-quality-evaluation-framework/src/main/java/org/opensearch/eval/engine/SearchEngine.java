@@ -60,4 +60,11 @@ public abstract class SearchEngine {
      */
     public abstract Map<String, Set<ClickthroughRate>> getClickthroughRate(final int maxRank) throws Exception;
 
+    /**
+     * Calculate the rank-aggregated click through from the UBI events.
+     * @return A map of positions to clickthrough rates.
+     * @throws IOException Thrown when a problem accessing OpenSearch.
+     */
+    public abstract Map<Integer, Double> getRankAggregatedClickThrough(int maxRank) throws Exception;
+
 }

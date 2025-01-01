@@ -11,19 +11,14 @@ package org.opensearch.eval.judgments.clickmodel.coec;
 import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
+import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.Judgment;
-import org.opensearch.eval.model.ubi.event.UbiEvent;
-import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
 import org.opensearch.eval.utils.MathUtils;
 
-import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
@@ -62,7 +57,7 @@ public class CoecClickModel extends ClickModel {
 
         // Calculate and index the rank-aggregated click-through.
         LOGGER.info("Beginning calculation of rank-aggregated click-through.");
-        final Map<Integer, Double> rankAggregatedClickThrough = getRankAggregatedClickThrough();
+        final Map<Integer, Double> rankAggregatedClickThrough = searchEngine.getRankAggregatedClickThrough(maxRank);
         LOGGER.info("Rank-aggregated clickthrough positions: {}", rankAggregatedClickThrough.size());
         showRankAggregatedClickThrough(rankAggregatedClickThrough);
 
@@ -148,108 +143,6 @@ public class CoecClickModel extends ClickModel {
         } else {
             return null;
         }
-
-    }
-
-
-    /**
-     * Calculate the rank-aggregated click through from the UBI events.
-     * @return A map of positions to clickthrough rates.
-     * @throws IOException Thrown when a problem accessing OpenSearch.
-     */
-    public Map<Integer, Double> getRankAggregatedClickThrough() throws Exception {
-
-        final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
-
-        // TODO: Allow for a time period and for a specific application.
-
-        final QueryBuilder findRangeNumber = QueryBuilders.rangeQuery("event_attributes.position.ordinal").lte(parameters.getMaxRank());
-        final QueryBuilder queryBuilder = new BoolQueryBuilder().must(findRangeNumber);
-
-        // Order the aggregations by key and not by value.
-        final BucketOrder bucketOrder = BucketOrder.key(true);
-
-        final TermsAggregationBuilder positionsAggregator = AggregationBuilders.terms("By_Position").field("event_attributes.position.ordinal").order(bucketOrder).size(parameters.getMaxRank());
-        final TermsAggregationBuilder actionNameAggregation = AggregationBuilders.terms("By_Action").field("action_name").subAggregation(positionsAggregator).order(bucketOrder).size(parameters.getMaxRank());
-
-        final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-                .query(queryBuilder)
-                .aggregation(actionNameAggregation)
-                .from(0)
-                .size(0);
-
-        final SearchRequest searchRequest = new SearchRequest(Constants.UBI_EVENTS_INDEX_NAME).source(searchSourceBuilder);
-        final SearchResponse searchResponse = client.search(searchRequest).get();
-
-        final Map<Integer, Double> clickCounts = new HashMap<>();
-        final Map<Integer, Double> impressionCounts = new HashMap<>();
-
-        final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
-        final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
-
-        LOGGER.debug("Aggregation query: {}", searchSourceBuilder.toString());
-
-        for(final Terms.Bucket actionBucket : actionBuckets) {
-
-            // Handle the "impression" bucket.
-            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
-
-                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
-                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-
-                for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-                }
-
-            }
-
-            // Handle the "click" bucket.
-            if(EVENT_CLICK.equalsIgnoreCase(actionBucket.getKey().toString())) {
-
-                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
-                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-
-                for(final Terms.Bucket positionBucket : positionBuckets) {
-                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-                    clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-                }
-
-            }
-
-        }
-
-        for(int rank = 0; rank < parameters.getMaxRank(); rank++) {
-
-            if(impressionCounts.containsKey(rank)) {
-
-                if(clickCounts.containsKey(rank)) {
-
-                    // Calculate the CTR by dividing the number of clicks by the number of impressions.
-                    LOGGER.info("Position = {}, Impression Counts = {}, Click Count = {}", rank, impressionCounts.get(rank), clickCounts.get(rank));
-                    rankAggregatedClickThrough.put(rank, clickCounts.get(rank) / impressionCounts.get(rank));
-
-                } else {
-
-                    // This document has impressions but no clicks, so it's CTR is zero.
-                    LOGGER.info("Position = {}, Impression Counts = {}, Impressions but no clicks so CTR is 0", rank, clickCounts.get(rank));
-                    rankAggregatedClickThrough.put(rank, 0.0);
-
-                }
-
-            } else {
-
-                // No impressions so the clickthrough rate is 0.
-                LOGGER.info("No impressions for rank {}, so using CTR of 0", rank);
-                rankAggregatedClickThrough.put(rank, (double) 0);
-
-            }
-
-        }
-
-        searchEngine.indexRankAggregatedClickthrough(rankAggregatedClickThrough);
-
-        return rankAggregatedClickThrough;
 
     }
 

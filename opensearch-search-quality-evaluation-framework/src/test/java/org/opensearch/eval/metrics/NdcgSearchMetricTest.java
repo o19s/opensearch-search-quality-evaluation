@@ -8,12 +8,15 @@
  */
 package org.opensearch.eval.metrics;
 
-import org.opensearch.test.OpenSearchTestCase;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-public class NdcgSearchMetricTest extends OpenSearchTestCase {
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+public class NdcgSearchMetricTest {
+
+    @Test
     public void testCalculate() {
 
         final int k = 10;
@@ -26,6 +29,7 @@ public class NdcgSearchMetricTest extends OpenSearchTestCase {
 
     }
 
+    @Test
     public void testCalculateAllZeros() {
 
         final int k = 10;

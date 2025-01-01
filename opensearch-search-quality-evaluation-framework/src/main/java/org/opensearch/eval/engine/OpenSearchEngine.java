@@ -13,17 +13,24 @@ import com.google.gson.Gson;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.mapping.IntegerNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -493,6 +500,161 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
+    @Override
+    public Map<Integer, Double> getRankAggregatedClickThrough(final int maxRank) throws Exception {
+
+        final Map<Integer, Double> rankAggregatedClickThrough = new HashMap<>();
+
+        final RangeQuery rangeQuery = RangeQuery.of(r -> r
+                .field("event_attributes.position.ordinal")
+                .lte(JsonData.of(maxRank))
+        );
+
+        // TODO: Is this the same as: final BucketOrder bucketOrder = BucketOrder.key(true);
+        final List<Map<String, SortOrder>> sort = new ArrayList<>();
+        sort.add(Map.of("_key", SortOrder.Asc));
+
+        final Aggregation positionsAggregator = Aggregation.of(a -> a
+                .terms(t -> t
+                        .field("event_attributes.position.ordinal")
+                        .name("By_Position")
+                        .size(maxRank)
+                        .order(sort)
+                )
+        );
+
+        final Aggregation actionNameAggregation = Aggregation.of(a -> a
+                .terms(t -> t
+                        .field("action_name")
+                        .name("By_Action")
+                        .size(maxRank)
+                        .order(sort)
+                )
+        );
+
+        final Map<String, Aggregation> aggregations = new HashMap<>();
+        aggregations.put("By_Position", positionsAggregator);
+        aggregations.put("By_Action", actionNameAggregation);
+
+        // TODO: Allow for a time period and for a specific application.
+        final SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(Constants.UBI_EVENTS_INDEX_NAME)
+                .aggregations(aggregations)
+                .query(q -> q.range(rangeQuery))
+                .from(0)
+                .size(0)
+                .build();
+
+        final SearchResponse<Void> searchResponse = client.search(searchRequest, Void.class);
+
+        final Map<String, Aggregate> aggs = searchResponse.aggregations();
+        final StringTermsAggregate byAction = aggs.get("By_Action").sterms();
+        final List<StringTermsBucket> byActionBuckets = byAction.buckets().array();
+
+        final Map<Integer, Double> clickCounts = new HashMap<>();
+        final Map<Integer, Double> impressionCounts = new HashMap<>();
+
+        for (final StringTermsBucket bucket : byActionBuckets) {
+            System.out.println("Key: " + bucket.key() + ", Doc Count: " + bucket.docCount());
+
+//            // Handle the "impression" bucket.
+//            if(EVENT_IMPRESSION.equalsIgnoreCase(bucket.key())) {
+//
+//                final Aggregate positionTerms = bucket.aggregations().get("By_Position");
+//
+//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
+//
+//                for(final Terms.Bucket positionBucket : positionBuckets) {
+//                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+//                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
+//                }
+//
+//            }
+//
+//            // Handle the "click" bucket.
+//            if(EVENT_CLICK.equalsIgnoreCase(bucket.key())) {
+//
+//                final Aggregate positionTerms = actionBucket.getAggregations().get("By_Position");
+//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
+//
+//                for(final Terms.Bucket positionBucket : positionBuckets) {
+//                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+//                    clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
+//                }
+//
+//            }
+
+        }
+
+
+//        final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
+//        final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
+//
+//        LOGGER.debug("Aggregation query: {}", searchSourceBuilder.toString());
+//
+//        for(final Terms.Bucket actionBucket : actionBuckets) {
+//
+//            // Handle the "impression" bucket.
+//            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
+//
+//                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
+//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
+//
+//                for(final Terms.Bucket positionBucket : positionBuckets) {
+//                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+//                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
+//                }
+//
+//            }
+//
+//            // Handle the "click" bucket.
+//            if(EVENT_CLICK.equalsIgnoreCase(actionBucket.getKey().toString())) {
+//
+//                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
+//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
+//
+//                for(final Terms.Bucket positionBucket : positionBuckets) {
+//                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
+//                    clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
+//                }
+//
+//            }
+//
+//        }
+
+        for(int rank = 0; rank < maxRank; rank++) {
+
+            if(impressionCounts.containsKey(rank)) {
+
+                if(clickCounts.containsKey(rank)) {
+
+                    // Calculate the CTR by dividing the number of clicks by the number of impressions.
+                    LOGGER.info("Position = {}, Impression Counts = {}, Click Count = {}", rank, impressionCounts.get(rank), clickCounts.get(rank));
+                    rankAggregatedClickThrough.put(rank, clickCounts.get(rank) / impressionCounts.get(rank));
+
+                } else {
+
+                    // This document has impressions but no clicks, so it's CTR is zero.
+                    LOGGER.info("Position = {}, Impression Counts = {}, Impressions but no clicks so CTR is 0", rank, clickCounts.get(rank));
+                    rankAggregatedClickThrough.put(rank, 0.0);
+
+                }
+
+            } else {
+
+                // No impressions so the clickthrough rate is 0.
+                LOGGER.info("No impressions for rank {}, so using CTR of 0", rank);
+                rankAggregatedClickThrough.put(rank, (double) 0);
+
+            }
+
+        }
+
+        indexRankAggregatedClickthrough(rankAggregatedClickThrough);
+
+        return rankAggregatedClickThrough;
+
+    }
 
     private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 
