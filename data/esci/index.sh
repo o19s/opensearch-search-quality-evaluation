@@ -7,4 +7,4 @@ echo "Initializing UBI..."
 curl -s -X POST "http://localhost:9200/_plugins/ubi/initialize"
 
 echo "Indexing queries and events..."
-curl -s -T "http://localhost:9200/_bulk?pretty" -H "Content-Type: application/x-ndjson" --data-binary @ubi_queries_events.ndjson
+curl  -X POST 'http://localhost:9200/index-name/_bulk?pretty' --data-binary @ubi_queries_events.ndjson -H "Content-Type: application/x-ndjson"

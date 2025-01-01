@@ -15,23 +15,38 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.eval.engine.OpenSearchEngine;
+import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.judgments.clickmodel.ClickModel;
+import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
+import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
 
-public class SearchQualityEvaluationApp {
+public class SearchQualityEvaluationFrameworkApp {
 
-    private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationApp.class);
+    private static final Logger LOGGER = LogManager.getLogger(SearchQualityEvaluationFrameworkApp.class);
 
-    public static void main(String args[]) throws ParseException {
+    public static void main(String[] args) throws Exception {
+
+        System.out.println("Search Quality Evaluation Framework");
 
         final Options options = new Options();
-        options.addOption("c", true, "create a click model");
+        options.addOption("c", false, "create a click model");
         options.addOption("q", true, "run a query set");
 
         final CommandLineParser parser = new DefaultParser();
         final CommandLine cmd = parser.parse(options, args);
 
         if(cmd.hasOption("c")) {
-            final String clickModel = cmd.getOptionValue("c");
-            // TODO: Create the click model.
+
+            //final String clickModel = cmd.getOptionValue("c");
+            System.out.println("Creating click model...");
+
+            final SearchEngine searchEngine = new OpenSearchEngine();
+            final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(10);
+
+            final ClickModel cm = new CoecClickModel(searchEngine, coecClickModelParameters);
+            cm.calculateJudgments();
+
         } else {
 
         }

@@ -9,7 +9,6 @@
 package org.opensearch.eval.engine;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.gson.Gson;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -86,13 +85,13 @@ public class OpenSearchEngine extends SearchEngine {
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
 
     private final OpenSearchClient client;
-    private final Gson gson = new Gson();
 
     // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
     private static final Map<String, String> userQueryCache = new HashMap<>();
 
     public OpenSearchEngine() {
 
+        // TODO: Parameterize the host.
         final HttpHost[] hosts = new HttpHost[] {
                 new HttpHost("http", "localhost", 9200)
         };
@@ -207,7 +206,9 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Collection<UbiQuery> ubiQueries = new ArrayList<>();
 
-        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(Time.of(t -> t.offset(1000))), UbiQuery.class);
+        final Time scrollTime = new Time.Builder().time("10m").build();
+
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
@@ -234,7 +235,9 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Collection<Judgment> judgments = new ArrayList<>();
 
-        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(index).size(1000).scroll(Time.of(t -> t.offset(1000))), Judgment.class);
+        final Time scrollTime = new Time.Builder().time("10m").build();
+
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(index).size(1000).scroll(scrollTime), Judgment.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<Judgment>> searchHits = searchResponse.hits().hits();
@@ -431,12 +434,14 @@ public class OpenSearchEngine extends SearchEngine {
                 .query(encodedQuery)
                 .build();
 
+        final Time scrollTime = new Time.Builder().time("10m").build();
+
         final SearchRequest searchRequest = new SearchRequest.Builder()
                 .index(Constants.UBI_EVENTS_INDEX_NAME)
                 .query(q -> q.wrapper(wrapperQuery))
                 .from(0)
                 .size(1000)
-                .scroll(Time.of(t -> t.offset(1000)))
+                .scroll(scrollTime)
                 .build();
 
         final SearchResponse<UbiEvent> searchResponse = client.search(searchRequest, UbiEvent.class);
@@ -517,7 +522,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Aggregation positionsAggregator = Aggregation.of(a -> a
                 .terms(t -> t
                         .field("event_attributes.position.ordinal")
-                        .name("By_Position")
+                        //.name("By_Position")
                         .size(maxRank)
                         .order(sort)
                 )
@@ -526,7 +531,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Aggregation actionNameAggregation = Aggregation.of(a -> a
                 .terms(t -> t
                         .field("action_name")
-                        .name("By_Action")
+                        //.name("By_Action")
                         .size(maxRank)
                         .order(sort)
                 )
@@ -544,6 +549,8 @@ public class OpenSearchEngine extends SearchEngine {
                 .from(0)
                 .size(0)
                 .build();
+
+        System.out.println(searchRequest.toJsonString());
 
         final SearchResponse<Void> searchResponse = client.search(searchRequest, Void.class);
 

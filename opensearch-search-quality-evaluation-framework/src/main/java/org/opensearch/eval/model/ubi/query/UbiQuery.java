@@ -8,6 +8,7 @@
  */
 package org.opensearch.eval.model.ubi.query;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.Map;
@@ -20,21 +21,29 @@ public class UbiQuery {
     @SerializedName("timestamp")
     private String timestamp;
 
+    @JsonProperty("query_id")
     @SerializedName("query_id")
     private String queryId;
 
+    @JsonProperty("client_id")
     @SerializedName("client_id")
     private String clientId;
 
+    @JsonProperty("user_query")
     @SerializedName("user_query")
     private String userQuery;
 
     @SerializedName("query")
     private String query;
 
+    @SerializedName("application")
+    private String application;
+
+    @JsonProperty("query_attributes")
     @SerializedName("query_attributes")
     private Map<String, String> queryAttributes;
 
+    @JsonProperty("query_response")
     @SerializedName("query_response")
     private QueryResponse queryResponse;
 
@@ -157,4 +166,11 @@ public class UbiQuery {
         this.queryResponse = queryResponse;
     }
 
+    public String getApplication() {
+        return application;
+    }
+
+    public void setApplication(String application) {
+        this.application = application;
+    }
 }

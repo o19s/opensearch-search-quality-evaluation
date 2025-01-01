@@ -8,13 +8,16 @@
  */
 package org.opensearch.eval.model.ubi.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 
 public class EventObject {
 
+    @JsonProperty("object_id_field")
     @SerializedName("object_id_field")
     private String objectIdField;
 
+    @JsonProperty("object_id")
     @SerializedName("object_id")
     private String objectId;
 

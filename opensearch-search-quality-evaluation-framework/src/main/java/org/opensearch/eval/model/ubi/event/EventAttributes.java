@@ -8,6 +8,7 @@
  */
 package org.opensearch.eval.model.ubi.event;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 
 /**
@@ -18,6 +19,7 @@ public class EventAttributes {
     @SerializedName("object")
     private EventObject object;
 
+    @JsonProperty("session_id")
     @SerializedName("session_id")
     private String sessionId;
 
