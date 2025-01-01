@@ -26,6 +26,18 @@ public class ClickThroughRate extends AbstractData {
         super(id);
     }
 
+    @Override
+    public String toString() {
+        return "ClickThroughRate{" +
+                "id='" + getId() + '\'' +
+                ", userQuery='" + userQuery + '\'' +
+                ", clicks=" + clicks +
+                ", events=" + events +
+                ", ctr=" + ctr +
+                ", objectId='" + objectId + '\'' +
+                '}';
+    }
+
     public String getUserQuery() {
         return userQuery;
     }

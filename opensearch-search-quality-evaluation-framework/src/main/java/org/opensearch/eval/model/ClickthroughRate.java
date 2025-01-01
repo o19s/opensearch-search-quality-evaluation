@@ -16,8 +16,8 @@ import org.opensearch.eval.utils.MathUtils;
 public class ClickthroughRate {
 
     private final String objectId;
-    private int clicks;
-    private int impressions;
+    private long clicks;
+    private long impressions;
 
     /**
      * Creates a new clickthrough rate for an object.
@@ -35,7 +35,7 @@ public class ClickthroughRate {
      * @param clicks The count of clicks.
      * @param impressions The count of events.
      */
-    public ClickthroughRate(final String objectId, final int clicks, final int impressions) {
+    public ClickthroughRate(final String objectId, final long clicks, final long impressions) {
         this.objectId = objectId;
         this.clicks = clicks;
         this.impressions = impressions;
@@ -61,6 +61,10 @@ public class ClickthroughRate {
         impressions++;
     }
 
+    public void setImpressions(long impressions) {
+        this.impressions = impressions;
+    }
+
     /**
      * Calculate the clickthrough rate.
      * @return The clickthrough rate as clicks divided by events.
@@ -73,7 +77,7 @@ public class ClickthroughRate {
      * Gets the count of clicks.
      * @return The count of clicks.
      */
-    public int getClicks() {
+    public long getClicks() {
         return clicks;
     }
 
@@ -81,7 +85,7 @@ public class ClickthroughRate {
      * Gets the count of events.
      * @return The count of events.
      */
-    public int getImpressions() {
+    public long getImpressions() {
         return impressions;
     }
 

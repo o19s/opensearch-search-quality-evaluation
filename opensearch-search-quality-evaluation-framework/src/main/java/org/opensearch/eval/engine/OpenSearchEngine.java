@@ -21,6 +21,7 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.mapping.IntegerNumberProperty;
@@ -334,7 +335,11 @@ public class OpenSearchEngine extends SearchEngine {
         // If this does not return a query then we cannot calculate the judgments. Each even should have a query associated with it.
         if(searchResponse.hits().hits() != null & !searchResponse.hits().hits().isEmpty()) {
 
-            return searchResponse.hits().hits().get(0).source();
+            final UbiQuery ubiQuery = searchResponse.hits().hits().get(0).source();
+
+            LOGGER.info("Found query: {}", ubiQuery.toString());
+
+            return ubiQuery;
 
         } else {
 
@@ -478,6 +483,12 @@ public class OpenSearchEngine extends SearchEngine {
                         LOGGER.warn("Invalid event action name: {}", ubiEvent.getActionName());
                     }
 
+                    // Safeguard to avoid having clicks without events.
+                    // When the clicks is > 0 and impressions == 0, set the impressions to the number of clicks.
+                    if(clickthroughRate.getClicks() > 0 && clickthroughRate.getImpressions() == 0) {
+                        clickthroughRate.setImpressions(clickthroughRate.getClicks());
+                    }
+
                     clickthroughRates.add(clickthroughRate);
                     queriesToClickthroughRates.put(userQuery, clickthroughRates);
                     // LOGGER.debug("clickthroughRate = {}", queriesToClickthroughRates.size());
@@ -490,6 +501,10 @@ public class OpenSearchEngine extends SearchEngine {
             // TODO: Getting a warning in the log that "QueryGroup _id can't be null, It should be set before accessing it. This is abnormal behaviour"
             // I don't remember seeing this prior to 2.18.0 but it's possible I just didn't see it.
             // https://github.com/opensearch-project/OpenSearch/blob/f105e4eb2ede1556b5dd3c743bea1ab9686ebccf/server/src/main/java/org/opensearch/wlm/QueryGroupTask.java#L73
+
+            if(scrollId == null) {
+                break;
+            }
 
             final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
             final ScrollResponse<UbiEvent> scrollResponse = client.scroll(scrollRequest, UbiEvent.class);
@@ -522,7 +537,6 @@ public class OpenSearchEngine extends SearchEngine {
         final Aggregation positionsAggregator = Aggregation.of(a -> a
                 .terms(t -> t
                         .field("event_attributes.position.ordinal")
-                        //.name("By_Position")
                         .size(maxRank)
                         .order(sort)
                 )
@@ -531,14 +545,12 @@ public class OpenSearchEngine extends SearchEngine {
         final Aggregation actionNameAggregation = Aggregation.of(a -> a
                 .terms(t -> t
                         .field("action_name")
-                        //.name("By_Action")
                         .size(maxRank)
                         .order(sort)
-                )
+                ).aggregations(Map.of("By_Position", positionsAggregator))
         );
 
         final Map<String, Aggregation> aggregations = new HashMap<>();
-        aggregations.put("By_Position", positionsAggregator);
         aggregations.put("By_Action", actionNameAggregation);
 
         // TODO: Allow for a time period and for a specific application.
@@ -562,72 +574,36 @@ public class OpenSearchEngine extends SearchEngine {
         final Map<Integer, Double> impressionCounts = new HashMap<>();
 
         for (final StringTermsBucket bucket : byActionBuckets) {
-            System.out.println("Key: " + bucket.key() + ", Doc Count: " + bucket.docCount());
 
-//            // Handle the "impression" bucket.
-//            if(EVENT_IMPRESSION.equalsIgnoreCase(bucket.key())) {
-//
-//                final Aggregate positionTerms = bucket.aggregations().get("By_Position");
-//
-//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-//
-//                for(final Terms.Bucket positionBucket : positionBuckets) {
-//                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-//                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-//                }
-//
-//            }
-//
-//            // Handle the "click" bucket.
-//            if(EVENT_CLICK.equalsIgnoreCase(bucket.key())) {
-//
-//                final Aggregate positionTerms = actionBucket.getAggregations().get("By_Position");
-//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-//
-//                for(final Terms.Bucket positionBucket : positionBuckets) {
-//                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-//                    clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-//                }
-//
-//            }
+            // Handle the "impression" bucket.
+            if(EVENT_IMPRESSION.equalsIgnoreCase(bucket.key())) {
+
+                final Aggregate positionTerms = bucket.aggregations().get("By_Position");
+
+                final List<LongTermsBucket> positionBuckets = positionTerms.lterms().buckets().array();
+
+                for(final LongTermsBucket positionBucket : positionBuckets) {
+                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
+                    impressionCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
+                }
+
+            }
+
+            // Handle the "click" bucket.
+            if(EVENT_CLICK.equalsIgnoreCase(bucket.key())) {
+
+                final Aggregate positionTerms = bucket.aggregations().get("By_Position");
+
+                final List<LongTermsBucket> positionBuckets = positionTerms.lterms().buckets().array();
+
+                for(final LongTermsBucket positionBucket : positionBuckets) {
+                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
+                    impressionCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
+                }
+
+            }
 
         }
-
-
-//        final Terms actionTerms = searchResponse.getAggregations().get("By_Action");
-//        final Collection<? extends Terms.Bucket> actionBuckets = actionTerms.getBuckets();
-//
-//        LOGGER.debug("Aggregation query: {}", searchSourceBuilder.toString());
-//
-//        for(final Terms.Bucket actionBucket : actionBuckets) {
-//
-//            // Handle the "impression" bucket.
-//            if(EVENT_IMPRESSION.equalsIgnoreCase(actionBucket.getKey().toString())) {
-//
-//                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
-//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-//
-//                for(final Terms.Bucket positionBucket : positionBuckets) {
-//                    LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-//                    impressionCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-//                }
-//
-//            }
-//
-//            // Handle the "click" bucket.
-//            if(EVENT_CLICK.equalsIgnoreCase(actionBucket.getKey().toString())) {
-//
-//                final Terms positionTerms = actionBucket.getAggregations().get("By_Position");
-//                final Collection<? extends Terms.Bucket> positionBuckets = positionTerms.getBuckets();
-//
-//                for(final Terms.Bucket positionBucket : positionBuckets) {
-//                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.getKey(), (double) positionBucket.getDocCount());
-//                    clickCounts.put(Integer.valueOf(positionBucket.getKey().toString()), (double) positionBucket.getDocCount());
-//                }
-//
-//            }
-//
-//        }
 
         for(int rank = 0; rank < maxRank; rank++) {
 
@@ -795,14 +771,17 @@ public class OpenSearchEngine extends SearchEngine {
 
                     final String id = UUID.randomUUID().toString();
 
-                    final ClickThroughRate clickThroughRate = new ClickThroughRate();
-                    clickThroughRate.setUserQuery(userQuery);
-                    clickThroughRate.setClicks(clickthroughRate.getClicks());
-                    clickThroughRate.setEvents(clickthroughRate.getImpressions());
-                    clickThroughRate.setCtr(clickthroughRate.getClickthroughRate());
-                    clickThroughRate.setObjectId(clickthroughRate.getObjectId());
+                    final ClickThroughRate ctr = new ClickThroughRate(id);
+                    ctr.setUserQuery(userQuery);
+                    ctr.setClicks(clickthroughRate.getClicks());
+                    ctr.setEvents(clickthroughRate.getImpressions());
+                    ctr.setCtr(clickthroughRate.getClickthroughRate());
+                    ctr.setObjectId(clickthroughRate.getObjectId());
 
-                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(INDEX_QUERY_DOC_CTR).id(id).document(clickThroughRate).build();
+                    LOGGER.debug("Clickthrough rate: {}", ctr);
+
+                    // TODO: This index needs created.
+                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(INDEX_QUERY_DOC_CTR).id(id).document(ctr).build();
                     client.index(indexRequest);
 
                 }
