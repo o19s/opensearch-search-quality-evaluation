@@ -102,7 +102,7 @@ public class App {
                 final JsonObject jsonObject = jsonElement.getAsJsonObject();
                 final String samplerType = jsonObject.get("sampler").getAsString();
 
-                if("all".equalsIgnoreCase(samplerType)) {
+                if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
 
@@ -111,7 +111,7 @@ public class App {
 
                     System.out.println("Query set created: " + querySetId);
 
-                } else if("pptss".equalsIgnoreCase(samplerType)) {
+                } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final ProbabilityProportionalToSizeParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeParameters.class);
 
