@@ -13,17 +13,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
-      - name: Cache Maven packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
       - name: Set up JDK ${{ matrix.jdk }}
         uses: actions/setup-java@v4
         with:
           distribution: adopt
           java-version: ${{ matrix.jdk }}
-          cache: maven
       - name: Build
         run: mvn --batch-mode test
