@@ -24,9 +24,6 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch._types.mapping.IntegerNumberProperty;
-import org.opensearch.client.opensearch._types.mapping.Property;
-import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -124,20 +121,6 @@ public class OpenSearchEngine extends SearchEngine {
                 .build();
 
         stream.close();
-
-        return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
-
-    }
-
-    @Override
-    public boolean createIndex(String index, Map<String, Object> mapping) throws IOException {
-
-        // TODO: Build the mapping.
-        final TypeMapping mapping2 = new TypeMapping.Builder()
-                .properties("age", new Property.Builder().integer(new IntegerNumberProperty.Builder().build()).build())
-                .build();
-
-        final CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder().index(index).mappings(mapping2).build();
 
         return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
 
@@ -351,7 +334,9 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField) throws IOException {
+    public List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException {
+
+        LOGGER.info("Running query on index {}, k = {}, userQuery = {}, idField = {}, pipeline = {}, query = {}", index, k, userQuery, idField, pipeline, query);
 
         // Replace the query placeholder with the user query.
         final String parsedQuery = query.replace(QUERY_PLACEHOLDER, userQuery);
@@ -362,19 +347,36 @@ public class OpenSearchEngine extends SearchEngine {
                 .query(encodedQuery)
                 .build();
 
-        final SearchRequest searchRequest = new SearchRequest.Builder()
-                .index(index)
-                .query(q -> q.wrapper(wrapperQuery))
-                .from(0)
-                .size(k)
-                .build();
-
-        // TODO: Handle the searchPipeline if it is not null.
         // TODO: Only return the idField since that's all we need.
+        final SearchRequest searchRequest;
+
+        if(!pipeline.isEmpty()) {
+
+            searchRequest = new SearchRequest.Builder()
+                    .index(index)
+                    .query(q -> q.wrapper(wrapperQuery))
+                    .from(0)
+                    .size(k)
+                    .pipeline(pipeline)
+                    .build();
+
+        } else {
+
+            searchRequest = new SearchRequest.Builder()
+                    .index(index)
+                    .query(q -> q.wrapper(wrapperQuery))
+                    .from(0)
+                    .size(k)
+                    .build();
+
+        }
 
         final SearchResponse<ObjectNode> searchResponse = client.search(searchRequest, ObjectNode.class);
 
         final List<String> orderedDocumentIds = new ArrayList<>();
+
+        LOGGER.info("Encoded query: {}", encodedQuery);
+        LOGGER.info("Found hits: {}", searchResponse.hits().hits().size());
 
         for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
 
@@ -385,7 +387,9 @@ public class OpenSearchEngine extends SearchEngine {
             } else {
                 // TODO: Need to check this field actually exists.
                 // TODO: Does this work?
-                documentId = searchResponse.hits().hits().get(i).fields().get(idField).toString();
+                final Hit<ObjectNode> hit = searchResponse.hits().hits().get(i);
+                documentId = hit.source().get(idField).toString();
+
             }
 
             orderedDocumentIds.add(documentId);

@@ -76,7 +76,7 @@ public class App {
 
             System.out.println("Running query set...");
 
-            final String querySetOptionsFile = cmd.getOptionValue("q");
+            final String querySetOptionsFile = cmd.getOptionValue("r");
             final File file = new File(querySetOptionsFile);
 
             if(file.exists()) {
@@ -122,7 +122,7 @@ public class App {
 
                 } else {
 
-                    System.err.println("Invalid sampler.");
+                    System.err.println("Invalid sampler: " + samplerType);
 
                 }
 

@@ -35,7 +35,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchQuerySetRunner.class);
 
-    public static final String QUERY_PLACEHOLDER = "#?query##";
+    public static final String QUERY_PLACEHOLDER = "#$query##";
 
     /**
      * Creates a new query set runner
@@ -71,7 +71,8 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                             querySetParameters.getQuery(),
                             querySetParameters.getK(),
                             userQuery,
-                            querySetParameters.getIdField());
+                            querySetParameters.getIdField(),
+                            querySetParameters.getSearchPipeline());
 
                     try {
 

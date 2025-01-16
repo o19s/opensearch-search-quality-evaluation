@@ -15,7 +15,6 @@ import java.util.Set;
 public abstract class SearchEngine {
 
     public abstract boolean doesIndexExist(String index) throws IOException;
-    public abstract boolean createIndex(String index, Map<String, Object> mapping) throws IOException;
     public abstract boolean createIndex(String index, String mapping) throws IOException;
     public abstract boolean deleteIndex(String index) throws IOException;
 
@@ -31,7 +30,7 @@ public abstract class SearchEngine {
 
     public abstract Collection<Judgment> getJudgments(final String index) throws IOException;
 
-    public abstract List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField) throws IOException;
+    public abstract List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException;
 
     public abstract String indexQuerySet(QuerySet querySet) throws IOException;
     public abstract Collection<UbiQuery> getUbiQueries() throws IOException;

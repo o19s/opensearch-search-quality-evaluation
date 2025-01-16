@@ -20,7 +20,7 @@ import java.util.Map;
  */
 public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
-    public static final String NAME = "none";
+    public static final String NAME = "all";
 
     private final SearchEngine searchEngine;
     private final AllQueriesQuerySamplerParameters parameters;
