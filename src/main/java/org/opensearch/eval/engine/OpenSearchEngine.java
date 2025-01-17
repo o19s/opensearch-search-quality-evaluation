@@ -8,6 +8,7 @@
  */
 package org.opensearch.eval.engine;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
@@ -40,6 +41,10 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
+import org.opensearch.client.opensearch.generic.Bodies;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.opensearch.generic.Response;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
@@ -336,65 +341,101 @@ public class OpenSearchEngine extends SearchEngine {
     @Override
     public List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException {
 
-        LOGGER.info("Running query on index {}, k = {}, userQuery = {}, idField = {}, pipeline = {}, query = {}", index, k, userQuery, idField, pipeline, query);
-
         // Replace the query placeholder with the user query.
         final String parsedQuery = query.replace(QUERY_PLACEHOLDER, userQuery);
 
-        final String encodedQuery = Base64.getEncoder().encodeToString(parsedQuery.getBytes(StandardCharsets.UTF_8));
+        LOGGER.debug("Running query on index {}, k = {}, userQuery = {}, idField = {}, pipeline = {}, query = {}", index, k, userQuery, idField, pipeline, parsedQuery);
 
-        final WrapperQuery wrapperQuery = new WrapperQuery.Builder()
-                .query(encodedQuery)
-                .build();
+        // Use a generic client to get around https://github.com/opensearch-project/OpenSearch/issues/16829
+        // Refer to https://code.dblock.org/2023/10/16/making-raw-json-rest-requests-to-opensearch.html#:~:text=build()%3B,Here's%20a%20search%20example.&See%20the%20updated%20documentation%20and%20working%20demo%20for%20more%20information.
+        final OpenSearchGenericClient genericClient = client.generic().withClientOptions(OpenSearchGenericClient.ClientOptions.throwOnHttpErrors());
 
-        // TODO: Only return the idField since that's all we need.
-        final SearchRequest searchRequest;
+        final Map<String, String> params = new HashMap<>();
 
         if(!pipeline.isEmpty()) {
-
-            searchRequest = new SearchRequest.Builder()
-                    .index(index)
-                    .query(q -> q.wrapper(wrapperQuery))
-                    .from(0)
-                    .size(k)
-                    .pipeline(pipeline)
-                    .build();
-
-        } else {
-
-            searchRequest = new SearchRequest.Builder()
-                    .index(index)
-                    .query(q -> q.wrapper(wrapperQuery))
-                    .from(0)
-                    .size(k)
-                    .build();
-
+            params.put("search_pipeline", pipeline);
         }
 
-        final SearchResponse<ObjectNode> searchResponse = client.search(searchRequest, ObjectNode.class);
+        final Response searchResponse = genericClient.execute(
+                Requests.builder()
+                        .endpoint(index + "/_search")
+                        .method("POST")
+                        .query(params)
+                        .json(parsedQuery)
+                        .build());
+
+        final JsonNode json = searchResponse.getBody()
+                .map(b -> Bodies.json(b, JsonNode.class, client._transport().jsonpMapper()))
+                .orElse(null);
 
         final List<String> orderedDocumentIds = new ArrayList<>();
 
-        LOGGER.info("Encoded query: {}", encodedQuery);
-        LOGGER.info("Found hits: {}", searchResponse.hits().hits().size());
+        final JsonNode hits = json.get("hits").get("hits");
+        for (int i = 0; i < hits.size(); i++) {
 
-        for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
-
-            final String documentId;
-
-            if ("_id".equals(idField)) {
-                documentId = searchResponse.hits().hits().get(i).id();
+            if(hits.get(i).get("_source").get(idField) != null) {
+                orderedDocumentIds.add(hits.get(i).get("_source").get(idField).asText());
             } else {
-                // TODO: Need to check this field actually exists.
-                // TODO: Does this work?
-                final Hit<ObjectNode> hit = searchResponse.hits().hits().get(i);
-                documentId = hit.source().get(idField).toString();
-
+                LOGGER.info("The requested idField {} does not exist.", idField);
             }
 
-            orderedDocumentIds.add(documentId);
-
         }
+
+        // The following commented code uses a wrapper query.
+//        final String encodedQuery = Base64.getEncoder().encodeToString(parsedQuery.getBytes(StandardCharsets.UTF_8));
+
+//        final WrapperQuery wrapperQuery = new WrapperQuery.Builder()
+//                .query(encodedQuery)
+//                .build();
+
+        // TODO: Only return the idField since that's all we need.
+ //       final SearchRequest searchRequest;
+
+//        if(!pipeline.isEmpty()) {
+//
+//            searchRequest = new SearchRequest.Builder()
+//                    .index(index)
+//                    .query(q -> q.wrapper(wrapperQuery))
+//                    .from(0)
+//                    .size(k)
+//                    .pipeline(pipeline)
+//                    .build();
+//
+//        } else {
+//
+//            searchRequest = new SearchRequest.Builder()
+//                    .index(index)
+//                    .query(q -> q.wrapper(wrapperQuery))
+//                    .from(0)
+//                    .size(k)
+//                    .build();
+//
+//        }
+
+//        final SearchResponse<ObjectNode> searchResponse = client.search(searchRequest, ObjectNode.class);
+
+//        final List<String> orderedDocumentIds = new ArrayList<>();
+//
+//        LOGGER.info("Encoded query: {}", encodedQuery);
+//        LOGGER.info("Found hits: {}", searchResponse.hits().hits().size());
+//
+//        for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
+//
+//            final String documentId;
+//
+//            if ("_id".equals(idField)) {
+//                documentId = searchResponse.hits().hits().get(i).id();
+//            } else {
+//                // TODO: Need to check this field actually exists.
+//                // TODO: Does this work?
+//                final Hit<ObjectNode> hit = searchResponse.hits().hits().get(i);
+//                documentId = hit.source().get(idField).toString();
+//
+//            }
+//
+//            orderedDocumentIds.add(documentId);
+//
+//        }
 
         return orderedDocumentIds;
 
@@ -452,6 +493,9 @@ public class OpenSearchEngine extends SearchEngine {
                 .size(1000)
                 .scroll(scrollTime)
                 .build();
+
+        // Use the generic client to send the raw json.
+        // https://code.dblock.org/2023/10/16/making-raw-json-rest-requests-to-opensearch.html#:~:text=build()%3B,Here's%20a%20search%20example.&See%20the%20updated%20documentation%20and%20working%20demo%20for%20more%20information.
 
         final SearchResponse<UbiEvent> searchResponse = client.search(searchRequest, UbiEvent.class);
 

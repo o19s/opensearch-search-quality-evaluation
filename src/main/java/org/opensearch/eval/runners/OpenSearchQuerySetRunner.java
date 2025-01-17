@@ -122,7 +122,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             return querySetRunResult;
 
         } catch (Exception ex) {
-            throw new RuntimeException("Unable to run query set.", ex);
+            throw new RuntimeException("Unable to run query set. If using a search_pipeline make sure the pipeline exists.", ex);
         }
 
     }

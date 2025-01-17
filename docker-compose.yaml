@@ -7,7 +7,7 @@ services:
       discovery.type: single-node
       node.name: opensearch
       plugins.security.disabled: "true"
-      logger.level: info
+      logger.level: debug
       OPENSEARCH_INITIAL_ADMIN_PASSWORD: SuperSecretPassword_123
       http.max_content_length: 500mb
       OPENSEARCH_JAVA_OPTS: "-Xms16g -Xmx16g"
