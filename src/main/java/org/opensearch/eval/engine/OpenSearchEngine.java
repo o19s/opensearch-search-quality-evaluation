@@ -347,7 +347,7 @@ public class OpenSearchEngine extends SearchEngine {
         LOGGER.debug("Running query on index {}, k = {}, userQuery = {}, idField = {}, pipeline = {}, query = {}", index, k, userQuery, idField, pipeline, parsedQuery);
 
         // Use a generic client to get around https://github.com/opensearch-project/OpenSearch/issues/16829
-        // Refer to https://code.dblock.org/2023/10/16/making-raw-json-rest-requests-to-opensearch.html#:~:text=build()%3B,Here's%20a%20search%20example.&See%20the%20updated%20documentation%20and%20working%20demo%20for%20more%20information.
+        // Refer to https://code.dblock.org/2023/10/16/making-raw-json-rest-requests-to-opensearch.html
         final OpenSearchGenericClient genericClient = client.generic().withClientOptions(OpenSearchGenericClient.ClientOptions.throwOnHttpErrors());
 
         final Map<String, String> params = new HashMap<>();
