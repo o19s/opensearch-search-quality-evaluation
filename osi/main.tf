@@ -128,59 +128,7 @@ resource "aws_s3_bucket" "ubi_queries_events_bucket" {
 
 resource "aws_osis_pipeline" "ubi_events_pipeline" {
   pipeline_name               = "ubi-pipeline"
-  pipeline_configuration_body = <<-EOT
-            version: "2"
-            ubi-pipeline:
-              source:
-                http:
-                  path: "/ubi"
-              processor:
-                - date:
-                    from_time_received: true
-                    destination: "@timestamp"
-              route:
-                - ubi-events: '/type == "event"'
-                - ubi-queries: '/type == "query"'
-              sink:
-                - opensearch:
-                    hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
-                    index: "ubi_events"
-                    aws:
-                      sts_role_arn: "${aws_iam_role.ubi.arn}"   
-                      region: "${data.aws_region.current.name}"
-                    routes: [ubi-events]
-                - s3:
-                    aws:
-                      sts_role_arn: "${aws_iam_role.ubi.arn}"
-                      region: "${data.aws_region.current.name}"
-                    bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
-                    object_key:
-                      path_prefix: ubi_events/
-                    threshold:
-                      event_collect_timeout: "60s"
-                    codec:
-                      ndjson:
-                    routes: [ubi-events]
-                - opensearch:
-                    hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
-                    index: "ubi_queries"
-                    aws:
-                      sts_role_arn: "${aws_iam_role.ubi.arn}"   
-                      region: "${data.aws_region.current.name}"
-                    routes: [ubi-queries]
-                - s3:
-                    aws:
-                      sts_role_arn: "${aws_iam_role.ubi.arn}"
-                      region: "${data.aws_region.current.name}"
-                    bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
-                    object_key:
-                      path_prefix: ubi_queries/
-                    threshold:
-                      event_collect_timeout: "60s"
-                    codec:
-                      ndjson:
-                    routes: [ubi-queries]                    
-        EOT
+  pipeline_configuration_body = file("blueprint.yaml")
   max_units                   = 1
   min_units                   = 1
   log_publishing_options {
