@@ -12,17 +12,24 @@ ubi-pipeline:
     - ubi-queries: '/type == "query"'
   sink:
     - opensearch:
-        hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
+        # Provide an AWS OpenSearch Service domain endpoint
+        hosts: [ "<<https://search-mydomain-1a2a3a4a5a6a7a8a9a0a9a8a7a.us-east-1.es.amazonaws.com>>" ]
         index: "ubi_events"
         aws:
-          sts_role_arn: "${aws_iam_role.ubi.arn}"   
-          region: "${data.aws_region.current.name}"
+          # Enable the 'serverless' flag if the sink is an Amazon OpenSearch Serverless collection
+          serverless: false
+          # Provide a Role ARN with access to the domain. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
         routes: [ubi-events]
     - s3:
         aws:
-          sts_role_arn: "${aws_iam_role.ubi.arn}"
-          region: "${data.aws_region.current.name}"
-        bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
+          # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
+        bucket: "<<bucket-name>>"
         object_key:
           path_prefix: ubi_events/
         threshold:
@@ -34,14 +41,18 @@ ubi-pipeline:
         hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
         index: "ubi_queries"
         aws:
-          sts_role_arn: "${aws_iam_role.ubi.arn}"   
-          region: "${data.aws_region.current.name}"
+          # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
         routes: [ubi-queries]
     - s3:
         aws:
-          sts_role_arn: "${aws_iam_role.ubi.arn}"
-          region: "${data.aws_region.current.name}"
-        bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
+          # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
+        bucket: "<<bucket-name>>"
         object_key:
           path_prefix: ubi_queries/
         threshold:

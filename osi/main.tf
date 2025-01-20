@@ -128,7 +128,7 @@ resource "aws_s3_bucket" "ubi_queries_events_bucket" {
 
 resource "aws_osis_pipeline" "ubi_events_pipeline" {
   pipeline_name               = "ubi-pipeline"
-  pipeline_configuration_body = file("blueprint.yaml")
+  pipeline_configuration_body = file("blueprint-terraform.yaml")
   max_units                   = 1
   min_units                   = 1
   log_publishing_options {
