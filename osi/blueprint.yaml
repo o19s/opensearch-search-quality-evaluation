@@ -1,0 +1,62 @@
+version: "2"
+ubi-pipeline:
+  source:
+    http:
+      path: "/ubi"
+  processor:
+    - date:
+        from_time_received: true
+        destination: "@timestamp"
+  route:
+    - ubi-events: '/type == "event"'
+    - ubi-queries: '/type == "query"'
+  sink:
+    - opensearch:
+        # Provide an AWS OpenSearch Service domain endpoint
+        hosts: [ "<<https://search-mydomain-1a2a3a4a5a6a7a8a9a0a9a8a7a.us-east-1.es.amazonaws.com>>" ]
+        index: "ubi_events"
+        aws:
+          # Enable the 'serverless' flag if the sink is an Amazon OpenSearch Serverless collection
+          serverless: false
+          # Provide a Role ARN with access to the domain. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
+        routes: [ubi-events]
+    - s3:
+        aws:
+          # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
+        bucket: "<<bucket-name>>"
+        object_key:
+          path_prefix: ubi_events/
+        threshold:
+          event_collect_timeout: "60s"
+        codec:
+          ndjson:
+        routes: [ubi-events]
+    - opensearch:
+        hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
+        index: "ubi_queries"
+        aws:
+          # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
+        routes: [ubi-queries]
+    - s3:
+        aws:
+          # Provide a Role ARN with access to the bucket. This role should have a trust relationship with osis-pipelines.amazonaws.com
+          sts_role_arn: "<<arn:aws:iam::123456789012:role/Example-Role>>" 
+          # Provide the region of the domain.
+          region: "<<us-east-1>>"
+        bucket: "<<bucket-name>>"
+        object_key:
+          path_prefix: ubi_queries/
+        threshold:
+          event_collect_timeout: "60s"
+        codec:
+          ndjson:
+        routes: [ubi-queries]
