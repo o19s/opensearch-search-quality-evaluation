@@ -63,6 +63,7 @@ import org.opensearch.eval.utils.TimeUtils;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -92,11 +93,10 @@ public class OpenSearchEngine extends SearchEngine {
     // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
     private static final Map<String, String> userQueryCache = new HashMap<>();
 
-    public OpenSearchEngine() {
+    public OpenSearchEngine(final URI uri) {
 
-        // TODO: Parameterize the host.
         final HttpHost[] hosts = new HttpHost[] {
-                new HttpHost("http", "localhost", 9200)
+                HttpHost.create(uri)
         };
 
         final OpenSearchTransport transport = ApacheHttpClient5TransportBuilder

@@ -31,6 +31,7 @@ import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 
 import java.io.File;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
@@ -45,14 +46,23 @@ public class App {
         final Gson gson = new Gson();
 
         final Options options = new Options();
-        options.addOption("c", true, "create a click model");
-        options.addOption("s", true, "create a query set using sampling");
-        options.addOption("r", true, "run a query set");
+        options.addOption("c", "create-click-model", true, "create a click model");
+        options.addOption("s", "create-query-set", true, "create a query set using sampling");
+        options.addOption("r", "run-query-set", true, "run a query set");
+        options.addOption("o", "opensearch", true, "OpenSearch URL, e.g. http://localhost:9200");
 
         final CommandLineParser parser = new DefaultParser();
         final CommandLine cmd = parser.parse(options, args);
 
-        final SearchEngine searchEngine = new OpenSearchEngine();
+        final URI uri;
+        if(cmd.hasOption("o")) {
+            uri = URI.create(cmd.getOptionValue("o"));
+        } else {
+            System.out.println("No OpenSearch host given so defaulting to http://localhost:9200");
+            uri = URI.create("http://localhost:9200");
+        }
+
+        final SearchEngine searchEngine = new OpenSearchEngine(uri);
 
         if(cmd.hasOption("c")) {
 

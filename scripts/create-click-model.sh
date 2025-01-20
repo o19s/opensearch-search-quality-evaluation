@@ -1,4 +1,4 @@
 #!/bin/bash -e
 
 # Create a click model.
-java -jar ../target/search-evaluation-framework-1.0.0-SNAPSHOT-jar-with-dependencies.jar -c coec
+java -jar ../target/search-evaluation-framework.jar -o http://localhost:9200 -c coec
