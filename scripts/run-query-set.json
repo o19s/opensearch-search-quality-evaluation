@@ -1,8 +1,8 @@
 {
-  "query_set_id": "20b2c5d3-42bf-4aaf-843e-d806e9fcd3c1",
-  "judgments_id": "69a69c21-f0bb-443e-bf75-bca389704fd0",
+  "query_set_id": "6d2a8d56-a9e6-4f99-9a81-482974d11c32",
+  "judgments_id": "c2d46e06-0e37-4370-b547-296b554c646e",
   "index": "ecommerce",
-  "search_pipeline": "filter_pipeline",
+  "search_pipeline": "",
   "id_field": "asin",
   "k": 10,
   "threshold": 1.0,

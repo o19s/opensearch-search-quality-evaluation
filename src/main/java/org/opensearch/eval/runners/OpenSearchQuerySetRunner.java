@@ -117,6 +117,8 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             final String querySetRunId = UUID.randomUUID().toString();
             final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetParameters.getQuerySetId(), queryResults, querySetMetrics);
 
+            save(querySetRunResult);
+
             LOGGER.info("Query set run complete: {}", querySetRunId);
 
             return querySetRunResult;
@@ -129,6 +131,8 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
     @Override
     public void save(final QuerySetRunResult result) throws Exception {
+
+        LOGGER.info("Indexing query run results.");
 
         // Now, index the metrics as expected by the dashboards.
 

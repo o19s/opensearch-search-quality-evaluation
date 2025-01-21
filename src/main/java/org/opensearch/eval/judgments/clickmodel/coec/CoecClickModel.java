@@ -109,7 +109,7 @@ public class CoecClickModel extends ClickModel {
 
                 }
 
-                // Numerator is sum of clicks at all ranks up to the maxRank.
+                // Numerator is the sum of clicks at all ranks up to the maxRank.
                 final long totalNumberClicksForQueryResult = ctr.getClicks();
 
                 // Divide the numerator by the denominator (value).
