@@ -1,0 +1,28 @@
+{
+    "_source": {
+      "excludes": [
+        "title_embedding"
+      ]
+    },
+    "query": {
+      "hybrid": {
+        "queries": [
+          {
+            "match": {
+              "title_text": {
+                "query": "#$query##"
+              }
+            }
+          },
+          {
+            "neural": {
+              "title_embedding": {
+                "query_text": "#$query##",
+                "k": 50
+              }
+            }
+          }
+        ]
+      }
+    }
+}
