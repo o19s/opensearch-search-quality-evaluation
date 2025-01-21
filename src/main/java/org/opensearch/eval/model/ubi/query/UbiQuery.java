@@ -11,6 +11,7 @@ package org.opensearch.eval.model.ubi.query;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,9 +44,9 @@ public class UbiQuery {
     @SerializedName("query_attributes")
     private Map<String, String> queryAttributes;
 
-    @JsonProperty("query_response")
-    @SerializedName("query_response")
-    private QueryResponse queryResponse;
+    @JsonProperty("query_response_object_ids")
+    @SerializedName("query_response_object_ids")
+    private List<String> queryResponseObjectIds;
 
     /**
      * Creates a new UBI query object.
@@ -150,27 +151,19 @@ public class UbiQuery {
         this.queryAttributes = queryAttributes;
     }
 
-    /**
-     * Gets the query responses.
-     * @return The query responses.
-     */
-    public QueryResponse getQueryResponse() {
-        return queryResponse;
-    }
-
-    /**
-     * Sets the query responses.
-     * @param queryResponse The query responses.
-     */
-    public void setQueryResponse(QueryResponse queryResponse) {
-        this.queryResponse = queryResponse;
-    }
-
     public String getApplication() {
         return application;
     }
 
     public void setApplication(String application) {
         this.application = application;
+    }
+
+    public List<String> getQueryResponseObjectIds() {
+        return queryResponseObjectIds;
+    }
+
+    public void setQueryResponseObjectIds(List<String> queryResponseObjectIds) {
+        this.queryResponseObjectIds = queryResponseObjectIds;
     }
 }
