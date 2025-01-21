@@ -16,6 +16,10 @@ import com.google.gson.annotations.SerializedName;
  */
 public class UbiEvent {
 
+    @JsonProperty("user_id")
+    @SerializedName("user_id")
+    private String userId;
+
     @JsonProperty("action_name")
     @SerializedName("action_name")
     private String actionName;
@@ -151,5 +155,13 @@ public class UbiEvent {
 
     public void setMessageType(String messageType) {
         this.messageType = messageType;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }
