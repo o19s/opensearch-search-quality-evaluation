@@ -51,7 +51,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
             queries.merge(ubiQuery.getUserQuery(), 1L, Long::sum);
 
             // Will be useful for paging once implemented.
-            if(queries.size() > parameters.getQuerySetSize()) {
+            if(queries.size() >= parameters.getQuerySetSize()) {
                 break;
             }
 
