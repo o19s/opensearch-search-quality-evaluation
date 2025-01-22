@@ -44,6 +44,10 @@ public class UbiQuery {
     @SerializedName("query_attributes")
     private Map<String, String> queryAttributes;
 
+    @JsonProperty("query_response_id")
+    @SerializedName("query_response_id")
+    private String queryResponseId;
+
     @JsonProperty("query_response_hit_ids")
     @SerializedName("query_response_hit_ids")
     private List<String> queryResponseHitIds;
@@ -166,4 +170,13 @@ public class UbiQuery {
     public void setQueryResponseHitIds(List<String> queryResponseHitIds) {
         this.queryResponseHitIds = queryResponseHitIds;
     }
+
+    public String getQueryResponseId() {
+        return queryResponseId;
+    }
+
+    public void setQueryResponseId(String queryResponseId) {
+        this.queryResponseId = queryResponseId;
+    }
+
 }
