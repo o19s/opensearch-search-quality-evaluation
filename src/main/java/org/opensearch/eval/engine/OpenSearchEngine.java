@@ -645,8 +645,8 @@ public class OpenSearchEngine extends SearchEngine {
                 final List<LongTermsBucket> positionBuckets = positionTerms.lterms().buckets().array();
 
                 for(final LongTermsBucket positionBucket : positionBuckets) {
-                    LOGGER.debug("Inserting client event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
-                    impressionCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
+                    LOGGER.debug("Inserting click event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
+                    clickCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
                 }
 
             }
@@ -681,6 +681,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         }
 
+        // Index the calculated values.
         indexRankAggregatedClickthrough(rankAggregatedClickThrough);
 
         return rankAggregatedClickThrough;
