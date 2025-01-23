@@ -7,18 +7,16 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
-        jdk: [ 11, 17, 21 ]
+        jdk: [ 21 ]
         experimental: [false]
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Set up JDK ${{ matrix.jdk }}
         uses: actions/setup-java@v4
         with:
-          distribution: temurin
+          distribution: adopt
           java-version: ${{ matrix.jdk }}
-          cache: gradle
-      - name: Assemble target plugin
-        uses: gradle/gradle-build-action@v3
-        with:
-          cache-disabled: true
-          arguments: -Dtests.security.manager=false assemble
+      - name: Build
+        run: mvn --batch-mode test

@@ -29,3 +29,17 @@ gradle-app.setting
 .project
 .classpath
 
+# Ignore Gradle project-specific cache directory
+.gradle
+
+# Ignore Gradle build output directory
+build
+
+# intellij files
+.idea/
+*.iml
+*.ipr
+*.iws
+build-idea/
+out/
+

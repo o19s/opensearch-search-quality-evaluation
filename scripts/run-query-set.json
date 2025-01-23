@@ -1,0 +1,11 @@
+{
+  "query_set_id": "6b1ac777-758d-4f33-9bb6-7e3f15e77637",
+  "judgments_id": "76267535-0591-4e13-9e3d-8de5cb1329a6",
+  "index": "ecommerce",
+  "search_pipeline": "hybrid-search-pipeline",
+  "id_field": "asin",
+  "k": 10,
+  "threshold": 1.0,
+  "query": "{\"_source\": {\"excludes\": [\"title_embedding\"]},\"query\": {\"hybrid\": {\"queries\": [{\"match\": {\"title_text\": {\"query\": \"#$query##\"}}},{\"neural\": {\"title_embedding\": {\"query_text\": \"#$query##\",\"k\": 50}}}]}}}",
+  "not_used_query": "{\"query\": {\"match\": {\"description\": \"#$query##\"}}}"
+}

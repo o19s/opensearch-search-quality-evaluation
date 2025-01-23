@@ -1,0 +1,94 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
+package org.opensearch.eval.samplers;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.data.QuerySet;
+import org.opensearch.eval.utils.TimeUtils;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * An interface for sampling UBI queries.
+ */
+public abstract class AbstractQuerySampler {
+
+    private static final Logger LOGGER = LogManager.getLogger(AbstractQuerySampler.class);
+
+    /**
+     * Gets the name of the sampler.
+     * @return The name of the sampler.
+     */
+    public abstract String getName();
+
+    /**
+     * Samples the queries and inserts the query set into an index.
+     * @return A query set ID.
+     */
+    public abstract String sample() throws Exception;
+
+    /**
+     * Index the query set.
+     */
+    protected String indexQuerySet(final SearchEngine searchEngine, final String name, final String description, final String sampling, Map<String, Long> queries) throws Exception {
+
+        LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
+
+        final Collection<Map<String, Long>> querySetQueries = new ArrayList<>();
+
+        // Convert the queries map to an object.
+        for(final String query : queries.keySet()) {
+
+            // Map of the query itself to the frequency of the query.
+            final Map<String, Long> querySetQuery = new HashMap<>();
+            querySetQuery.put(query, queries.get(query));
+
+            querySetQueries.add(querySetQuery);
+
+        }
+
+        final QuerySet querySet = new QuerySet();
+        querySet.setName(name);
+        querySet.setDescription(description);
+        querySet.setSampling(sampling);
+        querySet.setQuerySetQueries(querySetQueries);
+        querySet.setTimestamp(TimeUtils.getTimestamp());
+
+        final String querySetId = searchEngine.indexQuerySet(querySet);
+
+        // TODO: Create a mapping for the query set index.
+
+//        final IndexRequest indexRequest = new IndexRequest().index(Constants.QUERY_SETS_INDEX_NAME)
+//                .id(querySetId)
+//                .source(querySet)
+//                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+//
+//        client.index(indexRequest, new ActionListener<>() {
+//
+//            @Override
+//            public void onResponse(IndexResponse indexResponse) {
+//                LOGGER.info("Indexed query set {} having name {}", querySetId, name);
+//            }
+//
+//            @Override
+//            public void onFailure(Exception ex) {
+//                LOGGER.error("Unable to index query set {}", querySetId, ex);
+//            }
+//        });
+
+        return querySetId;
+
+    }
+
+}

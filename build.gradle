@@ -1,4 +1,0 @@
-allprojects {
-    group 'org.opensearch'
-    version '1.0.0-SNAPSHOT'
-}
