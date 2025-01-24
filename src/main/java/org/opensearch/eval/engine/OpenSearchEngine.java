@@ -32,6 +32,7 @@ import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
@@ -177,10 +178,15 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Query query = Query.of(q -> q.bool(boolQuery));
 
+        // TODO: Make sure the query being run here is correct.
+        //System.out.println(query.);
+
         final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME)
                 .query(query)
                 .from(0)
                 .size(1), Judgment.class);
+
+        System.out.println("Number of judgments: " + searchResponse.hits().hits().size());
 
         if(searchResponse.hits().hits().isEmpty()) {
             return Double.NaN;
@@ -208,13 +214,21 @@ public class OpenSearchEngine extends SearchEngine {
                 ubiQueries.add(searchResponse.hits().hits().get(i).source());
             }
 
-            final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
-            final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
+            if(scrollId != null) {
+                final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
+                final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
 
-            scrollId = scrollResponse.scrollId();
-            searchHits = scrollResponse.hits().hits();
+                scrollId = scrollResponse.scrollId();
+                searchHits = scrollResponse.hits().hits();
+            } else {
+                break;
+            }
 
         }
+
+        // TODO: Clear the scroll.
+        // final ClearScrollRequest clearScrollRequest = new ClearScrollRequest.Builder().scrollId(scrollId).build();
+        // client.clearScroll(clearScrollRequest);
 
         return ubiQueries;
 
@@ -356,6 +370,7 @@ public class OpenSearchEngine extends SearchEngine {
             params.put("search_pipeline", pipeline);
         }
 
+        // TODO: Need to consider k, or it needs to be the responsibilty of the person to put k in the query.
         final Response searchResponse = genericClient.execute(
                 Requests.builder()
                         .endpoint(index + "/_search")
@@ -371,6 +386,8 @@ public class OpenSearchEngine extends SearchEngine {
         final List<String> orderedDocumentIds = new ArrayList<>();
 
         final JsonNode hits = json.get("hits").get("hits");
+        // System.out.println("Number of hits for user query " + userQuery + ": " + hits.size());
+
         for (int i = 0; i < hits.size(); i++) {
 
             if(hits.get(i).get("_source").get(idField) != null) {

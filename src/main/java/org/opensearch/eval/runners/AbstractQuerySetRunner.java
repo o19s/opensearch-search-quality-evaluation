@@ -53,7 +53,7 @@ public abstract class AbstractQuerySetRunner {
      */
     protected RelevanceScores getRelevanceScores(final String judgmentsId, final String query, final List<String> orderedDocumentIds, final int k) throws Exception {
 
-        // Ordered list of scores.
+        // An ordered list of scores.
         final List<Double> scores = new ArrayList<>();
 
         // Count the number of documents without judgments.
