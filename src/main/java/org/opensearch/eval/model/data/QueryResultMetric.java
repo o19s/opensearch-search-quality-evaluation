@@ -1,17 +1,36 @@
 package org.opensearch.eval.model.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.UUID;
 
 public class QueryResultMetric extends AbstractData {
 
+    @JsonProperty("datetime")
     private String datetime;
+
+    @JsonProperty("search_config")
     private String searchConfig;
+
+    @JsonProperty("query_set_id")
     private String querySetId;
+
+    @JsonProperty("query")
     private String query;
+
+    @JsonProperty("metric")
     private String metric;
+
+    @JsonProperty("value")
     private double value;
+
+    @JsonProperty("application")
     private String application;
+
+    @JsonProperty("evaluation_id")
     private String evaluationId;
+
+    @JsonProperty("frogs_percent")
     private double frogsPercent;
 
     public QueryResultMetric(String id) {

@@ -157,7 +157,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         // TODO: Handle the query set not being found.
 
-        return searchResponse.hits().hits().get(0).source();
+        return searchResponse.hits().hits().getFirst().source();
 
     }
 
@@ -167,9 +167,9 @@ public class OpenSearchEngine extends SearchEngine {
         var boolQuery = BoolQuery.of(bq -> bq
                 .must(
                         List.of(
-                            MatchQuery.of(mq -> mq.query(FieldValue.of("judgments_id")).field(judgmentsId)).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of("query")).field(userQuery)).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of("document_id")).field(documentId)).toQuery()
+                            MatchQuery.of(mq -> mq.query(FieldValue.of(judgmentsId)).field("judgment_set_id")).toQuery(),
+                            MatchQuery.of(mq -> mq.query(FieldValue.of(userQuery)).field("query")).toQuery(),
+                            MatchQuery.of(mq -> mq.query(FieldValue.of(documentId)).field("document")).toQuery()
                         )
                 )
         );
@@ -182,14 +182,17 @@ public class OpenSearchEngine extends SearchEngine {
         final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME)
                 .query(query)
                 .from(0)
-                .size(1), Judgment.class);
+                .size(1),
+                Judgment.class);
 
-        System.out.println("Number of judgments: " + searchResponse.hits().hits().size());
+        if(!searchResponse.hits().hits().isEmpty()) {
+            System.out.println("Number of judgments: " + searchResponse.hits().hits().size());
+        }
 
         if(searchResponse.hits().hits().isEmpty()) {
             return Double.NaN;
         } else {
-            return searchResponse.hits().hits().get(0).source().getJudgment();
+            return searchResponse.hits().hits().getFirst().source().getJudgment();
         }
 
     }

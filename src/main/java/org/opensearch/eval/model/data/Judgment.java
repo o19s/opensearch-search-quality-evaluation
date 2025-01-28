@@ -9,43 +9,37 @@
 package org.opensearch.eval.model.data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.gson.annotations.SerializedName;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.utils.MathUtils;
-
-import java.util.UUID;
 
 /**
  * A judgment of a search result's quality for a given query.
  */
-public class Judgment extends AbstractData {
+public class Judgment {
 
-    private static final Logger LOGGER = LogManager.getLogger(Judgment.class.getName());
+    @JsonProperty("id")
+    private String id;
 
     @JsonProperty("query_id")
-    @SerializedName("query_id")
-    private final String queryId;
+    private String queryId;
 
     @JsonProperty("query")
-    @SerializedName("query")
-    private final String query;
+    private String query;
 
     @JsonProperty("document")
-    @SerializedName("document")
-    private final String document;
+    private String document;
 
     @JsonProperty("judgment")
-    @SerializedName("judgment")
-    private final double judgment;
+    private double judgment;
 
     @JsonProperty("judgment_set_id")
-    @SerializedName("judgment_set_id")
     private String judgmentSetId;
 
     @JsonProperty("timestamp")
-    @SerializedName("timestamp")
     private String timestamp;
+
+    public Judgment() {
+
+    }
 
     /**
      * Creates a new judgment.
@@ -55,7 +49,6 @@ public class Judgment extends AbstractData {
      * @param judgment The judgment value.
      */
     public Judgment(final String queryId, final String query, final String document, final double judgment) {
-        super(UUID.randomUUID().toString());
         this.queryId = queryId;
         this.query = query;
         this.document = document;
@@ -117,6 +110,14 @@ public class Judgment extends AbstractData {
 
     public void setTimestamp(String timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
 }
