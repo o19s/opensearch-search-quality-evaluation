@@ -8,12 +8,12 @@
  */
 package org.opensearch.eval.model.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.annotations.SerializedName;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.utils.MathUtils;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -23,28 +23,29 @@ public class Judgment extends AbstractData {
 
     private static final Logger LOGGER = LogManager.getLogger(Judgment.class.getName());
 
+    @JsonProperty("query_id")
+    @SerializedName("query_id")
     private final String queryId;
-    private final String query;
-    private final String document;
-    private final double judgment;
-    private String judgmentsId;
-    private String timestamp;
 
-    /**
-     * Creates a new judgment.
-     * @param id The judgment ID.
-     * @param queryId The query ID for the judgment.
-     * @param query The query for the judgment.
-     * @param document The document in the judgment.
-     * @param judgment The judgment value.
-     */
-    public Judgment(final String id, final String queryId, final String query, final String document, final double judgment) {
-        super(id);
-        this.queryId = queryId;
-        this.query = query;
-        this.document = document;
-        this.judgment = judgment;
-    }
+    @JsonProperty("query")
+    @SerializedName("query")
+    private final String query;
+
+    @JsonProperty("document")
+    @SerializedName("document")
+    private final String document;
+
+    @JsonProperty("judgment")
+    @SerializedName("judgment")
+    private final double judgment;
+
+    @JsonProperty("judgment_set_id")
+    @SerializedName("judgment_set_id")
+    private String judgmentSetId;
+
+    @JsonProperty("timestamp")
+    @SerializedName("timestamp")
+    private String timestamp;
 
     /**
      * Creates a new judgment.
@@ -63,18 +64,6 @@ public class Judgment extends AbstractData {
 
     public String toJudgmentString() {
         return queryId + ", " + query + ", " + document + ", " + MathUtils.round(judgment);
-    }
-
-    public Map<String, Object> getJudgmentAsMap() {
-
-        final Map<String, Object> judgmentMap = new HashMap<>();
-        judgmentMap.put("query_id", queryId);
-        judgmentMap.put("query", query);
-        judgmentMap.put("document_id", document);
-        judgmentMap.put("judgment", judgment);
-
-        return judgmentMap;
-
     }
 
     @Override
@@ -114,12 +103,12 @@ public class Judgment extends AbstractData {
         return judgment;
     }
 
-    public String getJudgmentsId() {
-        return judgmentsId;
+    public String getJudgmentSetId() {
+        return judgmentSetId;
     }
 
-    public void setJudgmentsId(String judgmentsId) {
-        this.judgmentsId = judgmentsId;
+    public void setJudgmentSetId(String judgmentSetId) {
+        this.judgmentSetId = judgmentSetId;
     }
 
     public String getTimestamp() {

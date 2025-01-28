@@ -9,7 +9,6 @@
 package org.opensearch.eval.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +31,6 @@ import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
-import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
@@ -888,7 +886,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         for(final Judgment judgment : judgments) {
 
-            judgment.setJudgmentsId(judgmentsId);
+            judgment.setJudgmentSetId(judgmentsId);
             judgment.setTimestamp(timestamp);
 
             final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(Constants.JUDGMENTS_INDEX_NAME).id(judgment.getId()).document(judgment).build();
