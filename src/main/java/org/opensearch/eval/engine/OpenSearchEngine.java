@@ -9,7 +9,6 @@
 package org.opensearch.eval.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -158,7 +157,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         // TODO: Handle the query set not being found.
 
-        return searchResponse.hits().hits().get(0).source();
+        return searchResponse.hits().hits().getFirst().source();
 
     }
 
@@ -168,24 +167,32 @@ public class OpenSearchEngine extends SearchEngine {
         var boolQuery = BoolQuery.of(bq -> bq
                 .must(
                         List.of(
-                            MatchQuery.of(mq -> mq.query(FieldValue.of("judgments_id")).field(judgmentsId)).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of("query")).field(userQuery)).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of("document_id")).field(documentId)).toQuery()
+                            MatchQuery.of(mq -> mq.query(FieldValue.of(judgmentsId)).field("judgment_set_id")).toQuery(),
+                            MatchQuery.of(mq -> mq.query(FieldValue.of(userQuery)).field("query")).toQuery(),
+                            MatchQuery.of(mq -> mq.query(FieldValue.of(documentId)).field("document")).toQuery()
                         )
                 )
         );
 
         final Query query = Query.of(q -> q.bool(boolQuery));
 
+        // TODO: Make sure the query being run here is correct.
+        //System.out.println(query.);
+
         final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME)
                 .query(query)
                 .from(0)
-                .size(1), Judgment.class);
+                .size(1),
+                Judgment.class);
+
+        if(!searchResponse.hits().hits().isEmpty()) {
+            System.out.println("Number of judgments: " + searchResponse.hits().hits().size());
+        }
 
         if(searchResponse.hits().hits().isEmpty()) {
             return Double.NaN;
         } else {
-            return searchResponse.hits().hits().get(0).source().getJudgment();
+            return searchResponse.hits().hits().getFirst().source().getJudgment();
         }
 
     }
@@ -208,13 +215,21 @@ public class OpenSearchEngine extends SearchEngine {
                 ubiQueries.add(searchResponse.hits().hits().get(i).source());
             }
 
-            final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
-            final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
+            if(scrollId != null) {
+                final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
+                final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
 
-            scrollId = scrollResponse.scrollId();
-            searchHits = scrollResponse.hits().hits();
+                scrollId = scrollResponse.scrollId();
+                searchHits = scrollResponse.hits().hits();
+            } else {
+                break;
+            }
 
         }
+
+        // TODO: Clear the scroll.
+        // final ClearScrollRequest clearScrollRequest = new ClearScrollRequest.Builder().scrollId(scrollId).build();
+        // client.clearScroll(clearScrollRequest);
 
         return ubiQueries;
 
@@ -356,6 +371,7 @@ public class OpenSearchEngine extends SearchEngine {
             params.put("search_pipeline", pipeline);
         }
 
+        // TODO: Need to consider k, or it needs to be the responsibilty of the person to put k in the query.
         final Response searchResponse = genericClient.execute(
                 Requests.builder()
                         .endpoint(index + "/_search")
@@ -371,6 +387,8 @@ public class OpenSearchEngine extends SearchEngine {
         final List<String> orderedDocumentIds = new ArrayList<>();
 
         final JsonNode hits = json.get("hits").get("hits");
+        // System.out.println("Number of hits for user query " + userQuery + ": " + hits.size());
+
         for (int i = 0; i < hits.size(); i++) {
 
             if(hits.get(i).get("_source").get(idField) != null) {
@@ -871,7 +889,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         for(final Judgment judgment : judgments) {
 
-            judgment.setJudgmentsId(judgmentsId);
+            judgment.setJudgmentSetId(judgmentsId);
             judgment.setTimestamp(timestamp);
 
             final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(Constants.JUDGMENTS_INDEX_NAME).id(judgment.getId()).document(judgment).build();

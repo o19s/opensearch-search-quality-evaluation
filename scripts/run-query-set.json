@@ -1,6 +1,6 @@
 {
-  "query_set_id": "6b1ac777-758d-4f33-9bb6-7e3f15e77637",
-  "judgments_id": "76267535-0591-4e13-9e3d-8de5cb1329a6",
+  "query_set_id": "6c895d94-3146-4d9b-8858-f632e3fb0201",
+  "judgments_id": "40181d0d-fd94-4d91-a4b6-d08230bbaa31",
   "index": "ecommerce",
   "search_pipeline": "hybrid-search-pipeline",
   "id_field": "asin",
