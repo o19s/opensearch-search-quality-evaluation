@@ -10,15 +10,12 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
-import org.opensearch.eval.model.data.QueryResultMetric;
 import org.opensearch.eval.model.data.QuerySet;
-import org.opensearch.eval.utils.TimeUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,8 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-
-import static org.opensearch.eval.Constants.DASHBOARD_METRICS_INDEX_NAME;
 
 /**
  * A {@link AbstractQuerySetRunner} for Amazon OpenSearch.
@@ -56,7 +51,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             throw new IllegalArgumentException("The given query set " + querySetParameters.getQuerySetId() + " does not exist");
         }
 
-        final long judgmentCount = searchEngine.getJudgments(Constants.JUDGMENTS_INDEX_NAME, querySetParameters.getJudgmentsId());
+        final long judgmentCount = searchEngine.getJudgmentsCount(querySetParameters.getJudgmentsId());
         if(judgmentCount == 0) {
             LOGGER.error("There are no judgments with the judgment set ID {}", querySetParameters.getJudgmentsId());
             throw new IllegalArgumentException("There are no judgments with the judgment set ID " + querySetParameters.getJudgmentsId());
@@ -130,7 +125,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             final String querySetRunId = UUID.randomUUID().toString();
             final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetParameters.getQuerySetId(), queryResults, querySetMetrics);
 
-            save(querySetRunResult);
+            searchEngine.saveQueryRunResult(querySetRunResult);
 
             LOGGER.info("Query set run complete: {}", querySetRunId);
 
@@ -138,66 +133,6 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
         } catch (Exception ex) {
             throw new RuntimeException("Unable to run query set. If using a search_pipeline make sure the pipeline exists.", ex);
-        }
-
-    }
-
-    @Override
-    public void save(final QuerySetRunResult result) throws Exception {
-
-        LOGGER.info("Indexing query run results.");
-
-        // Now, index the metrics as expected by the dashboards.
-
-        // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
-        // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
-
-        final boolean dashboardMetricsIndexExists = searchEngine.doesIndexExist(DASHBOARD_METRICS_INDEX_NAME);
-
-        if (!dashboardMetricsIndexExists) {
-
-            // Create the index.
-            // TODO: Read this mapping from a resource file instead.
-            final String mapping = "{\n" +
-                    "              \"properties\": {\n" +
-                    "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
-                    "                \"search_config\": { \"type\": \"keyword\" },\n" +
-                    "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
-                    "                \"query\": { \"type\": \"keyword\" },\n" +
-                    "                \"metric\": { \"type\": \"keyword\" },\n" +
-                    "                \"value\": { \"type\": \"double\" },\n" +
-                    "                \"application\": { \"type\": \"keyword\" },\n" +
-                    "                \"evaluation_id\": { \"type\": \"keyword\" },\n" +
-                    "                \"frogs_percent\": { \"type\": \"double\" }\n" +
-                    "              }\n" +
-                    "          }";
-
-            // TODO: Make sure the index gets created successfully.
-            searchEngine.createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
-
-        }
-
-        final String timestamp = TimeUtils.getTimestamp();
-
-        for(final QueryResult queryResult : result.getQueryResults()) {
-
-            for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
-
-                final QueryResultMetric queryResultMetric = new QueryResultMetric();
-                queryResultMetric.setDatetime(timestamp);
-                queryResultMetric.setSearchConfig("research_1");
-                queryResultMetric.setQuerySetId(result.getQuerySetId());
-                queryResultMetric.setQuery(queryResult.getQuery());
-                queryResultMetric.setMetric(searchMetric.getName());
-                queryResultMetric.setValue(searchMetric.getValue());
-                queryResultMetric.setApplication("sample_data");
-                queryResultMetric.setEvaluationId(result.getRunId());
-                queryResultMetric.setFrogsPercent(queryResult.getFrogs());
-
-                searchEngine.indexQueryResultMetric(queryResultMetric);
-
-            }
-
         }
 
     }

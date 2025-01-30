@@ -49,6 +49,7 @@ import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.eval.Constants;
+import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.ClickThroughRate;
 import org.opensearch.eval.model.data.Judgment;
@@ -57,6 +58,8 @@ import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.model.data.RankAggregatedClickThrough;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
+import org.opensearch.eval.runners.QueryResult;
+import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.utils.TimeUtils;
 
 import java.io.ByteArrayInputStream;
@@ -84,6 +87,31 @@ import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHO
  * Functionality for interacting with OpenSearch.
  */
 public class OpenSearchEngine extends SearchEngine {
+
+    /**
+     * The name of the index that stores the implicit judgments.
+     */
+    private static final String JUDGMENTS_INDEX_NAME = "judgments";
+
+    /**
+     * The name of the UBI index containing the queries. This should not be changed.
+     */
+    private static final String UBI_QUERIES_INDEX_NAME = "ubi_queries";
+
+    /**
+     * The name of the UBI index containing the events. This should not be changed.
+     */
+    private static final String UBI_EVENTS_INDEX_NAME = "ubi_events";
+
+    /**
+     * The name of the index that stores the query sets.
+     */
+    private static final String QUERY_SETS_INDEX_NAME = "search_quality_eval_query_sets";
+
+    /**
+     * The name of the index that stores the metrics for the dashboard.
+     */
+    private static final String DASHBOARD_METRICS_INDEX_NAME = "sqe_metrics_sample_data";
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
 
@@ -140,10 +168,9 @@ public class OpenSearchEngine extends SearchEngine {
     @Override
     public String indexQuerySet(final QuerySet querySet) throws IOException {
 
-        final String index = Constants.QUERY_SETS_INDEX_NAME;
         final String id = querySet.getId();
 
-        final IndexRequest<QuerySet> indexRequest = new IndexRequest.Builder<QuerySet>().index(index).id(id).document(querySet).build();
+        final IndexRequest<QuerySet> indexRequest = new IndexRequest.Builder<QuerySet>().index(QUERY_SETS_INDEX_NAME).id(id).document(querySet).build();
         return client.index(indexRequest).id();
 
     }
@@ -154,7 +181,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Query query = Query.of(q -> q.term(m -> m.field("_id").value(FieldValue.of(querySetId))));
 
         final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
-        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).trackTotalHits(trackHits).query(query).size(1), QuerySet.class);
+        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(QUERY_SETS_INDEX_NAME).trackTotalHits(trackHits).query(query).size(1), QuerySet.class);
 
         if(searchResponse.hits().total().value() > 0) {
             return true;
@@ -170,7 +197,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Query query = Query.of(q -> q.term(m -> m.field("_id").value(FieldValue.of(querySetId))));
 
-        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).query(query).size(1), QuerySet.class);
+        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(QUERY_SETS_INDEX_NAME).query(query).size(1), QuerySet.class);
 
         return searchResponse.hits().hits().getFirst().source();
 
@@ -194,7 +221,7 @@ public class OpenSearchEngine extends SearchEngine {
         // TODO: Make sure the query being run here is correct.
         //System.out.println(query.);
 
-        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME)
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(JUDGMENTS_INDEX_NAME)
                 .query(query)
                 .from(0)
                 .size(1),
@@ -219,7 +246,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
@@ -251,25 +278,25 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public long getJudgments(final String index, final String judgmentsSetId) throws IOException {
+    public long getJudgmentsCount(final String judgmentsSetId) throws IOException {
 
         final Query query = Query.of(q -> q.term(m -> m.field("judgment_set_id").value(FieldValue.of(judgmentsSetId))));
 
         final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
-        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME).query(query).trackTotalHits(trackHits).size(0), Judgment.class);
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(JUDGMENTS_INDEX_NAME).query(query).trackTotalHits(trackHits).size(0), Judgment.class);
 
         return searchResponse.hits().total().value();
 
     }
 
     @Override
-    public Collection<Judgment> getJudgments(final String index) throws IOException {
+    public Collection<Judgment> getJudgments() throws IOException {
 
         final Collection<Judgment> judgments = new ArrayList<>();
 
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(index).size(1000).scroll(scrollTime), Judgment.class);
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(JUDGMENTS_INDEX_NAME).size(1000).scroll(scrollTime), Judgment.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<Judgment>> searchHits = searchResponse.hits().hits();
@@ -356,7 +383,7 @@ public class OpenSearchEngine extends SearchEngine {
         LOGGER.debug("Getting query from query ID {}", queryId);
 
         final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("query_id").query(FieldValue.of(queryId))))
-                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .index(UBI_QUERIES_INDEX_NAME)
                 .from(0)
                 .size(1)
                 .build();
@@ -533,7 +560,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Time scrollTime = new Time.Builder().time("10m").build();
 
         final SearchRequest searchRequest = new SearchRequest.Builder()
-                .index(Constants.UBI_EVENTS_INDEX_NAME)
+                .index(UBI_EVENTS_INDEX_NAME)
                 .query(q -> q.wrapper(wrapperQuery))
                 .from(0)
                 .size(1000)
@@ -649,7 +676,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         // TODO: Allow for a time period and for a specific application.
         final SearchRequest searchRequest = new SearchRequest.Builder()
-                .index(Constants.UBI_EVENTS_INDEX_NAME)
+                .index(UBI_EVENTS_INDEX_NAME)
                 .aggregations(aggregations)
                 .query(q -> q.range(rangeQuery))
                 .from(0)
@@ -737,7 +764,7 @@ public class OpenSearchEngine extends SearchEngine {
     private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 
         final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("user_query").query(FieldValue.of(userQuery))))
-                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .index(UBI_QUERIES_INDEX_NAME)
                 .build();
 
         final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
@@ -797,7 +824,7 @@ public class OpenSearchEngine extends SearchEngine {
                     .build();
 
             final SearchRequest searchRequest = new SearchRequest.Builder()
-                    .index(Constants.UBI_EVENTS_INDEX_NAME)
+                    .index(UBI_EVENTS_INDEX_NAME)
                     .query(q -> q.wrapper(wrapperQuery))
                     .size(0)
                     .trackTotalHits(TrackHits.of(t -> t.enabled(true)))
@@ -893,7 +920,7 @@ public class OpenSearchEngine extends SearchEngine {
         // TODO: Use bulk imports.
 
         final IndexRequest<QueryResultMetric> indexRequest = new IndexRequest.Builder<QueryResultMetric>()
-                .index(Constants.DASHBOARD_METRICS_INDEX_NAME)
+                .index(DASHBOARD_METRICS_INDEX_NAME)
                 .id(queryResultMetric.getId())
                 .document(queryResultMetric).build();
 
@@ -920,12 +947,72 @@ public class OpenSearchEngine extends SearchEngine {
             judgment.setJudgmentSetId(judgmentsId);
             judgment.setTimestamp(timestamp);
 
-            final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(Constants.JUDGMENTS_INDEX_NAME).id(judgment.getId()).document(judgment).build();
+            final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(JUDGMENTS_INDEX_NAME).id(judgment.getId()).document(judgment).build();
             client.index(indexRequest);
 
         }
 
         return judgmentsId;
+
+    }
+
+    @Override
+    public void saveQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception {
+
+        LOGGER.info("Indexing query run results.");
+
+        // Now, index the metrics as expected by the dashboards.
+
+        // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
+        // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
+
+        final boolean dashboardMetricsIndexExists = doesIndexExist(DASHBOARD_METRICS_INDEX_NAME);
+
+        if (!dashboardMetricsIndexExists) {
+
+            // Create the index.
+            // TODO: Read this mapping from a resource file instead.
+            final String mapping = "{\n" +
+                    "              \"properties\": {\n" +
+                    "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                    "                \"search_config\": { \"type\": \"keyword\" },\n" +
+                    "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
+                    "                \"query\": { \"type\": \"keyword\" },\n" +
+                    "                \"metric\": { \"type\": \"keyword\" },\n" +
+                    "                \"value\": { \"type\": \"double\" },\n" +
+                    "                \"application\": { \"type\": \"keyword\" },\n" +
+                    "                \"evaluation_id\": { \"type\": \"keyword\" },\n" +
+                    "                \"frogs_percent\": { \"type\": \"double\" }\n" +
+                    "              }\n" +
+                    "          }";
+
+            // TODO: Make sure the index gets created successfully.
+            createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
+
+        }
+
+        final String timestamp = TimeUtils.getTimestamp();
+
+        for(final QueryResult queryResult : querySetRunResult.getQueryResults()) {
+
+            for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+
+                final QueryResultMetric queryResultMetric = new QueryResultMetric();
+                queryResultMetric.setDatetime(timestamp);
+                queryResultMetric.setSearchConfig("research_1");
+                queryResultMetric.setQuerySetId(querySetRunResult.getQuerySetId());
+                queryResultMetric.setQuery(queryResult.getQuery());
+                queryResultMetric.setMetric(searchMetric.getName());
+                queryResultMetric.setValue(searchMetric.getValue());
+                queryResultMetric.setApplication("sample_data");
+                queryResultMetric.setEvaluationId(querySetRunResult.getRunId());
+                queryResultMetric.setFrogsPercent(queryResult.getFrogs());
+
+                indexQueryResultMetric(queryResultMetric);
+
+            }
+
+        }
 
     }
 
