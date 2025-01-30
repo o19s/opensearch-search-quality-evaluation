@@ -149,13 +149,28 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public QuerySet getQuerySet(String querySetId) throws IOException {
+    public boolean doesQuerySetExist(final String querySetId) throws IOException {
+
+        final Query query = Query.of(q -> q.term(m -> m.field("_id").value(FieldValue.of(querySetId))));
+
+        final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
+        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).trackTotalHits(trackHits).query(query).size(1), QuerySet.class);
+
+        if(searchResponse.hits().total().value() > 0) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
+
+    @Override
+    public QuerySet getQuerySet(final String querySetId) throws IOException {
 
         final Query query = Query.of(q -> q.term(m -> m.field("_id").value(FieldValue.of(querySetId))));
 
         final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).query(query).size(1), QuerySet.class);
-
-        // TODO: Handle the query set not being found.
 
         return searchResponse.hits().hits().getFirst().source();
 
@@ -235,6 +250,19 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
+    @Override
+    public long getJudgments(final String index, final String judgmentsSetId) throws IOException {
+
+        final Query query = Query.of(q -> q.term(m -> m.field("judgment_set_id").value(FieldValue.of(judgmentsSetId))));
+
+        final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME).query(query).trackTotalHits(trackHits).size(0), Judgment.class);
+
+        return searchResponse.hits().total().value();
+
+    }
+
+    @Override
     public Collection<Judgment> getJudgments(final String index) throws IOException {
 
         final Collection<Judgment> judgments = new ArrayList<>();

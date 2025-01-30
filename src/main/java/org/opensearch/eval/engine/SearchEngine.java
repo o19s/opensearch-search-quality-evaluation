@@ -29,6 +29,7 @@ public abstract class SearchEngine {
     public abstract boolean bulkIndex(String index, Map<String, Object> documents) throws IOException;
 
     public abstract Collection<Judgment> getJudgments(final String index) throws IOException;
+    public abstract long getJudgments(final String index, final String judgmentsSetId) throws IOException;
 
     public abstract List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException;
 
@@ -42,6 +43,14 @@ public abstract class SearchEngine {
      * @throws IOException Thrown if the query set cannot be retrieved.
      */
     public abstract QuerySet getQuerySet(String querySetId) throws IOException;
+
+    /**
+     * Determines if a query set exists.
+     * @param querySetId The ID of the query set to get.
+     * @return <code>true</code> if the query set exists.
+     * @throws IOException Thrown upon an error searching.
+     */
+    public abstract boolean doesQuerySetExist(String querySetId) throws IOException;
 
     /**
      * Get a judgment from the index.

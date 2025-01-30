@@ -10,6 +10,7 @@ package org.opensearch.eval.runners;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
@@ -48,6 +49,18 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
     @Override
     public QuerySetRunResult run(final RunQuerySetParameters querySetParameters) throws Exception {
+
+        // Verify the given query set and judgment set exists prior to trying to run.
+        if(!searchEngine.doesQuerySetExist(querySetParameters.getQuerySetId())) {
+            LOGGER.error("The given query set {} does not exist", querySetParameters.getQuerySetId());
+            throw new IllegalArgumentException("The given query set " + querySetParameters.getQuerySetId() + " does not exist");
+        }
+
+        final long judgmentCount = searchEngine.getJudgments(Constants.JUDGMENTS_INDEX_NAME, querySetParameters.getJudgmentsId());
+        if(judgmentCount == 0) {
+            LOGGER.error("There are no judgments with the judgment set ID {}", querySetParameters.getJudgmentsId());
+            throw new IllegalArgumentException("There are no judgments with the judgment set ID " + querySetParameters.getJudgmentsId());
+        }
 
         final QuerySet querySet = searchEngine.getQuerySet(querySetParameters.getQuerySetId());
         LOGGER.info("Found {} queries in query set {}", querySet.getQuerySetQueries().size(), querySetParameters.getQuerySetId());
@@ -186,8 +199,6 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             }
 
         }
-
-
 
     }
 

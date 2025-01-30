@@ -38,7 +38,7 @@ public class Judgment {
     private String timestamp;
 
     public Judgment() {
-
+        // Empty constructor used for deserialization.
     }
 
     /**
