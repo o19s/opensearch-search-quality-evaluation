@@ -916,7 +916,7 @@ public class OpenSearchEngine extends SearchEngine {
                     "                \"description\": { \"type\": \"text\" },\n" +
                     "                \"id\": { \"type\": \"keyword\" },\n" +
                     "                \"name\": { \"type\": \"keyword\" },\n" +
-                    "                \"querySetQueries\": { \"type\": \"object\" },\n" +
+                    "                \"query_set_queries\": { \"type\": \"object\" },\n" +
                     "                \"sampling\": { \"type\": \"keyword\" }\n" +
                     "              }\n" +
                     "          }";
