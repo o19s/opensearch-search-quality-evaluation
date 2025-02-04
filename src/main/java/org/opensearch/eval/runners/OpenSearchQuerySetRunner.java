@@ -147,7 +147,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             // TODO: Read this mapping from a resource file instead.
             final String mapping = "{\n" +
                     "              \"properties\": {\n" +
-                    "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                    "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
                     "                \"search_config\": { \"type\": \"keyword\" },\n" +
                     "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
                     "                \"query\": { \"type\": \"keyword\" },\n" +
@@ -171,7 +171,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
                 final QueryResultMetric queryResultMetric = new QueryResultMetric();
-                queryResultMetric.setDatetime(timestamp);
+                queryResultMetric.setTimestamp(timestamp);
                 queryResultMetric.setSearchConfig("research_1");
                 queryResultMetric.setQuerySetId(result.getQuerySetId());
                 queryResultMetric.setQuery(queryResult.getQuery());

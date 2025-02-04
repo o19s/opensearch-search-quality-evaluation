@@ -6,8 +6,8 @@ import java.util.UUID;
 
 public class QueryResultMetric extends AbstractData {
 
-    @JsonProperty("datetime")
-    private String datetime;
+    @JsonProperty("timestamp")
+    private String timestamp;
 
     @JsonProperty("search_config")
     private String searchConfig;
@@ -41,12 +41,12 @@ public class QueryResultMetric extends AbstractData {
         super(UUID.randomUUID().toString());
     }
 
-    public String getDatetime() {
-        return datetime;
+    public String getTimestamp() {
+        return timestamp;
     }
 
-    public void setDatetime(String datetime) {
-        this.datetime = datetime;
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
     }
 
     public String getSearchConfig() {
