@@ -107,6 +107,8 @@ public class App {
 
             if(file.exists()) {
 
+                searchEngine.createQuerySetIndex();
+
                 final String jsonString = Files.readString(file.toPath(), StandardCharsets.UTF_8);
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);
                 final JsonObject jsonObject = jsonElement.getAsJsonObject();
