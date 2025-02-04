@@ -25,7 +25,7 @@ public class Constants {
     /**
      * The name of the index that stores the metrics for the dashboard.
      */
-    public static final String DASHBOARD_METRICS_INDEX_NAME = "sqe_metrics_sample_data";
+    public static final String DASHBOARD_METRICS_INDEX_NAME = "sqe_metrics";
 
     /**
      * The name of the index that stores the implicit judgments.
