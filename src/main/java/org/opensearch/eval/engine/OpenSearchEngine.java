@@ -912,7 +912,7 @@ public class OpenSearchEngine extends SearchEngine {
 
             final String mapping = "{\n" +
                     "              \"properties\": {\n" +
-                    "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                    "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
                     "                \"description\": { \"type\": \"text\" },\n" +
                     "                \"id\": { \"type\": \"keyword\" },\n" +
                     "                \"name\": { \"type\": \"keyword\" },\n" +
