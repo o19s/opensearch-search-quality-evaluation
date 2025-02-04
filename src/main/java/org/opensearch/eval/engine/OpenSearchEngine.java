@@ -1016,4 +1016,34 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
+    @Override
+    public void createJudgmentsIndex() throws Exception {
+
+        final boolean dashboardMetricsIndexExists = doesIndexExist(JUDGMENTS_INDEX_NAME);
+
+        if (!dashboardMetricsIndexExists) {
+
+            // Create the index.
+            // TODO: Read this mapping from a resource file instead.
+            final String mapping = "{\n" +
+                    "              \"properties\": {\n" +
+                    "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                    "                \"search_config\": { \"type\": \"keyword\" },\n" +
+                    "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
+                    "                \"query\": { \"type\": \"keyword\" },\n" +
+                    "                \"metric\": { \"type\": \"keyword\" },\n" +
+                    "                \"value\": { \"type\": \"double\" },\n" +
+                    "                \"application\": { \"type\": \"keyword\" },\n" +
+                    "                \"evaluation_id\": { \"type\": \"keyword\" },\n" +
+                    "                \"frogs_percent\": { \"type\": \"double\" }\n" +
+                    "              }\n" +
+                    "          }";
+
+            // TODO: Make sure the index gets created successfully.
+            createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
+
+        }
+
+    }
+
 }

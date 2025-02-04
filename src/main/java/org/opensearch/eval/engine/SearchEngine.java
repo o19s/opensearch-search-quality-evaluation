@@ -17,6 +17,8 @@ public abstract class SearchEngine {
 
     public abstract boolean doesIndexExist(String index) throws IOException;
     public abstract boolean createIndex(String index, String mapping) throws IOException;
+    public abstract void createJudgmentsIndex() throws Exception;
+
     public abstract boolean deleteIndex(String index) throws IOException;
 
     public abstract String getUserQuery(final String queryId) throws Exception;

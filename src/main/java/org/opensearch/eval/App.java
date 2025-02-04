@@ -272,35 +272,6 @@ public class App {
 //
 //    }
 //
-//    private void createJudgmentsIndex(final NodeClient client) throws Exception {
-//
-//        // If the judgments index does not exist we need to create it.
-//        final IndicesExistsRequest indicesExistsRequest = new IndicesExistsRequest(Constants.JUDGMENTS_INDEX_NAME);
-//
-//        final IndicesExistsResponse indicesExistsResponse = client.admin().indices().exists(indicesExistsRequest).get();
-//
-//        if(!indicesExistsResponse.isExists()) {
-//
-//            // TODO: Read this mapping from a resource file instead.
-//            final String mapping = "{\n" +
-//                    "                                                  \"properties\": {\n" +
-//                    "                                                    \"judgments_id\": { \"type\": \"keyword\" },\n" +
-//                    "                                                    \"query_id\": { \"type\": \"keyword\" },\n" +
-//                    "                                                    \"query\": { \"type\": \"keyword\" },\n" +
-//                    "                                                    \"document_id\": { \"type\": \"keyword\" },\n" +
-//                    "                                                    \"judgment\": { \"type\": \"double\" },\n" +
-//                    "                                                    \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" }\n" +
-//                    "                                                  }\n" +
-//                    "                                              }";
-//
-//            // Create the judgments index.
-//            final CreateIndexRequest createIndexRequest = new CreateIndexRequest(Constants.JUDGMENTS_INDEX_NAME).mapping(mapping);
-//
-//            // TODO: Don't use .get()
-//            client.admin().indices().create(createIndexRequest).get();
-//
-//        }
-//
-//    }
+
 
 }
