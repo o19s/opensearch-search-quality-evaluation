@@ -62,6 +62,7 @@ public class App {
             uri = URI.create("http://localhost:9200");
         }
 
+        // OpenSearch is currently the only supported search engine.
         final SearchEngine searchEngine = new OpenSearchEngine(uri);
 
         if(cmd.hasOption("c")) {
@@ -72,6 +73,9 @@ public class App {
             final String clickModelType = cmd.getOptionValue("c");
 
             if(CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModelType)) {
+
+                // Create the judgments index if it does not already exist.
+                searchEngine.createJudgmentsIndex();
 
                 final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(10);
 

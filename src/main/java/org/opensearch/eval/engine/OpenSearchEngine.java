@@ -1019,27 +1019,21 @@ public class OpenSearchEngine extends SearchEngine {
     @Override
     public void createJudgmentsIndex() throws Exception {
 
-        final boolean dashboardMetricsIndexExists = doesIndexExist(JUDGMENTS_INDEX_NAME);
+        final boolean jdugmentsIndexExists = doesIndexExist(JUDGMENTS_INDEX_NAME);
 
-        if (!dashboardMetricsIndexExists) {
+        if (!jdugmentsIndexExists) {
 
-            // Create the index.
-            // TODO: Read this mapping from a resource file instead.
             final String mapping = "{\n" +
                     "              \"properties\": {\n" +
-                    "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
-                    "                \"search_config\": { \"type\": \"keyword\" },\n" +
-                    "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
+                    "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                    "                \"judgment_set_id\": { \"type\": \"keyword\" },\n" +
                     "                \"query\": { \"type\": \"keyword\" },\n" +
-                    "                \"metric\": { \"type\": \"keyword\" },\n" +
-                    "                \"value\": { \"type\": \"double\" },\n" +
-                    "                \"application\": { \"type\": \"keyword\" },\n" +
-                    "                \"evaluation_id\": { \"type\": \"keyword\" },\n" +
-                    "                \"frogs_percent\": { \"type\": \"double\" }\n" +
+                    "                \"query_id\": { \"type\": \"keyword\" },\n" +
+                    "                \"document\": { \"type\": \"keyword\" },\n" +
+                    "                \"judgment\": { \"type\": \"float\" }\n" +
                     "              }\n" +
                     "          }";
 
-            // TODO: Make sure the index gets created successfully.
             createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
 
         }
