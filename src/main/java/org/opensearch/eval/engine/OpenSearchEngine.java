@@ -74,7 +74,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.opensearch.eval.Constants.DASHBOARD_METRICS_INDEX_NAME;
 import static org.opensearch.eval.Constants.QUERY_SETS_INDEX_NAME;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
