@@ -6,6 +6,6 @@
   "id_field": "asin",
   "k": 10,
   "threshold": 1.0,
-  "query": "{\"_source\": {\"excludes\": [\"title_embedding\"]},\"query\": {\"hybrid\": {\"queries\": [{\"match\": {\"title_text\": {\"query\": \"#$query##\"}}},{\"neural\": {\"title_embedding\": {\"query_text\": \"#$query##\",\"k\": 50}}}]}}}",
-  "not_used_query": "{\"query\": {\"match\": {\"description\": \"#$query##\"}}}"
+  "query": "{\"_source\": {\"excludes\": [\"title_embedding\"]},\"query\": {\"hybrid\": {\"queries\": [{\"match\": {\"title_text\": {\"query\": \"%SearchText%\"}}},{\"neural\": {\"title_embedding\": {\"query_text\": \"%SearchText%\",\"k\": 50}}}]}}}",
+  "not_used_query": "{\"query\": {\"match\": {\"description\": \"%SearchText%\"}}}"
 }
