@@ -18,7 +18,7 @@ The design of the metrics schema follows these principles:
 Each data point in the metrics source represents an evaluation under a given metric of a search configuration
 on the results that it returns for a query. The fields are as follows:
  * **application**: the name of the search application being considered (for the sample data included in the dashboards "sample_data")
- * **datetime**: the date and time in which the evaluation took place in ISO 8601 format
+ * **timestamp**: the date and time in which the evaluation took place in ISO 8601 format
  * **search_config**: the search configuration that this data point evaluates
  * **query_set_id**: unique string identifier that the query being evaluated belongs to
  * **query**: the query string on which the search configuration is evaluated

@@ -997,7 +997,7 @@ public class OpenSearchEngine extends SearchEngine {
             for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
                 final QueryResultMetric queryResultMetric = new QueryResultMetric();
-                queryResultMetric.setDatetime(timestamp);
+                queryResultMetric.setTimestamp(timestamp);
                 queryResultMetric.setSearchConfig("research_1");
                 queryResultMetric.setQuerySetId(querySetRunResult.getQuerySetId());
                 queryResultMetric.setQuery(queryResult.getQuery());
