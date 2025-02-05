@@ -2,7 +2,7 @@
     "data": {
         "url": {
           "%context%": "true",
-          "%timefield%": "datetime",
+          "%timefield%": "timestamp",
           "index": "sqe_metrics*",
           "body": {
             "size": 10000
