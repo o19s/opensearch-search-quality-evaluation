@@ -74,6 +74,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.opensearch.eval.Constants.QUERY_SETS_INDEX_NAME;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
@@ -898,6 +899,30 @@ public class OpenSearchEngine extends SearchEngine {
         }
 
         return judgmentsId;
+
+    }
+
+    @Override
+    public void createQuerySetIndex() throws Exception {
+
+        final boolean querySetsIndexExists = doesIndexExist(QUERY_SETS_INDEX_NAME);
+
+        if (!querySetsIndexExists) {
+
+            final String mapping = "{\n" +
+                    "              \"properties\": {\n" +
+                    "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                    "                \"description\": { \"type\": \"text\" },\n" +
+                    "                \"id\": { \"type\": \"keyword\" },\n" +
+                    "                \"name\": { \"type\": \"keyword\" },\n" +
+                    "                \"query_set_queries\": { \"type\": \"object\" },\n" +
+                    "                \"sampling\": { \"type\": \"keyword\" }\n" +
+                    "              }\n" +
+                    "          }";
+
+            createIndex(QUERY_SETS_INDEX_NAME, mapping);
+
+        }
 
     }
 
