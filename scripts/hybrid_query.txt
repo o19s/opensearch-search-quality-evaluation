@@ -10,14 +10,14 @@
           {
             "match": {
               "title_text": {
-                "query": "#$query##"
+                "query": "%SearchText%"
               }
             }
           },
           {
             "neural": {
               "title_embedding": {
-                "query_text": "#$query##",
+                "query_text": "%SearchText%",
                 "k": 50
               }
             }
