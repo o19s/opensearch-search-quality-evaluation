@@ -48,7 +48,6 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
-import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.ClickThroughRate;
@@ -1035,6 +1034,29 @@ public class OpenSearchEngine extends SearchEngine {
                     "          }";
 
             createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
+
+        }
+
+    }
+
+    public void createQuerySetIndex() throws Exception {
+
+        final boolean querySetsIndexExists = doesIndexExist(QUERY_SETS_INDEX_NAME);
+
+        if (!querySetsIndexExists) {
+
+            final String mapping = "{\n" +
+                    "              \"properties\": {\n" +
+                    "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+                    "                \"description\": { \"type\": \"text\" },\n" +
+                    "                \"id\": { \"type\": \"keyword\" },\n" +
+                    "                \"name\": { \"type\": \"keyword\" },\n" +
+                    "                \"query_set_queries\": { \"type\": \"object\" },\n" +
+                    "                \"sampling\": { \"type\": \"keyword\" }\n" +
+                    "              }\n" +
+                    "          }";
+
+            createIndex(QUERY_SETS_INDEX_NAME, mapping);
 
         }
 

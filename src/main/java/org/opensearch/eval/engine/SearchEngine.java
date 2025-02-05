@@ -20,6 +20,7 @@ public abstract class SearchEngine {
     public abstract void createJudgmentsIndex() throws Exception;
 
     public abstract boolean deleteIndex(String index) throws IOException;
+    public abstract void createQuerySetIndex() throws Exception;
 
     public abstract String getUserQuery(final String queryId) throws Exception;
     public abstract UbiQuery getQueryFromQueryId(final String queryId) throws Exception;

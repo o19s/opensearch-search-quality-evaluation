@@ -23,6 +23,10 @@ echo "${MAJOR}Using Open Search and Open Search Dashboards at $opensearch and $o
 echo "${MAJOR}Deleting index sqe_metrics_sample_data${RESET}"
 curl -s -X DELETE $opensearch/sqe_metrics_sample_data/
 
+echo "${MAJOR}Creating index sqe_metrics_sample_data with mappings${RESET}"
+curl -s -X PUT $opensearch/sqe_metrics_sample_data/ -H "Content-Type: application/json" -d @sqe_metrics_mappings.json
+
+     
 echo "${MAJOR}Populating index sqe_metrics_sample_data with sample metric data${RESET}"
 curl -s -H 'Content-Type: application/x-ndjson' -XPOST "$opensearch/sqe_metrics_sample_data/_bulk?pretty=false&filter_path=-items" --data-binary @sample_data.ndjson 
 
