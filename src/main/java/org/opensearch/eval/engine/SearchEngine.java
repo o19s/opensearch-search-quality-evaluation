@@ -5,6 +5,7 @@ import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.data.QueryResultMetric;
 import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
+import org.opensearch.eval.runners.QuerySetRunResult;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -16,6 +17,8 @@ public abstract class SearchEngine {
 
     public abstract boolean doesIndexExist(String index) throws IOException;
     public abstract boolean createIndex(String index, String mapping) throws IOException;
+    public abstract void createJudgmentsIndex() throws Exception;
+
     public abstract boolean deleteIndex(String index) throws IOException;
     public abstract void createQuerySetIndex() throws Exception;
 
@@ -29,12 +32,15 @@ public abstract class SearchEngine {
 
     public abstract boolean bulkIndex(String index, Map<String, Object> documents) throws IOException;
 
-    public abstract Collection<Judgment> getJudgments(final String index) throws IOException;
+    public abstract Collection<Judgment> getJudgments() throws IOException;
+    public abstract long getJudgmentsCount(final String judgmentsSetId) throws IOException;
 
     public abstract List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException;
 
     public abstract String indexQuerySet(QuerySet querySet) throws IOException;
     public abstract Collection<UbiQuery> getUbiQueries() throws IOException;
+
+    public abstract void saveQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception;
 
     /**
      * Gets a query set from the index.
@@ -43,6 +49,14 @@ public abstract class SearchEngine {
      * @throws IOException Thrown if the query set cannot be retrieved.
      */
     public abstract QuerySet getQuerySet(String querySetId) throws IOException;
+
+    /**
+     * Determines if a query set exists.
+     * @param querySetId The ID of the query set to get.
+     * @return <code>true</code> if the query set exists.
+     * @throws IOException Thrown upon an error searching.
+     */
+    public abstract boolean doesQuerySetExist(String querySetId) throws IOException;
 
     /**
      * Get a judgment from the index.
