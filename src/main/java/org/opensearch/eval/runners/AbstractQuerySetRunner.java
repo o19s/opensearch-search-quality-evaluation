@@ -37,12 +37,6 @@ public abstract class AbstractQuerySetRunner {
     abstract QuerySetRunResult run(RunQuerySetParameters querySetParameters) throws Exception;
 
     /**
-     * Saves the query set results to a persistent store, which may be the search engine itself.
-     * @param result The {@link QuerySetRunResult results}.
-     */
-    abstract void save(QuerySetRunResult result) throws Exception;
-
-    /**
      * Gets the judgments for a query / document pairs.
      * @param judgmentsId The judgments collection for which the judgment to retrieve belongs.
      * @param query The user query.

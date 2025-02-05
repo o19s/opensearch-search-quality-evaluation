@@ -8,16 +8,27 @@
  */
 package org.opensearch.eval.model.data;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
 public class QuerySet extends AbstractData {
 
+    @JsonProperty("name")
     private String name;
+
+    @JsonProperty("description")
     private String description;
+
+    @JsonProperty("sampling")
     private String sampling;
+
+    @JsonProperty("query_set_queries")
     private Collection<Map<String, Long>> querySetQueries;
+
+    @JsonProperty("timestamp")
     private String timestamp;
 
     public QuerySet() {
