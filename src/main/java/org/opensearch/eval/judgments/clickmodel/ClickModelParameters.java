@@ -10,4 +10,14 @@ package org.opensearch.eval.judgments.clickmodel;
 
 public abstract class ClickModelParameters {
 
+    final JudgmentParameters judgmentParameters;
+
+    public ClickModelParameters(final JudgmentParameters judgmentParameters) {
+        this.judgmentParameters = judgmentParameters;
+    }
+
+    public JudgmentParameters getJudgmentParameters() {
+        return judgmentParameters;
+    }
+
 }

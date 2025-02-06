@@ -9,6 +9,7 @@
 package org.opensearch.eval.judgments.clickmodel.coec;
 
 import org.opensearch.eval.judgments.clickmodel.ClickModelParameters;
+import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 
 /**
  * The parameters for the {@link CoecClickModel}.
@@ -22,7 +23,8 @@ public class CoecClickModelParameters extends ClickModelParameters {
      * Creates new parameters.
      * @param maxRank The max rank to use when calculating the judgments.
      */
-    public CoecClickModelParameters(final int maxRank) {
+    public CoecClickModelParameters(final int maxRank, final JudgmentParameters judgmentParameters) {
+        super(judgmentParameters);
         this.maxRank = maxRank;
     }
 
@@ -31,7 +33,8 @@ public class CoecClickModelParameters extends ClickModelParameters {
      * @param maxRank The max rank to use when calculating the judgments.
      * @param roundingDigits The number of decimal places to round calculated values to.
      */
-    public CoecClickModelParameters(final int maxRank, final int roundingDigits) {
+    public CoecClickModelParameters(final int maxRank, final int roundingDigits, final JudgmentParameters judgmentParameters) {
+        super(judgmentParameters);
         this.maxRank = maxRank;
         this.roundingDigits = roundingDigits;
     }

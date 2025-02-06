@@ -394,7 +394,7 @@ public class OpenSearchEngine extends SearchEngine {
 
             final UbiQuery ubiQuery = searchResponse.hits().hits().get(0).source();
 
-            LOGGER.info("Found query: {}", ubiQuery.toString());
+            LOGGER.debug("Found query: {}", ubiQuery.getUserQuery().toString());
 
             return ubiQuery;
 
@@ -1026,6 +1026,11 @@ public class OpenSearchEngine extends SearchEngine {
                     "              \"properties\": {\n" +
                     "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
                     "                \"judgment_set_id\": { \"type\": \"keyword\" },\n" +
+                    "                \"judgment_set_type\": { \"type\": \"keyword\" },\n" +
+                    "                \"judgment_set_generator\": { \"type\": \"keyword\" },\n" +
+                    "                \"judgment_set_name\": { \"type\": \"keyword\" },\n" +
+                    "                \"judgment_set_description\": { \"type\": \"keyword\" },\n" +
+                    "                \"judgment_set_parameters\": { \"type\": \"object\" },\n" +
                     "                \"query\": { \"type\": \"keyword\" },\n" +
                     "                \"query_id\": { \"type\": \"keyword\" },\n" +
                     "                \"document\": { \"type\": \"keyword\" },\n" +
@@ -1033,7 +1038,7 @@ public class OpenSearchEngine extends SearchEngine {
                     "              }\n" +
                     "          }";
 
-            createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
+            createIndex(JUDGMENTS_INDEX_NAME, mapping);
 
         }
 
