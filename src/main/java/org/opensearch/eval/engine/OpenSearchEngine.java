@@ -1053,6 +1053,8 @@ public class OpenSearchEngine extends SearchEngine {
                     "                \"name\": { \"type\": \"keyword\" },\n" +
                     "                \"query_set_queries\": { \"type\": \"object\" },\n" +
                     "                \"sampling\": { \"type\": \"keyword\" }\n" +
+                    "                \"application\": { \"type\": \"keyword\" }\n" +
+                    "                \"search_config\": { \"type\": \"keyword\" }\n" +
                     "              }\n" +
                     "          }";
 

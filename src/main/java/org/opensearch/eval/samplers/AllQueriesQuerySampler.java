@@ -64,7 +64,10 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
         }
 
         if(!queries.isEmpty()) {
-            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), queries);
+
+            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(),
+                    parameters.getSampling(), queries, parameters.getApplication(), parameters.getSearchConfig());
+
         } else {
             return null;
         }
