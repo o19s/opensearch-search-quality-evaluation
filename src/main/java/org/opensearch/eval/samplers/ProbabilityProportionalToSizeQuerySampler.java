@@ -54,76 +54,84 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
 
         final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
+        // Get all user queries except empty queries.
         final List<String> userQueries = ubiQueries.stream()
                 .map(UbiQuery::getUserQuery)
+                .filter(userQuery -> !userQuery.isEmpty())
                 .toList();
 
-        // LOGGER.info("User queries found: {}", userQueries);
+        LOGGER.debug("User queries found: {}", userQueries.size());
 
-        final Map<String, Long> weights = new HashMap<>();
+        if(!userQueries.isEmpty()) {
 
-        // Increment the weight for each user query.
-        for(final String userQuery : userQueries) {
-            weights.merge(userQuery, 1L, Long::sum);
-        }
+            final Map<String, Long> weights = new HashMap<>();
 
-        // The total number of queries will be used to normalize the weights.
-        final long countOfQueries = userQueries.size();
-
-        // Calculate the normalized weights by dividing by the total number of queries.
-        final Map<String, Double> normalizedWeights = new HashMap<>();
-        for(final String userQuery : weights.keySet()) {
-            normalizedWeights.put(userQuery, weights.get(userQuery) / (double) countOfQueries);
-            //LOGGER.info("{}: {}/{} = {}", userQuery, weights.get(userQuery), countOfQueries, normalizedWeights.get(userQuery));
-        }
-
-        // Ensure all normalized weights sum to 1.
-        final double sumOfNormalizedWeights = normalizedWeights.values().stream().reduce(0.0, Double::sum);
-        if(!compare(1.0, sumOfNormalizedWeights)) {
-            throw new RuntimeException("Summed normalized weights do not equal 1.0: Actual value: " + sumOfNormalizedWeights);
-        } else {
-            LOGGER.info("Summed normalized weights sum to {}", sumOfNormalizedWeights);
-        }
-
-        final Map<String, Long> querySet = new HashMap<>();
-        final Set<Double> randomNumbers = new HashSet<>();
-
-        // Generate random numbers between 0 and 1 for the size of the query set.
-        // Do this until our query set has reached the requested maximum size.
-        // This may require generating more random numbers than what was requested
-        // because removing duplicate user queries will require randomly picking more queries.
-        int count = 1;
-
-        // TODO: How to short-circuit this such that if the same query gets picked over and over, the loop will never end.
-        final int max = 5000;
-        while(querySet.size() < parameters.getQuerySetSize() && count < max) {
-
-            // Make a random number not yet used.
-            double random;
-            do {
-                random = Math.random();
-            } while (randomNumbers.contains(random));
-            randomNumbers.add(random);
-
-            // Find the weight closest to the random weight in the map of deltas.
-            double smallestDelta = Integer.MAX_VALUE;
-            String closestQuery = null;
-            for(final String query : normalizedWeights.keySet()) {
-                final double delta = Math.abs(normalizedWeights.get(query) - random);
-                if(delta < smallestDelta) {
-                    smallestDelta = delta;
-                    closestQuery = query;
-                }
+            // Increment the weight for each user query.
+            for (final String userQuery : userQueries) {
+                weights.merge(userQuery, 1L, Long::sum);
             }
 
-            querySet.put(closestQuery, weights.get(closestQuery));
-            count++;
+            // The total number of queries will be used to normalize the weights.
+            final long countOfQueries = userQueries.size();
 
-            //LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
+            // Calculate the normalized weights by dividing by the total number of queries.
+            final Map<String, Double> normalizedWeights = new HashMap<>();
+            for (final String userQuery : weights.keySet()) {
+                normalizedWeights.put(userQuery, weights.get(userQuery) / (double) countOfQueries);
+                //LOGGER.info("{}: {}/{} = {}", userQuery, weights.get(userQuery), countOfQueries, normalizedWeights.get(userQuery));
+            }
 
+            // Ensure all normalized weights sum to 1.
+            final double sumOfNormalizedWeights = normalizedWeights.values().stream().reduce(0.0, Double::sum);
+            if (!compare(1.0, sumOfNormalizedWeights)) {
+                throw new RuntimeException("Summed normalized weights do not equal 1.0: Actual value: " + sumOfNormalizedWeights);
+            } else {
+                LOGGER.info("Summed normalized weights sum to {}", sumOfNormalizedWeights);
+            }
+
+            final Map<String, Long> querySet = new HashMap<>();
+            final Set<Double> randomNumbers = new HashSet<>();
+
+            // Generate random numbers between 0 and 1 for the size of the query set.
+            // Do this until our query set has reached the requested maximum size.
+            // This may require generating more random numbers than what was requested
+            // because removing duplicate user queries will require randomly picking more queries.
+            int count = 1;
+
+            // TODO: How to short-circuit this such that if the same query gets picked over and over, the loop will never end.
+            final int max = 5000;
+            while (querySet.size() < parameters.getQuerySetSize() && count < max) {
+
+                // Make a random number not yet used.
+                double random;
+                do {
+                    random = Math.random();
+                } while (randomNumbers.contains(random));
+                randomNumbers.add(random);
+
+                // Find the weight closest to the random weight in the map of deltas.
+                double smallestDelta = Integer.MAX_VALUE;
+                String closestQuery = null;
+                for (final String query : normalizedWeights.keySet()) {
+                    final double delta = Math.abs(normalizedWeights.get(query) - random);
+                    if (delta < smallestDelta) {
+                        smallestDelta = delta;
+                        closestQuery = query;
+                    }
+                }
+
+                querySet.put(closestQuery, weights.get(closestQuery));
+                count++;
+
+                //LOGGER.info("Generated random value: {}; Smallest delta = {}; Closest query = {}", random, smallestDelta, closestQuery);
+
+            }
+
+            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+
+        } else {
+            return null;
         }
-
-        return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
     }
 
