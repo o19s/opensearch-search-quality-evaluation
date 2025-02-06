@@ -11,6 +11,8 @@ package org.opensearch.eval.model.data;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opensearch.eval.utils.MathUtils;
 
+import java.util.Map;
+
 /**
  * A judgment of a search result's quality for a given query.
  */
@@ -34,25 +36,26 @@ public class Judgment {
     @JsonProperty("judgment_set_id")
     private String judgmentSetId;
 
+    @JsonProperty("judgment_set_type")
+    private String judgmentSetType;
+
+    @JsonProperty("judgment_set_generator")
+    private String judgmentSetGenerator;
+
+    @JsonProperty("judgment_set_name")
+    private String judgmentSetName;
+
+    @JsonProperty("judgment_set_description")
+    private String judgmentSetDescription;
+
+    @JsonProperty("judgment_set_parameters")
+    private Map<String, Object> judgmentSetParameters;
+
     @JsonProperty("timestamp")
     private String timestamp;
 
     public Judgment() {
         // Empty constructor used for deserialization.
-    }
-
-    /**
-     * Creates a new judgment.
-     * @param queryId The query ID for the judgment.
-     * @param query The query for the judgment.
-     * @param document The document in the judgment.
-     * @param judgment The judgment value.
-     */
-    public Judgment(final String queryId, final String query, final String document, final double judgment) {
-        this.queryId = queryId;
-        this.query = query;
-        this.document = document;
-        this.judgment = judgment;
     }
 
     public String toJudgmentString() {
@@ -62,6 +65,22 @@ public class Judgment {
     @Override
     public String toString() {
         return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + MathUtils.round(judgment);
+    }
+
+    public void setQueryId(String queryId) {
+        this.queryId = queryId;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
+    }
+
+    public void setDocument(String document) {
+        this.document = document;
+    }
+
+    public void setJudgment(double judgment) {
+        this.judgment = judgment;
     }
 
     /**
@@ -118,6 +137,46 @@ public class Judgment {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public String getJudgmentSetType() {
+        return judgmentSetType;
+    }
+
+    public void setJudgmentSetType(String judgmentSetType) {
+        this.judgmentSetType = judgmentSetType;
+    }
+
+    public String getJudgmentSetGenerator() {
+        return judgmentSetGenerator;
+    }
+
+    public void setJudgmentSetGenerator(String judgmentSetGenerator) {
+        this.judgmentSetGenerator = judgmentSetGenerator;
+    }
+
+    public String getJudgmentSetName() {
+        return judgmentSetName;
+    }
+
+    public void setJudgmentSetName(String judgmentSetName) {
+        this.judgmentSetName = judgmentSetName;
+    }
+
+    public String getJudgmentSetDescription() {
+        return judgmentSetDescription;
+    }
+
+    public void setJudgmentSetDescription(String judgmentSetDescription) {
+        this.judgmentSetDescription = judgmentSetDescription;
+    }
+
+    public Map<String, Object> getJudgmentSetParameters() {
+        return judgmentSetParameters;
+    }
+
+    public void setJudgmentSetParameters(Map<String, Object> judgmentSetParameters) {
+        this.judgmentSetParameters = judgmentSetParameters;
     }
 
 }

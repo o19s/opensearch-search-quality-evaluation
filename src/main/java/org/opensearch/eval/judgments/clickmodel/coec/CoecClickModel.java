@@ -8,7 +8,6 @@
  */
 package org.opensearch.eval.judgments.clickmodel.coec;
 
-import com.google.gson.Gson;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
@@ -38,7 +37,6 @@ public class CoecClickModel extends ClickModel {
     private final CoecClickModelParameters parameters;
 
     private final IncrementalUserQueryHash incrementalUserQueryHash = new IncrementalUserQueryHash();
-    private final Gson gson = new Gson();
     private final SearchEngine searchEngine;
 
     private static final Logger LOGGER = LogManager.getLogger(CoecClickModel.class.getName());
@@ -126,7 +124,16 @@ public class CoecClickModel extends ClickModel {
 
                 // Add the judgment to the list.
                 // TODO: What to do for query ID when the values are per user_query instead?
-                final Judgment judgment = new Judgment(String.valueOf(queryId), userQuery, ctr.getObjectId(), judgmentValue);
+                final Judgment judgment = new Judgment();
+                judgment.setQueryId(String.valueOf(queryId));
+                judgment.setQuery(userQuery);
+                judgment.setDocument(ctr.getObjectId());
+                judgment.setJudgment(judgmentValue);
+                judgment.setJudgmentSetType(parameters.getJudgmentParameters().getJudgmentSetType());
+                judgment.setJudgmentSetGenerator(parameters.getJudgmentParameters().getJudgmentSetGenerator());
+                judgment.setJudgmentSetName(parameters.getJudgmentParameters().getJudgmentSetName());
+                judgment.setJudgmentSetParameters(parameters.getJudgmentParameters().getJudgmentSetParameters());
+
                 judgments.add(judgment);
 
             }
