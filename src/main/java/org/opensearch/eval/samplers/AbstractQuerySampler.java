@@ -65,29 +65,7 @@ public abstract class AbstractQuerySampler {
         querySet.setQuerySetQueries(querySetQueries);
         querySet.setTimestamp(TimeUtils.getTimestamp());
 
-        final String querySetId = searchEngine.indexQuerySet(querySet);
-
-        // TODO: Create a mapping for the query set index.
-
-//        final IndexRequest indexRequest = new IndexRequest().index(Constants.QUERY_SETS_INDEX_NAME)
-//                .id(querySetId)
-//                .source(querySet)
-//                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-//
-//        client.index(indexRequest, new ActionListener<>() {
-//
-//            @Override
-//            public void onResponse(IndexResponse indexResponse) {
-//                LOGGER.info("Indexed query set {} having name {}", querySetId, name);
-//            }
-//
-//            @Override
-//            public void onFailure(Exception ex) {
-//                LOGGER.error("Unable to index query set {}", querySetId, ex);
-//            }
-//        });
-
-        return querySetId;
+        return searchEngine.indexQuerySet(querySet);
 
     }
 

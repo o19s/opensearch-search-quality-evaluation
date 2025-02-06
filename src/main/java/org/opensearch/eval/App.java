@@ -41,7 +41,19 @@ public class App {
 
     public static void main(String[] args) throws Exception {
 
-        System.out.println("Search Quality Evaluation Framework");
+        final String title = """
+                 #####                                        ######                                                             #     #                                                        \s
+                #     # ######   ##   #####   ####  #    #    #     # ###### #      ###### #    #   ##   #    #  ####  ######    #  #  #  ####  #####  #    # #####  ###### #    #  ####  #    #\s
+                #       #       #  #  #    # #    # #    #    #     # #      #      #      #    #  #  #  ##   # #    # #         #  #  # #    # #    # #   #  #    # #      ##   # #    # #    #\s
+                 #####  #####  #    # #    # #      ######    ######  #####  #      #####  #    # #    # # #  # #      #####     #  #  # #    # #    # ####   #####  #####  # #  # #      ######\s
+                      # #      ###### #####  #      #    #    #   #   #      #      #      #    # ###### #  # # #      #         #  #  # #    # #####  #  #   #    # #      #  # # #      #    #\s
+                #     # #      #    # #   #  #    # #    #    #    #  #      #      #       #  #  #    # #   ## #    # #         #  #  # #    # #   #  #   #  #    # #      #   ## #    # #    #\s
+                 #####  ###### #    # #    #  ####  #    #    #     # ###### ###### ######   ##   #    # #    #  ####  ######     ## ##   ####  #    # #    # #####  ###### #    #  ####  #    #\s
+                                                                                                                                                                                                \s""";
+
+        System.out.println(title);
+        System.out.println("Search Quality Evaluation Framework\n");
+
 
         final Gson gson = new Gson();
 
@@ -77,9 +89,7 @@ public class App {
                 // Create the judgments index if it does not already exist.
                 searchEngine.createJudgmentsIndex();
 
-                final CoecClickModelParameters coecClickModelParameters = new CoecClickModelParameters(10);
-
-                final ClickModel cm = new CoecClickModel(searchEngine, coecClickModelParameters);
+                final ClickModel cm = new CoecClickModel(searchEngine, new CoecClickModelParameters(10));
                 cm.calculateJudgments();
 
             } else {
@@ -111,6 +121,7 @@ public class App {
 
             if(file.exists()) {
 
+                // Create the query set index if it does not already exist.
                 searchEngine.createQuerySetIndex();
 
                 final String jsonString = Files.readString(file.toPath(), StandardCharsets.UTF_8);
@@ -125,7 +136,11 @@ public class App {
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
                     final String querySetId = sampler.sample();
 
-                    System.out.println("Query set created: " + querySetId);
+                    if(querySetId != null) {
+                        System.out.println("Query set created: " + querySetId);
+                    } else {
+                        System.err.println("No queries found for query set.");
+                    }
 
                 } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
@@ -134,7 +149,11 @@ public class App {
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
                     final String querySetId = sampler.sample();
 
-                    System.out.println("Query set created: " + querySetId);
+                    if(querySetId != null) {
+                        System.out.println("Query set created: " + querySetId);
+                    } else {
+                        System.err.println("No queries found for query set.");
+                    }
 
                 } else {
 

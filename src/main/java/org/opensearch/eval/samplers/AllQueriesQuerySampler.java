@@ -8,6 +8,7 @@
  */
 package org.opensearch.eval.samplers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
@@ -48,16 +49,25 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
         for(final UbiQuery ubiQuery : ubiQueries) {
 
-            queries.merge(ubiQuery.getUserQuery(), 1L, Long::sum);
+            // Ignore if the user query is empty.
+            if(StringUtils.isNotEmpty(ubiQuery.getUserQuery())) {
 
-            // Will be useful for paging once implemented.
-            if(queries.size() >= parameters.getQuerySetSize()) {
-                break;
+                queries.merge(ubiQuery.getUserQuery(), 1L, Long::sum);
+
+                // Will be useful for paging once implemented.
+                if(queries.size() >= parameters.getQuerySetSize()) {
+                    break;
+                }
+
             }
 
         }
 
-        return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), queries);
+        if(!queries.isEmpty()) {
+            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), queries);
+        } else {
+            return null;
+        }
 
     }
 
