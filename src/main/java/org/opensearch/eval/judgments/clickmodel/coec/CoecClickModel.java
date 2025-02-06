@@ -156,7 +156,7 @@ public class CoecClickModel extends ClickModel {
     private void showJudgments(final Collection<Judgment> judgments) {
 
         for(final Judgment judgment : judgments) {
-            LOGGER.info(judgment.toJudgmentString());
+            LOGGER.debug(judgment.toJudgmentString());
         }
 
     }

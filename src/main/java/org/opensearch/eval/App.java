@@ -95,7 +95,9 @@ public class App {
                     searchEngine.createJudgmentsIndex();
 
                     final ClickModel cm = new CoecClickModel(searchEngine, new CoecClickModelParameters(10, judgmentParameters));
-                    cm.calculateJudgments();
+                    final String judgmentSetId = cm.calculateJudgments();
+
+                    System.out.println("Created judgment set: " + judgmentSetId);
 
                 } else {
                     System.err.println("Invalid click model type. Valid models are 'coec'.");

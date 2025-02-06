@@ -394,7 +394,7 @@ public class OpenSearchEngine extends SearchEngine {
 
             final UbiQuery ubiQuery = searchResponse.hits().hits().get(0).source();
 
-            LOGGER.info("Found query: {}", ubiQuery.getUserQuery().toString());
+            LOGGER.debug("Found query: {}", ubiQuery.getUserQuery().toString());
 
             return ubiQuery;
 
