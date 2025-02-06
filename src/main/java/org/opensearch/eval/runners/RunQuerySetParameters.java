@@ -28,16 +28,11 @@ public class RunQuerySetParameters {
     @SerializedName("threshold")
     private double threshold;
 
-//         * @param querySetId The ID of the query set to run.
-//     * @param judgmentsId The ID of the judgments set to use for search metric calculation.
-//     * @param index The name of the index to run the query sets against.
-//            * @param searchPipeline The name of the search pipeline to use, or <code>null</code> to not use a search pipeline.
-//            * @param idField The field in the index that is used to uniquely identify a document.
-//            * @param query The query that will be used to run the query set.
-//            * @param k The k used for metrics calculation, i.e. DCG@k.
-//     * @param threshold The cutoff for binary judgments. A judgment score greater than or equal
-//     *                  to this value will be assigned a binary judgment value of 1. A judgment score
-//     *                  less than this value will be assigned a binary judgment value of 0.
+    @SerializedName("application")
+    private double application;
+
+    @SerializedName("search_config")
+    private double searchConfig;
 
     public String getQuerySetId() {
         return querySetId;
@@ -101,6 +96,22 @@ public class RunQuerySetParameters {
 
     public void setThreshold(double threshold) {
         this.threshold = threshold;
+    }
+
+    public double getApplication() {
+        return application;
+    }
+
+    public void setApplication(double application) {
+        this.application = application;
+    }
+
+    public double getSearchConfig() {
+        return searchConfig;
+    }
+
+    public void setSearchConfig(double searchConfig) {
+        this.searchConfig = searchConfig;
     }
 
 }
