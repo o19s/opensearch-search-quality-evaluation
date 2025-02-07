@@ -125,7 +125,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             final String querySetRunId = UUID.randomUUID().toString();
             final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetParameters.getQuerySetId(), queryResults, querySetMetrics);
 
-            searchEngine.saveQueryRunResult(querySetRunResult);
+            searchEngine.indexQueryRunResult(querySetRunResult);
 
             LOGGER.info("Query set run complete: {}", querySetRunId);
 

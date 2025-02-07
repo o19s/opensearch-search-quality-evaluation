@@ -87,7 +87,7 @@ public class App {
             if(CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModelType)) {
 
                 // Create the judgments index if it does not already exist.
-                searchEngine.createJudgmentsIndex();
+                searchEngine.createIndex(Constants.JUDGMENTS_INDEX_NAME, Constants.JUDGMENTS_INDEX_MAPPING);
 
                 final ClickModel cm = new CoecClickModel(searchEngine, new CoecClickModelParameters(10));
                 cm.calculateJudgments();
@@ -122,7 +122,7 @@ public class App {
             if(file.exists()) {
 
                 // Create the query set index if it does not already exist.
-                searchEngine.createQuerySetIndex();
+                searchEngine.createIndex(Constants.QUERY_SETS_INDEX_NAME, Constants.QUERY_SETS_INDEX_MAPPING);
 
                 final String jsonString = Files.readString(file.toPath(), StandardCharsets.UTF_8);
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);
