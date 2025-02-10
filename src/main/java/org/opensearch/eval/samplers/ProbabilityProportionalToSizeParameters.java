@@ -12,7 +12,7 @@ public class ProbabilityProportionalToSizeParameters extends AbstractSamplerPara
 
     public ProbabilityProportionalToSizeParameters(final String name, final String description, final String sampling,
                                                    final int querySetSize, final String application, final String searchConfig) {
-        super("pptss", name, description, sampling, querySetSize, application, searchConfig);
+        super("pptss", name, description, sampling, querySetSize);
     }
 
 }

@@ -998,12 +998,12 @@ public class OpenSearchEngine extends SearchEngine {
 
                 final QueryResultMetric queryResultMetric = new QueryResultMetric();
                 queryResultMetric.setTimestamp(timestamp);
-                queryResultMetric.setSearchConfig("research_1");
+                queryResultMetric.setSearchConfig(querySetRunResult.getSearchConfig());
                 queryResultMetric.setQuerySetId(querySetRunResult.getQuerySetId());
                 queryResultMetric.setQuery(queryResult.getQuery());
                 queryResultMetric.setMetric(searchMetric.getName());
                 queryResultMetric.setValue(searchMetric.getValue());
-                queryResultMetric.setApplication("sample_data");
+                queryResultMetric.setApplication(querySetRunResult.getApplication());
                 queryResultMetric.setEvaluationId(querySetRunResult.getRunId());
                 queryResultMetric.setFrogsPercent(queryResult.getFrogs());
 

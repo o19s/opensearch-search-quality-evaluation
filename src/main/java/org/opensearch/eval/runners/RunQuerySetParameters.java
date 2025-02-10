@@ -29,10 +29,10 @@ public class RunQuerySetParameters {
     private double threshold;
 
     @SerializedName("application")
-    private double application;
+    private String application;
 
     @SerializedName("search_config")
-    private double searchConfig;
+    private String searchConfig;
 
     public String getQuerySetId() {
         return querySetId;
@@ -98,19 +98,19 @@ public class RunQuerySetParameters {
         this.threshold = threshold;
     }
 
-    public double getApplication() {
+    public String getApplication() {
         return application;
     }
 
-    public void setApplication(double application) {
+    public void setApplication(String application) {
         this.application = application;
     }
 
-    public double getSearchConfig() {
+    public String getSearchConfig() {
         return searchConfig;
     }
 
-    public void setSearchConfig(double searchConfig) {
+    public void setSearchConfig(String searchConfig) {
         this.searchConfig = searchConfig;
     }
 

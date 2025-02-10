@@ -42,8 +42,7 @@ public abstract class AbstractQuerySampler {
      * Index the query set.
      */
     protected String indexQuerySet(final SearchEngine searchEngine, final String name, final String description,
-                                   final String sampling, Map<String, Long> queries,
-                                   final String application, final String searchConfig) throws Exception {
+                                   final String sampling, Map<String, Long> queries) throws Exception {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
@@ -66,8 +65,6 @@ public abstract class AbstractQuerySampler {
         querySet.setSampling(sampling);
         querySet.setQuerySetQueries(querySetQueries);
         querySet.setTimestamp(TimeUtils.getTimestamp());
-        querySet.setApplication(application);
-        querySet.setSearchConfig(searchConfig);
 
         return searchEngine.indexQuerySet(querySet);
 
