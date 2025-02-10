@@ -9,7 +9,6 @@
 package org.opensearch.eval.model.ubi.event;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 
 import java.util.HashMap;
@@ -63,5 +62,5 @@ public class Position {
     public Map<String, Object> getAdditionalProperties() {
         return additionalProperties;
     }
-    
+
 }
