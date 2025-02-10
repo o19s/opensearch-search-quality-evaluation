@@ -48,6 +48,7 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.ClickThroughRate;
@@ -60,7 +61,6 @@ import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.QueryResult;
 import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.utils.TimeUtils;
-import org.opensearch.eval.Constants;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -363,7 +363,7 @@ public class OpenSearchEngine extends SearchEngine {
 
             final UbiQuery ubiQuery = searchResponse.hits().hits().get(0).source();
 
-            LOGGER.info("Found query: {}", ubiQuery.toString());
+            LOGGER.debug("Found query: {}", ubiQuery.getUserQuery().toString());
 
             return ubiQuery;
 
