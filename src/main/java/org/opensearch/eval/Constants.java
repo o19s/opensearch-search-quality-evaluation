@@ -34,6 +34,11 @@ public class Constants {
             "              \"properties\": {\n" +
             "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
             "                \"judgment_set_id\": { \"type\": \"keyword\" },\n" +
+            "                \"judgment_set_type\": { \"type\": \"keyword\" },\n" +
+            "                \"judgment_set_generator\": { \"type\": \"keyword\" },\n" +
+            "                \"judgment_set_name\": { \"type\": \"keyword\" },\n" +
+            "                \"judgment_set_description\": { \"type\": \"keyword\" },\n" +
+            "                \"judgment_set_parameters\": { \"type\": \"object\" },\n" +
             "                \"query\": { \"type\": \"keyword\" },\n" +
             "                \"query_id\": { \"type\": \"keyword\" },\n" +
             "                \"document\": { \"type\": \"keyword\" },\n" +
