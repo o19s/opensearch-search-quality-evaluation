@@ -120,16 +120,27 @@ public class OpenSearchEngine extends SearchEngine {
     @Override
     public boolean createIndex(final String index, final String mappingJson) throws IOException {
 
-        final InputStream stream = new ByteArrayInputStream(mappingJson.getBytes(StandardCharsets.UTF_8));
+        final boolean doesIndexExist = doesIndexExist(index);
 
-        final CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder()
-                .index(index)
-                .mappings(m -> m.withJson(stream))
-                .build();
+        if(!doesIndexExist) {
 
-        stream.close();
+            final InputStream stream = new ByteArrayInputStream(mappingJson.getBytes(StandardCharsets.UTF_8));
 
-        return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
+            final CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder()
+                    .index(index)
+                    .mappings(m -> m.withJson(stream))
+                    .build();
+
+            stream.close();
+
+            return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
+
+        } else {
+
+            // The index already exists.
+            return true;
+
+        }
 
     }
 
@@ -934,11 +945,7 @@ public class OpenSearchEngine extends SearchEngine {
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
 
-        final boolean dashboardMetricsIndexExists = doesIndexExist(Constants.DASHBOARD_METRICS_INDEX_NAME);
-
-        if (!dashboardMetricsIndexExists) {
-            createIndex(Constants.DASHBOARD_METRICS_INDEX_NAME, Constants.METRICS_MAPPING_INDEX_MAPPING);
-        }
+        createIndex(Constants.DASHBOARD_METRICS_INDEX_NAME, Constants.METRICS_MAPPING_INDEX_MAPPING);
 
         final String timestamp = TimeUtils.getTimestamp();
 
