@@ -11,13 +11,11 @@ The Search Evaluation Framework empowers users to:
 * Run Query Sets: Execute query sets against OpenSearch, retrieving search results for analysis.
 * Compare Search Relevance Metrics: Visualize and compare key search relevance metrics within the OpenSearch Dashboards, gaining actionable insights into search performance.
 
-Key Features and Benefits:
+Key Features and Benefits of the Search Evaluation Framework>
 
 * Seamless OpenSearch Integration: Works seamlessly with OpenSearch, leveraging its capabilities for search and data analysis.
 * Comprehensive Metrics: Provides a wide range of search relevance metrics to assess search performance from various perspectives.
 * Visualizations in OpenSearch Dashboards: Leverages the power of OpenSearch Dashboards to visualize and compare metrics, facilitating data-driven insights.
-  
-Availability:
 
 The Search Evaluation Framework is available now as part of the Search Relevance Workbench. To learn more and get started, please visit https://github.com/o19s/opensearch-search-quality-evaluation.
 
@@ -25,7 +23,7 @@ The Search Evaluation Framework is available now as part of the Search Relevance
 
 ### What's the core purpose of the Search Evaluation Framework?
 
-It's designed to streamline and standardize how we evaluate search relevance within OpenSearch. This gives us a consistent, data-driven approach to measure and improve our search experience. Think of it as the tool that helps us answer "How good is our search?" with actual data.
+It's designed to streamline and standardize how we evaluate search relevance within OpenSearch. This gives us a consistent, data-driven approach to measure and improve our search experience. Think of it as the tool that helps us answer "How good is our search?" with actual data coming from User Behavior Insights (UBI).
 
 ### Who is the target user for this framework?
 
@@ -33,15 +31,17 @@ Primarily, search engineers, relevance engineers, product managers, and anyone i
 
 ### How does this fit into the broader Search Relevance Workbench?
 
-The Search Evaluation Framework is a key component within the Search Relevance Workbench. It's the part that specifically handles creating judgments, running query sets, and analyzing metrics. The Workbench provides the overall environment, and this framework provides the specific tools for evaluation.
+The Search Evaluation Framework is a key component within the Search Relevance Workbench. It's the part that specifically handles creating judgments, running query sets, and analyzing metrics. The Search Relevaance Workbench provides the overall environment, and the Search Evaluation Framework provides the specific tools for evaluation.
 
 ### What's the underlying technology stack?
 
-It's built to work directly with OpenSearch and leverages OpenSearch Dashboards for visualization.
+It's built to work directly with OpenSearch and leverages OpenSearch Dashboards for visualization. It is a standalone Java application that features a command-line interface.
 
 ### How are judgments stored and managed?
 
-TODO
+Judgment sets are stored in OpenSearch indexes and created using the CLI.
+
+- Should the CLI be able to delete judgment sets?
 
 ### How scalable is the framework? Can it handle large query sets and massive datasets?
 
@@ -49,7 +49,7 @@ TODO
 
 ### What's the process for adding new metrics to the framework?
 
-TODO
+New metrics can be added by modifying the code. All metrics extend a common base class and this base class provides the means for creating new metrics.
 
 ### What's the recommended workflow for using the framework to improve search relevance?
 
