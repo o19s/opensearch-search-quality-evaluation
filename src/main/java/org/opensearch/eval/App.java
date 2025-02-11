@@ -21,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.OpenSearchEngine;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
+import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
@@ -79,21 +80,31 @@ public class App {
 
         if(cmd.hasOption("c")) {
 
-            //final String clickModel = cmd.getOptionValue("c");
-            System.out.println("Creating click model...");
+            final String querySetOptionsFile = cmd.getOptionValue("c");
+            final File file = new File(querySetOptionsFile);
 
-            final String clickModelType = cmd.getOptionValue("c");
+            if(file.exists()) {
 
-            if(CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(clickModelType)) {
+                final JudgmentParameters judgmentParameters = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), JudgmentParameters.class);
 
                 // Create the judgments index if it does not already exist.
-                searchEngine.createJudgmentsIndex();
+                searchEngine.createIndex(Constants.JUDGMENTS_INDEX_NAME, Constants.JUDGMENTS_INDEX_MAPPING);
 
-                final ClickModel cm = new CoecClickModel(searchEngine, new CoecClickModelParameters(10));
-                cm.calculateJudgments();
+                if (CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(judgmentParameters.getJudgmentSetGenerator())) {
+
+                    System.out.println("Creating click model...");
+
+                    final ClickModel cm = new CoecClickModel(searchEngine, new CoecClickModelParameters(10, judgmentParameters));
+                    final String judgmentSetId = cm.calculateJudgments();
+
+                    System.out.println("Created judgment set: " + judgmentSetId);
+
+                } else {
+                    System.err.println("Invalid click model type. Valid models are 'coec'.");
+                }
 
             } else {
-                System.err.println("Invalid click model type. Valid models are 'coec'.");
+                System.err.println("The judgments parameters file does not exist.");
             }
 
         } else if (cmd.hasOption("r")) {
@@ -122,7 +133,7 @@ public class App {
             if(file.exists()) {
 
                 // Create the query set index if it does not already exist.
-                searchEngine.createQuerySetIndex();
+                searchEngine.createIndex(Constants.QUERY_SETS_INDEX_NAME, Constants.QUERY_SETS_INDEX_MAPPING);
 
                 final String jsonString = Files.readString(file.toPath(), StandardCharsets.UTF_8);
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);

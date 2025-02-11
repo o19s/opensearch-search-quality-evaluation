@@ -48,6 +48,7 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.ClickThroughRate;
@@ -87,31 +88,6 @@ import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHO
  */
 public class OpenSearchEngine extends SearchEngine {
 
-    /**
-     * The name of the index that stores the implicit judgments.
-     */
-    private static final String JUDGMENTS_INDEX_NAME = "judgments";
-
-    /**
-     * The name of the UBI index containing the queries. This should not be changed.
-     */
-    private static final String UBI_QUERIES_INDEX_NAME = "ubi_queries";
-
-    /**
-     * The name of the UBI index containing the events. This should not be changed.
-     */
-    private static final String UBI_EVENTS_INDEX_NAME = "ubi_events";
-
-    /**
-     * The name of the index that stores the query sets.
-     */
-    private static final String QUERY_SETS_INDEX_NAME = "search_quality_eval_query_sets";
-
-    /**
-     * The name of the index that stores the metrics for the dashboard.
-     */
-    private static final String DASHBOARD_METRICS_INDEX_NAME = "sqe_metrics_sample_data";
-
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
 
     private final OpenSearchClient client;
@@ -121,7 +97,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     public OpenSearchEngine(final URI uri) {
 
-        final HttpHost[] hosts = new HttpHost[] {
+        final HttpHost[] hosts = new HttpHost[]{
                 HttpHost.create(uri)
         };
 
@@ -144,23 +120,27 @@ public class OpenSearchEngine extends SearchEngine {
     @Override
     public boolean createIndex(final String index, final String mappingJson) throws IOException {
 
-        final InputStream stream = new ByteArrayInputStream(mappingJson.getBytes(StandardCharsets.UTF_8));
+        final boolean doesIndexExist = doesIndexExist(index);
 
-        final CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder()
-                .index(index)
-                .mappings(m -> m.withJson(stream))
-                .build();
+        if (!doesIndexExist) {
 
-        stream.close();
+            final InputStream stream = new ByteArrayInputStream(mappingJson.getBytes(StandardCharsets.UTF_8));
 
-        return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
+            final CreateIndexRequest createIndexRequest = new CreateIndexRequest.Builder()
+                    .index(index)
+                    .mappings(m -> m.withJson(stream))
+                    .build();
 
-    }
+            stream.close();
 
-    @Override
-    public boolean deleteIndex(String index) throws IOException {
+            return Boolean.TRUE.equals(client.indices().create(createIndexRequest).acknowledged());
 
-        return client.indices().delete(s -> s.index(index)).acknowledged();
+        } else {
+
+            // The index already exists.
+            return true;
+
+        }
 
     }
 
@@ -169,7 +149,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final String id = querySet.getId();
 
-        final IndexRequest<QuerySet> indexRequest = new IndexRequest.Builder<QuerySet>().index(QUERY_SETS_INDEX_NAME).id(id).document(querySet).build();
+        final IndexRequest<QuerySet> indexRequest = new IndexRequest.Builder<QuerySet>().index(Constants.QUERY_SETS_INDEX_NAME).id(id).document(querySet).build();
         return client.index(indexRequest).id();
 
     }
@@ -180,9 +160,9 @@ public class OpenSearchEngine extends SearchEngine {
         final Query query = Query.of(q -> q.term(m -> m.field("_id").value(FieldValue.of(querySetId))));
 
         final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
-        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(QUERY_SETS_INDEX_NAME).trackTotalHits(trackHits).query(query).size(1), QuerySet.class);
+        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).trackTotalHits(trackHits).query(query).size(1), QuerySet.class);
 
-        if(searchResponse.hits().total().value() > 0) {
+        if (searchResponse.hits().total().value() > 0) {
             return true;
         } else {
             return false;
@@ -196,7 +176,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Query query = Query.of(q -> q.term(m -> m.field("_id").value(FieldValue.of(querySetId))));
 
-        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(QUERY_SETS_INDEX_NAME).query(query).size(1), QuerySet.class);
+        final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).query(query).size(1), QuerySet.class);
 
         return searchResponse.hits().hits().getFirst().source();
 
@@ -208,9 +188,9 @@ public class OpenSearchEngine extends SearchEngine {
         var boolQuery = BoolQuery.of(bq -> bq
                 .must(
                         List.of(
-                            MatchQuery.of(mq -> mq.query(FieldValue.of(judgmentsId)).field("judgment_set_id")).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of(userQuery)).field("query")).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of(documentId)).field("document")).toQuery()
+                                MatchQuery.of(mq -> mq.query(FieldValue.of(judgmentsId)).field("judgment_set_id")).toQuery(),
+                                MatchQuery.of(mq -> mq.query(FieldValue.of(userQuery)).field("query")).toQuery(),
+                                MatchQuery.of(mq -> mq.query(FieldValue.of(documentId)).field("document")).toQuery()
                         )
                 )
         );
@@ -220,17 +200,17 @@ public class OpenSearchEngine extends SearchEngine {
         // TODO: Make sure the query being run here is correct.
         //System.out.println(query.);
 
-        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(JUDGMENTS_INDEX_NAME)
-                .query(query)
-                .from(0)
-                .size(1),
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME)
+                        .query(query)
+                        .from(0)
+                        .size(1),
                 Judgment.class);
 
-        if(!searchResponse.hits().hits().isEmpty()) {
+        if (!searchResponse.hits().hits().isEmpty()) {
             System.out.println("Number of judgments: " + searchResponse.hits().hits().size());
         }
 
-        if(searchResponse.hits().hits().isEmpty()) {
+        if (searchResponse.hits().hits().isEmpty()) {
             return Double.NaN;
         } else {
             return searchResponse.hits().hits().getFirst().source().getJudgment();
@@ -245,7 +225,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
@@ -256,7 +236,7 @@ public class OpenSearchEngine extends SearchEngine {
                 ubiQueries.add(searchResponse.hits().hits().get(i).source());
             }
 
-            if(scrollId != null) {
+            if (scrollId != null) {
                 final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
                 final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
 
@@ -282,7 +262,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Query query = Query.of(q -> q.term(m -> m.field("judgment_set_id").value(FieldValue.of(judgmentsSetId))));
 
         final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
-        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(JUDGMENTS_INDEX_NAME).query(query).trackTotalHits(trackHits).size(0), Judgment.class);
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME).query(query).trackTotalHits(trackHits).size(0), Judgment.class);
 
         return searchResponse.hits().total().value();
 
@@ -295,7 +275,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(JUDGMENTS_INDEX_NAME).size(1000).scroll(scrollTime), Judgment.class);
+        final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME).size(1000).scroll(scrollTime), Judgment.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<Judgment>> searchHits = searchResponse.hits().hits();
@@ -323,7 +303,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final ArrayList<BulkOperation> bulkOperations = new ArrayList<>();
 
-        for(final String id : documents.keySet()) {
+        for (final String id : documents.keySet()) {
             final Object document = documents.get(id);
             bulkOperations.add(new BulkOperation.Builder().index(IndexOperation.of(io -> io.index(index).id(id).document(document))).build());
         }
@@ -341,6 +321,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Gets the user query for a given query ID.
+     *
      * @param queryId The query ID.
      * @return The user query.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
@@ -349,7 +330,7 @@ public class OpenSearchEngine extends SearchEngine {
     public String getUserQuery(final String queryId) throws Exception {
 
         // If it's in the cache just get it and return it.
-        if(userQueryCache.containsKey(queryId)) {
+        if (userQueryCache.containsKey(queryId)) {
             return userQueryCache.get(queryId);
         }
 
@@ -357,7 +338,7 @@ public class OpenSearchEngine extends SearchEngine {
         final UbiQuery ubiQuery = getQueryFromQueryId(queryId);
 
         // ubiQuery will be null if the query does not exist.
-        if(ubiQuery != null) {
+        if (ubiQuery != null) {
 
             userQueryCache.put(queryId, ubiQuery.getUserQuery());
             return ubiQuery.getUserQuery();
@@ -372,6 +353,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Gets the query object for a given query ID.
+     *
      * @param queryId The query ID.
      * @return A {@link UbiQuery} object for the given query ID.
      * @throws Exception Thrown if the query cannot be retrieved.
@@ -382,7 +364,7 @@ public class OpenSearchEngine extends SearchEngine {
         LOGGER.debug("Getting query from query ID {}", queryId);
 
         final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("query_id").query(FieldValue.of(queryId))))
-                .index(UBI_QUERIES_INDEX_NAME)
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
                 .from(0)
                 .size(1)
                 .build();
@@ -390,11 +372,11 @@ public class OpenSearchEngine extends SearchEngine {
         final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
 
         // If this does not return a query then we cannot calculate the judgments. Each even should have a query associated with it.
-        if(searchResponse.hits().hits() != null & !searchResponse.hits().hits().isEmpty()) {
+        if (searchResponse.hits().hits() != null & !searchResponse.hits().hits().isEmpty()) {
 
             final UbiQuery ubiQuery = searchResponse.hits().hits().get(0).source();
 
-            LOGGER.info("Found query: {}", ubiQuery.toString());
+            LOGGER.debug("Found query: {}", ubiQuery.getUserQuery().toString());
 
             return ubiQuery;
 
@@ -421,11 +403,11 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Map<String, String> params = new HashMap<>();
 
-        if(!pipeline.isEmpty()) {
+        if (!pipeline.isEmpty()) {
             params.put("search_pipeline", pipeline);
         }
 
-        // TODO: Need to consider k, or it needs to be the responsibilty of the person to put k in the query.
+        // TODO: Need to consider k, or it needs to be the responsibility of the person to put k in the query.
         final Response searchResponse = genericClient.execute(
                 Requests.builder()
                         .endpoint(index + "/_search")
@@ -445,7 +427,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         for (int i = 0; i < hits.size(); i++) {
 
-            if(hits.get(i).get("_source").get(idField) != null) {
+            if (hits.get(i).get("_source").get(idField) != null) {
                 orderedDocumentIds.add(hits.get(i).get("_source").get(idField).asText());
             } else {
                 LOGGER.info("The requested idField {} does not exist.", idField);
@@ -461,7 +443,7 @@ public class OpenSearchEngine extends SearchEngine {
 //                .build();
 
         // TODO: Only return the idField since that's all we need.
- //       final SearchRequest searchRequest;
+        //       final SearchRequest searchRequest;
 
 //        if(!pipeline.isEmpty()) {
 //
@@ -559,7 +541,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Time scrollTime = new Time.Builder().time("10m").build();
 
         final SearchRequest searchRequest = new SearchRequest.Builder()
-                .index(UBI_EVENTS_INDEX_NAME)
+                .index(Constants.UBI_EVENTS_INDEX_NAME)
                 .query(q -> q.wrapper(wrapperQuery))
                 .from(0)
                 .size(1000)
@@ -605,7 +587,7 @@ public class OpenSearchEngine extends SearchEngine {
 
                     // Safeguard to avoid having clicks without events.
                     // When the clicks is > 0 and impressions == 0, set the impressions to the number of clicks.
-                    if(clickthroughRate.getClicks() > 0 && clickthroughRate.getImpressions() == 0) {
+                    if (clickthroughRate.getClicks() > 0 && clickthroughRate.getImpressions() == 0) {
                         clickthroughRate.setImpressions(clickthroughRate.getClicks());
                     }
 
@@ -622,7 +604,7 @@ public class OpenSearchEngine extends SearchEngine {
             // I don't remember seeing this prior to 2.18.0 but it's possible I just didn't see it.
             // https://github.com/opensearch-project/OpenSearch/blob/f105e4eb2ede1556b5dd3c743bea1ab9686ebccf/server/src/main/java/org/opensearch/wlm/QueryGroupTask.java#L73
 
-            if(scrollId == null) {
+            if (scrollId == null) {
                 break;
             }
 
@@ -675,7 +657,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         // TODO: Allow for a time period and for a specific application.
         final SearchRequest searchRequest = new SearchRequest.Builder()
-                .index(UBI_EVENTS_INDEX_NAME)
+                .index(Constants.UBI_EVENTS_INDEX_NAME)
                 .aggregations(aggregations)
                 .query(q -> q.range(rangeQuery))
                 .from(0)
@@ -696,13 +678,13 @@ public class OpenSearchEngine extends SearchEngine {
         for (final StringTermsBucket bucket : byActionBuckets) {
 
             // Handle the "impression" bucket.
-            if(EVENT_IMPRESSION.equalsIgnoreCase(bucket.key())) {
+            if (EVENT_IMPRESSION.equalsIgnoreCase(bucket.key())) {
 
                 final Aggregate positionTerms = bucket.aggregations().get("By_Position");
 
                 final List<LongTermsBucket> positionBuckets = positionTerms.lterms().buckets().array();
 
-                for(final LongTermsBucket positionBucket : positionBuckets) {
+                for (final LongTermsBucket positionBucket : positionBuckets) {
                     LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
                     impressionCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
                 }
@@ -710,13 +692,13 @@ public class OpenSearchEngine extends SearchEngine {
             }
 
             // Handle the "click" bucket.
-            if(EVENT_CLICK.equalsIgnoreCase(bucket.key())) {
+            if (EVENT_CLICK.equalsIgnoreCase(bucket.key())) {
 
                 final Aggregate positionTerms = bucket.aggregations().get("By_Position");
 
                 final List<LongTermsBucket> positionBuckets = positionTerms.lterms().buckets().array();
 
-                for(final LongTermsBucket positionBucket : positionBuckets) {
+                for (final LongTermsBucket positionBucket : positionBuckets) {
                     LOGGER.debug("Inserting click event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
                     clickCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
                 }
@@ -725,11 +707,11 @@ public class OpenSearchEngine extends SearchEngine {
 
         }
 
-        for(int rank = 0; rank < maxRank; rank++) {
+        for (int rank = 0; rank < maxRank; rank++) {
 
-            if(impressionCounts.containsKey(rank)) {
+            if (impressionCounts.containsKey(rank)) {
 
-                if(clickCounts.containsKey(rank)) {
+                if (clickCounts.containsKey(rank)) {
 
                     // Calculate the CTR by dividing the number of clicks by the number of impressions.
                     LOGGER.info("Position = {}, Impression Counts = {}, Click Count = {}", rank, impressionCounts.get(rank), clickCounts.get(rank));
@@ -763,7 +745,7 @@ public class OpenSearchEngine extends SearchEngine {
     private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 
         final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("user_query").query(FieldValue.of(userQuery))))
-                .index(UBI_QUERIES_INDEX_NAME)
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
                 .build();
 
         final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
@@ -787,7 +769,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Collection<String> queryIds = getQueryIdsHavingUserQuery(userQuery);
 
         // For each query ID, get the events with action_name = "impression" having a match on objectId and rank (position).
-        for(final String queryId : queryIds) {
+        for (final String queryId : queryIds) {
 
             final String query = "{\n" +
                     "    \"bool\": {\n" +
@@ -823,7 +805,7 @@ public class OpenSearchEngine extends SearchEngine {
                     .build();
 
             final SearchRequest searchRequest = new SearchRequest.Builder()
-                    .index(UBI_EVENTS_INDEX_NAME)
+                    .index(Constants.UBI_EVENTS_INDEX_NAME)
                     .query(q -> q.wrapper(wrapperQuery))
                     .size(0)
                     .trackTotalHits(TrackHits.of(t -> t.enabled(true)))
@@ -837,7 +819,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         LOGGER.debug("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
 
-        if(countOfTimesShownAtRank > 0) {
+        if (countOfTimesShownAtRank > 0) {
             LOGGER.debug("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
         }
 
@@ -847,13 +829,14 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Index the rank-aggregated clickthrough values.
+     *
      * @param rankAggregatedClickThrough A map of position to clickthrough values.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
     @Override
     public void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws Exception {
 
-        if(!rankAggregatedClickThrough.isEmpty()) {
+        if (!rankAggregatedClickThrough.isEmpty()) {
 
             // TODO: Use bulk indexing.
 
@@ -876,13 +859,14 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Index the clickthrough rates.
+     *
      * @param clickthroughRates A map of query IDs to a collection of {@link ClickthroughRate} objects.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
     @Override
     public void indexClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
-        if(!clickthroughRates.isEmpty()) {
+        if (!clickthroughRates.isEmpty()) {
 
             // TODO: Use bulk inserts.
 
@@ -919,7 +903,7 @@ public class OpenSearchEngine extends SearchEngine {
         // TODO: Use bulk imports.
 
         final IndexRequest<QueryResultMetric> indexRequest = new IndexRequest.Builder<QueryResultMetric>()
-                .index(DASHBOARD_METRICS_INDEX_NAME)
+                .index(Constants.DASHBOARD_METRICS_INDEX_NAME)
                 .id(queryResultMetric.getId())
                 .document(queryResultMetric).build();
 
@@ -929,9 +913,10 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Index the judgments.
+     *
      * @param judgments A collection of {@link Judgment judgments}.
-     * @throws IOException Thrown when there is a problem accessing OpenSearch.
      * @return The ID of the indexed judgments.
+     * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
     @Override
     public String indexJudgments(final Collection<Judgment> judgments) throws Exception {
@@ -941,12 +926,12 @@ public class OpenSearchEngine extends SearchEngine {
 
         // TODO: Use bulk imports.
 
-        for(final Judgment judgment : judgments) {
+        for (final Judgment judgment : judgments) {
 
             judgment.setJudgmentSetId(judgmentsId);
             judgment.setTimestamp(timestamp);
 
-            final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(JUDGMENTS_INDEX_NAME).id(judgment.getId()).document(judgment).build();
+            final IndexRequest<Judgment> indexRequest = new IndexRequest.Builder<Judgment>().index(Constants.JUDGMENTS_INDEX_NAME).id(judgment.getId()).document(judgment).build();
             client.index(indexRequest);
 
         }
@@ -956,7 +941,7 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public void saveQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception {
+    public void indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception {
 
         LOGGER.info("Indexing query run results.");
 
@@ -965,36 +950,13 @@ public class OpenSearchEngine extends SearchEngine {
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
 
-        final boolean dashboardMetricsIndexExists = doesIndexExist(DASHBOARD_METRICS_INDEX_NAME);
-
-        if (!dashboardMetricsIndexExists) {
-
-            // Create the index.
-            // TODO: Read this mapping from a resource file instead.
-            final String mapping = "{\n" +
-                    "              \"properties\": {\n" +
-                    "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
-                    "                \"search_config\": { \"type\": \"keyword\" },\n" +
-                    "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
-                    "                \"query\": { \"type\": \"keyword\" },\n" +
-                    "                \"metric\": { \"type\": \"keyword\" },\n" +
-                    "                \"value\": { \"type\": \"double\" },\n" +
-                    "                \"application\": { \"type\": \"keyword\" },\n" +
-                    "                \"evaluation_id\": { \"type\": \"keyword\" },\n" +
-                    "                \"frogs_percent\": { \"type\": \"double\" }\n" +
-                    "              }\n" +
-                    "          }";
-
-            // TODO: Make sure the index gets created successfully.
-            createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
-
-        }
+        createIndex(Constants.DASHBOARD_METRICS_INDEX_NAME, Constants.METRICS_MAPPING_INDEX_MAPPING);
 
         final String timestamp = TimeUtils.getTimestamp();
 
-        for(final QueryResult queryResult : querySetRunResult.getQueryResults()) {
+        for (final QueryResult queryResult : querySetRunResult.getQueryResults()) {
 
-            for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+            for (final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
                 final QueryResultMetric queryResultMetric = new QueryResultMetric();
                 queryResultMetric.setTimestamp(timestamp);
@@ -1010,55 +972,6 @@ public class OpenSearchEngine extends SearchEngine {
                 indexQueryResultMetric(queryResultMetric);
 
             }
-
-        }
-
-    }
-
-    @Override
-    public void createJudgmentsIndex() throws Exception {
-
-        final boolean jdugmentsIndexExists = doesIndexExist(JUDGMENTS_INDEX_NAME);
-
-        if (!jdugmentsIndexExists) {
-
-            final String mapping = "{\n" +
-                    "              \"properties\": {\n" +
-                    "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
-                    "                \"judgment_set_id\": { \"type\": \"keyword\" },\n" +
-                    "                \"query\": { \"type\": \"keyword\" },\n" +
-                    "                \"query_id\": { \"type\": \"keyword\" },\n" +
-                    "                \"document\": { \"type\": \"keyword\" },\n" +
-                    "                \"judgment\": { \"type\": \"float\" }\n" +
-                    "              }\n" +
-                    "          }";
-
-            createIndex(DASHBOARD_METRICS_INDEX_NAME, mapping);
-
-        }
-
-    }
-
-    public void createQuerySetIndex() throws Exception {
-
-        final boolean querySetsIndexExists = doesIndexExist(QUERY_SETS_INDEX_NAME);
-
-        if (!querySetsIndexExists) {
-
-            final String mapping = "{\n" +
-                    "              \"properties\": {\n" +
-                    "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
-                    "                \"description\": { \"type\": \"text\" },\n" +
-                    "                \"id\": { \"type\": \"keyword\" },\n" +
-                    "                \"name\": { \"type\": \"keyword\" },\n" +
-                    "                \"query_set_queries\": { \"type\": \"object\" },\n" +
-                    "                \"sampling\": { \"type\": \"keyword\" }\n" +
-                    "                \"application\": { \"type\": \"keyword\" }\n" +
-                    "                \"search_config\": { \"type\": \"keyword\" }\n" +
-                    "              }\n" +
-                    "          }";
-
-            createIndex(QUERY_SETS_INDEX_NAME, mapping);
 
         }
 

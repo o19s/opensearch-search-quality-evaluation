@@ -126,7 +126,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetParameters.getQuerySetId(),
                     queryResults, querySetMetrics, querySetParameters.getApplication(), querySetParameters.getSearchConfig());
 
-            searchEngine.saveQueryRunResult(querySetRunResult);
+            searchEngine.indexQueryRunResult(querySetRunResult);
 
             LOGGER.info("Query set run complete: {}", querySetRunId);
 
