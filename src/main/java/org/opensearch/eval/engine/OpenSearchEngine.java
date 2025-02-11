@@ -97,7 +97,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     public OpenSearchEngine(final URI uri) {
 
-        final HttpHost[] hosts = new HttpHost[] {
+        final HttpHost[] hosts = new HttpHost[]{
                 HttpHost.create(uri)
         };
 
@@ -122,7 +122,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final boolean doesIndexExist = doesIndexExist(index);
 
-        if(!doesIndexExist) {
+        if (!doesIndexExist) {
 
             final InputStream stream = new ByteArrayInputStream(mappingJson.getBytes(StandardCharsets.UTF_8));
 
@@ -162,7 +162,7 @@ public class OpenSearchEngine extends SearchEngine {
         final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
         final SearchResponse<QuerySet> searchResponse = client.search(s -> s.index(Constants.QUERY_SETS_INDEX_NAME).trackTotalHits(trackHits).query(query).size(1), QuerySet.class);
 
-        if(searchResponse.hits().total().value() > 0) {
+        if (searchResponse.hits().total().value() > 0) {
             return true;
         } else {
             return false;
@@ -188,9 +188,9 @@ public class OpenSearchEngine extends SearchEngine {
         var boolQuery = BoolQuery.of(bq -> bq
                 .must(
                         List.of(
-                            MatchQuery.of(mq -> mq.query(FieldValue.of(judgmentsId)).field("judgment_set_id")).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of(userQuery)).field("query")).toQuery(),
-                            MatchQuery.of(mq -> mq.query(FieldValue.of(documentId)).field("document")).toQuery()
+                                MatchQuery.of(mq -> mq.query(FieldValue.of(judgmentsId)).field("judgment_set_id")).toQuery(),
+                                MatchQuery.of(mq -> mq.query(FieldValue.of(userQuery)).field("query")).toQuery(),
+                                MatchQuery.of(mq -> mq.query(FieldValue.of(documentId)).field("document")).toQuery()
                         )
                 )
         );
@@ -201,16 +201,16 @@ public class OpenSearchEngine extends SearchEngine {
         //System.out.println(query.);
 
         final SearchResponse<Judgment> searchResponse = client.search(s -> s.index(Constants.JUDGMENTS_INDEX_NAME)
-                .query(query)
-                .from(0)
-                .size(1),
+                        .query(query)
+                        .from(0)
+                        .size(1),
                 Judgment.class);
 
-        if(!searchResponse.hits().hits().isEmpty()) {
+        if (!searchResponse.hits().hits().isEmpty()) {
             System.out.println("Number of judgments: " + searchResponse.hits().hits().size());
         }
 
-        if(searchResponse.hits().hits().isEmpty()) {
+        if (searchResponse.hits().hits().isEmpty()) {
             return Double.NaN;
         } else {
             return searchResponse.hits().hits().getFirst().source().getJudgment();
@@ -236,7 +236,7 @@ public class OpenSearchEngine extends SearchEngine {
                 ubiQueries.add(searchResponse.hits().hits().get(i).source());
             }
 
-            if(scrollId != null) {
+            if (scrollId != null) {
                 final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
                 final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
 
@@ -303,7 +303,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final ArrayList<BulkOperation> bulkOperations = new ArrayList<>();
 
-        for(final String id : documents.keySet()) {
+        for (final String id : documents.keySet()) {
             final Object document = documents.get(id);
             bulkOperations.add(new BulkOperation.Builder().index(IndexOperation.of(io -> io.index(index).id(id).document(document))).build());
         }
@@ -321,6 +321,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Gets the user query for a given query ID.
+     *
      * @param queryId The query ID.
      * @return The user query.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
@@ -329,7 +330,7 @@ public class OpenSearchEngine extends SearchEngine {
     public String getUserQuery(final String queryId) throws Exception {
 
         // If it's in the cache just get it and return it.
-        if(userQueryCache.containsKey(queryId)) {
+        if (userQueryCache.containsKey(queryId)) {
             return userQueryCache.get(queryId);
         }
 
@@ -337,7 +338,7 @@ public class OpenSearchEngine extends SearchEngine {
         final UbiQuery ubiQuery = getQueryFromQueryId(queryId);
 
         // ubiQuery will be null if the query does not exist.
-        if(ubiQuery != null) {
+        if (ubiQuery != null) {
 
             userQueryCache.put(queryId, ubiQuery.getUserQuery());
             return ubiQuery.getUserQuery();
@@ -352,6 +353,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Gets the query object for a given query ID.
+     *
      * @param queryId The query ID.
      * @return A {@link UbiQuery} object for the given query ID.
      * @throws Exception Thrown if the query cannot be retrieved.
@@ -370,7 +372,7 @@ public class OpenSearchEngine extends SearchEngine {
         final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
 
         // If this does not return a query then we cannot calculate the judgments. Each even should have a query associated with it.
-        if(searchResponse.hits().hits() != null & !searchResponse.hits().hits().isEmpty()) {
+        if (searchResponse.hits().hits() != null & !searchResponse.hits().hits().isEmpty()) {
 
             final UbiQuery ubiQuery = searchResponse.hits().hits().get(0).source();
 
@@ -401,7 +403,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Map<String, String> params = new HashMap<>();
 
-        if(!pipeline.isEmpty()) {
+        if (!pipeline.isEmpty()) {
             params.put("search_pipeline", pipeline);
         }
 
@@ -425,7 +427,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         for (int i = 0; i < hits.size(); i++) {
 
-            if(hits.get(i).get("_source").get(idField) != null) {
+            if (hits.get(i).get("_source").get(idField) != null) {
                 orderedDocumentIds.add(hits.get(i).get("_source").get(idField).asText());
             } else {
                 LOGGER.info("The requested idField {} does not exist.", idField);
@@ -441,7 +443,7 @@ public class OpenSearchEngine extends SearchEngine {
 //                .build();
 
         // TODO: Only return the idField since that's all we need.
- //       final SearchRequest searchRequest;
+        //       final SearchRequest searchRequest;
 
 //        if(!pipeline.isEmpty()) {
 //
@@ -585,7 +587,7 @@ public class OpenSearchEngine extends SearchEngine {
 
                     // Safeguard to avoid having clicks without events.
                     // When the clicks is > 0 and impressions == 0, set the impressions to the number of clicks.
-                    if(clickthroughRate.getClicks() > 0 && clickthroughRate.getImpressions() == 0) {
+                    if (clickthroughRate.getClicks() > 0 && clickthroughRate.getImpressions() == 0) {
                         clickthroughRate.setImpressions(clickthroughRate.getClicks());
                     }
 
@@ -602,7 +604,7 @@ public class OpenSearchEngine extends SearchEngine {
             // I don't remember seeing this prior to 2.18.0 but it's possible I just didn't see it.
             // https://github.com/opensearch-project/OpenSearch/blob/f105e4eb2ede1556b5dd3c743bea1ab9686ebccf/server/src/main/java/org/opensearch/wlm/QueryGroupTask.java#L73
 
-            if(scrollId == null) {
+            if (scrollId == null) {
                 break;
             }
 
@@ -676,13 +678,13 @@ public class OpenSearchEngine extends SearchEngine {
         for (final StringTermsBucket bucket : byActionBuckets) {
 
             // Handle the "impression" bucket.
-            if(EVENT_IMPRESSION.equalsIgnoreCase(bucket.key())) {
+            if (EVENT_IMPRESSION.equalsIgnoreCase(bucket.key())) {
 
                 final Aggregate positionTerms = bucket.aggregations().get("By_Position");
 
                 final List<LongTermsBucket> positionBuckets = positionTerms.lterms().buckets().array();
 
-                for(final LongTermsBucket positionBucket : positionBuckets) {
+                for (final LongTermsBucket positionBucket : positionBuckets) {
                     LOGGER.debug("Inserting impression event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
                     impressionCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
                 }
@@ -690,13 +692,13 @@ public class OpenSearchEngine extends SearchEngine {
             }
 
             // Handle the "click" bucket.
-            if(EVENT_CLICK.equalsIgnoreCase(bucket.key())) {
+            if (EVENT_CLICK.equalsIgnoreCase(bucket.key())) {
 
                 final Aggregate positionTerms = bucket.aggregations().get("By_Position");
 
                 final List<LongTermsBucket> positionBuckets = positionTerms.lterms().buckets().array();
 
-                for(final LongTermsBucket positionBucket : positionBuckets) {
+                for (final LongTermsBucket positionBucket : positionBuckets) {
                     LOGGER.debug("Inserting click event from position {} with click count {}", positionBucket.key(), (double) positionBucket.docCount());
                     clickCounts.put(Integer.valueOf(positionBucket.key()), (double) positionBucket.docCount());
                 }
@@ -705,11 +707,11 @@ public class OpenSearchEngine extends SearchEngine {
 
         }
 
-        for(int rank = 0; rank < maxRank; rank++) {
+        for (int rank = 0; rank < maxRank; rank++) {
 
-            if(impressionCounts.containsKey(rank)) {
+            if (impressionCounts.containsKey(rank)) {
 
-                if(clickCounts.containsKey(rank)) {
+                if (clickCounts.containsKey(rank)) {
 
                     // Calculate the CTR by dividing the number of clicks by the number of impressions.
                     LOGGER.info("Position = {}, Impression Counts = {}, Click Count = {}", rank, impressionCounts.get(rank), clickCounts.get(rank));
@@ -767,7 +769,7 @@ public class OpenSearchEngine extends SearchEngine {
         final Collection<String> queryIds = getQueryIdsHavingUserQuery(userQuery);
 
         // For each query ID, get the events with action_name = "impression" having a match on objectId and rank (position).
-        for(final String queryId : queryIds) {
+        for (final String queryId : queryIds) {
 
             final String query = "{\n" +
                     "    \"bool\": {\n" +
@@ -817,7 +819,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         LOGGER.debug("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
 
-        if(countOfTimesShownAtRank > 0) {
+        if (countOfTimesShownAtRank > 0) {
             LOGGER.debug("Count of {} having {} at rank {} = {}", userQuery, objectId, rank, countOfTimesShownAtRank);
         }
 
@@ -827,13 +829,14 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Index the rank-aggregated clickthrough values.
+     *
      * @param rankAggregatedClickThrough A map of position to clickthrough values.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
     @Override
     public void indexRankAggregatedClickthrough(final Map<Integer, Double> rankAggregatedClickThrough) throws Exception {
 
-        if(!rankAggregatedClickThrough.isEmpty()) {
+        if (!rankAggregatedClickThrough.isEmpty()) {
 
             // TODO: Use bulk indexing.
 
@@ -856,13 +859,14 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Index the clickthrough rates.
+     *
      * @param clickthroughRates A map of query IDs to a collection of {@link ClickthroughRate} objects.
      * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
     @Override
     public void indexClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception {
 
-        if(!clickthroughRates.isEmpty()) {
+        if (!clickthroughRates.isEmpty()) {
 
             // TODO: Use bulk inserts.
 
@@ -909,9 +913,10 @@ public class OpenSearchEngine extends SearchEngine {
 
     /**
      * Index the judgments.
+     *
      * @param judgments A collection of {@link Judgment judgments}.
-     * @throws IOException Thrown when there is a problem accessing OpenSearch.
      * @return The ID of the indexed judgments.
+     * @throws IOException Thrown when there is a problem accessing OpenSearch.
      */
     @Override
     public String indexJudgments(final Collection<Judgment> judgments) throws Exception {
@@ -921,7 +926,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         // TODO: Use bulk imports.
 
-        for(final Judgment judgment : judgments) {
+        for (final Judgment judgment : judgments) {
 
             judgment.setJudgmentSetId(judgmentsId);
             judgment.setTimestamp(timestamp);
@@ -949,18 +954,18 @@ public class OpenSearchEngine extends SearchEngine {
 
         final String timestamp = TimeUtils.getTimestamp();
 
-        for(final QueryResult queryResult : querySetRunResult.getQueryResults()) {
+        for (final QueryResult queryResult : querySetRunResult.getQueryResults()) {
 
-            for(final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
+            for (final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
                 final QueryResultMetric queryResultMetric = new QueryResultMetric();
                 queryResultMetric.setTimestamp(timestamp);
-                queryResultMetric.setSearchConfig("research_1");
+                queryResultMetric.setSearchConfig(querySetRunResult.getSearchConfig());
                 queryResultMetric.setQuerySetId(querySetRunResult.getQuerySetId());
                 queryResultMetric.setQuery(queryResult.getQuery());
                 queryResultMetric.setMetric(searchMetric.getName());
                 queryResultMetric.setValue(searchMetric.getValue());
-                queryResultMetric.setApplication("sample_data");
+                queryResultMetric.setApplication(querySetRunResult.getApplication());
                 queryResultMetric.setEvaluationId(querySetRunResult.getRunId());
                 queryResultMetric.setFrogsPercent(queryResult.getFrogs());
 

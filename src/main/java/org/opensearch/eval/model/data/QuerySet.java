@@ -31,6 +31,12 @@ public class QuerySet extends AbstractData {
     @JsonProperty("timestamp")
     private String timestamp;
 
+    @JsonProperty("application")
+    private String application;
+
+    @JsonProperty("search_config")
+    private String searchConfig;
+
     public QuerySet() {
         super(UUID.randomUUID().toString());
     }
@@ -79,4 +85,19 @@ public class QuerySet extends AbstractData {
         this.timestamp = timestamp;
     }
 
+    public String getApplication() {
+        return application;
+    }
+
+    public void setApplication(String application) {
+        this.application = application;
+    }
+
+    public String getSearchConfig() {
+        return searchConfig;
+    }
+
+    public void setSearchConfig(String searchConfig) {
+        this.searchConfig = searchConfig;
+    }
 }

@@ -127,7 +127,8 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
 
             }
 
-            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(),
+                    parameters.getSampling(), querySet);
 
         } else {
             return null;

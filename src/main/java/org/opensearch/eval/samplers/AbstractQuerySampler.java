@@ -41,7 +41,8 @@ public abstract class AbstractQuerySampler {
     /**
      * Index the query set.
      */
-    protected String indexQuerySet(final SearchEngine searchEngine, final String name, final String description, final String sampling, Map<String, Long> queries) throws Exception {
+    protected String indexQuerySet(final SearchEngine searchEngine, final String name, final String description,
+                                   final String sampling, Map<String, Long> queries) throws Exception {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 

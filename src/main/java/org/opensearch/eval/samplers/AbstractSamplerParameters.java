@@ -16,7 +16,8 @@ public class AbstractSamplerParameters {
     private final String sampling;
     private final int querySetSize;
 
-    public AbstractSamplerParameters(final String sampler, final String name, final String description, final String sampling, final int querySetSize) {
+    public AbstractSamplerParameters(final String sampler, final String name, final String description, final String sampling,
+                                     final int querySetSize) {
         this.sampler = sampler;
         this.name = name;
         this.description = description;
