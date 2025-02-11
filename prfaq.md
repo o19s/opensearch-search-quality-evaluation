@@ -41,7 +41,13 @@ It's built to work directly with OpenSearch and leverages OpenSearch Dashboards 
 
 Judgment sets are stored in OpenSearch indexes and created using the CLI.
 
-- Should the CLI be able to delete judgment sets?
+- Should the CLI be able to list and delete judgment sets?
+
+### How are query sets stored and managed?
+
+Query sets are stored in OpenSearch indexes and created using the CLI.
+
+- Should the CLI be able to list and delete query sets?
 
 ### How scalable is the framework? Can it handle large query sets and massive datasets?
 
