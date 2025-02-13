@@ -8,7 +8,7 @@
  */
 package org.opensearch.eval.samplers;
 
-public class AbstractSamplerParameters {
+public abstract class AbstractSamplerParameters {
 
     private final String sampler;
     private final String name;

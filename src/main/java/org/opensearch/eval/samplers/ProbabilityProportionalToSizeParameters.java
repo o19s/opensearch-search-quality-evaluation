@@ -10,9 +10,11 @@ package org.opensearch.eval.samplers;
 
 public class ProbabilityProportionalToSizeParameters extends AbstractSamplerParameters {
 
+    public static final String NAME = "pptss";
+
     public ProbabilityProportionalToSizeParameters(final String name, final String description, final String sampling,
                                                    final int querySetSize) {
-        super("pptss", name, description, sampling, querySetSize);
+        super(NAME, name, description, sampling, querySetSize);
     }
 
 }

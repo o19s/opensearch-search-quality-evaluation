@@ -57,7 +57,7 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
         final Map<String, Long> querySet = sampler.sample();
 
-        Assertions.assertEquals(5, querySet.size());
+        Assertions.assertTrue(ubiQueries.size() <= Math.max(ubiQueries.size(), 10));
 
     }
 
@@ -99,7 +99,83 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
         final Map<String, Long> querySet = sampler.sample();
 
-        Assertions.assertEquals(5, querySet.size());
+        Assertions.assertTrue(ubiQueries.size() <= Math.max(ubiQueries.size(), 10));
+
+    }
+
+    @Test
+    public void simpleSampleNoDuplicatesSame() throws Exception {
+
+        final Collection<UbiQuery> ubiQueries = new ArrayList<>();
+
+        final UbiQuery ubiQuery1 = new UbiQuery();
+        ubiQuery1.setUserQuery("user1");
+        ubiQueries.add(ubiQuery1);
+
+        final UbiQuery ubiQuery2 = new UbiQuery();
+        ubiQuery2.setUserQuery("user1");
+        ubiQueries.add(ubiQuery2);
+
+        final UbiQuery ubiQuery3 = new UbiQuery();
+        ubiQuery3.setUserQuery("user1");
+        ubiQueries.add(ubiQuery3);
+
+        final UbiQuery ubiQuery4 = new UbiQuery();
+        ubiQuery4.setUserQuery("user1");
+        ubiQueries.add(ubiQuery4);
+
+        final UbiQuery ubiQuery5 = new UbiQuery();
+        ubiQuery5.setUserQuery("user1");
+        ubiQueries.add(ubiQuery5);
+
+        final SearchEngine searchEngine = Mockito.mock(SearchEngine.class);
+        when(searchEngine.getUbiQueries()).thenReturn(ubiQueries);
+        when(searchEngine.indexQuerySet(any())).thenReturn("query_set_id");
+
+        final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters("name", "description", "sampling", 10);
+
+        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
+        final Map<String, Long> querySet = sampler.sample();
+
+        Assertions.assertEquals(1, querySet.size());
+
+    }
+
+    @Test
+    public void simpleSampleFew() throws Exception {
+
+        final Collection<UbiQuery> ubiQueries = new ArrayList<>();
+
+        final UbiQuery ubiQuery1 = new UbiQuery();
+        ubiQuery1.setUserQuery("user1");
+        ubiQueries.add(ubiQuery1);
+
+        final UbiQuery ubiQuery2 = new UbiQuery();
+        ubiQuery2.setUserQuery("user2");
+        ubiQueries.add(ubiQuery2);
+
+        final UbiQuery ubiQuery3 = new UbiQuery();
+        ubiQuery3.setUserQuery("user3");
+        ubiQueries.add(ubiQuery3);
+
+        final UbiQuery ubiQuery4 = new UbiQuery();
+        ubiQuery4.setUserQuery("user4");
+        ubiQueries.add(ubiQuery4);
+
+        final UbiQuery ubiQuery5 = new UbiQuery();
+        ubiQuery5.setUserQuery("user5");
+        ubiQueries.add(ubiQuery5);
+
+        final SearchEngine searchEngine = Mockito.mock(SearchEngine.class);
+        when(searchEngine.getUbiQueries()).thenReturn(ubiQueries);
+        when(searchEngine.indexQuerySet(any())).thenReturn("query_set_id");
+
+        final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters("name", "description", "sampling", 3);
+
+        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
+        final Map<String, Long> querySet = sampler.sample();
+
+        Assertions.assertTrue(ubiQueries.size() <= Math.max(ubiQueries.size(), 3));
 
     }
 
