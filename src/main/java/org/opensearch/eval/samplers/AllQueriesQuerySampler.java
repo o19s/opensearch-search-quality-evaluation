@@ -24,13 +24,13 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
     public static final String NAME = "all";
 
     private final SearchEngine searchEngine;
-    private final AllQueriesQuerySamplerParameters parameters;
+    private final AllQueriesQueryQuerySamplerParameters parameters;
 
     /**
      * Creates a new sampler.
      * @param searchEngine The OpenSearch {@link SearchEngine engine}.
      */
-    public AllQueriesQuerySampler(final SearchEngine searchEngine, final AllQueriesQuerySamplerParameters parameters) {
+    public AllQueriesQuerySampler(final SearchEngine searchEngine, final AllQueriesQueryQuerySamplerParameters parameters) {
         this.searchEngine = searchEngine;
         this.parameters = parameters;
     }
@@ -41,9 +41,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
     }
 
     @Override
-    public Map<String, Long> sample() throws Exception {
-
-        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+    public Map<String, Long> sample(final Collection<UbiQuery> ubiQueries) throws Exception {
 
         final Map<String, Long> queries = new HashMap<>();
 

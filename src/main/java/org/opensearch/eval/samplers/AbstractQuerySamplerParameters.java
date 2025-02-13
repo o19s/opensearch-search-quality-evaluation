@@ -8,7 +8,7 @@
  */
 package org.opensearch.eval.samplers;
 
-public abstract class AbstractSamplerParameters {
+public abstract class AbstractQuerySamplerParameters {
 
     private final String sampler;
     private final String name;
@@ -16,8 +16,8 @@ public abstract class AbstractSamplerParameters {
     private final String sampling;
     private final int querySetSize;
 
-    public AbstractSamplerParameters(final String sampler, final String name, final String description, final String sampling,
-                                     final int querySetSize) {
+    public AbstractQuerySamplerParameters(final String sampler, final String name, final String description, final String sampling,
+                                          final int querySetSize) {
         this.sampler = sampler;
         this.name = name;
         this.description = description;

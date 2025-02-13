@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.model.data.QuerySet;
+import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.utils.TimeUtils;
 
 import java.util.ArrayList;
@@ -34,12 +35,14 @@ public abstract class AbstractQuerySampler {
 
     /**
      * Samples the queries and inserts the query set into an index.
+     * @param ubiQueries A collection of {@link UbiQuery queries}.
      * @return A query set with frequencies.
      */
-    public abstract Map<String, Long> sample() throws Exception;
+    public abstract Map<String, Long> sample(Collection<UbiQuery> ubiQueries) throws Exception;
 
     /**
      * Index the query set.
+     * @return Returns <code>null</code> if the query set is empty. Otherwise, returns a random UUID.
      */
     public String indexQuerySet(final SearchEngine searchEngine, final String name, final String description,
                                    final String sampling, Map<String, Long> queries) throws Exception {

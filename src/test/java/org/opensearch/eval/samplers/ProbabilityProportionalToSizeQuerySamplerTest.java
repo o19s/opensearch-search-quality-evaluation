@@ -10,16 +10,11 @@ package org.opensearch.eval.samplers;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 public class ProbabilityProportionalToSizeQuerySamplerTest {
 
@@ -48,14 +43,10 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery5.setUserQuery("user5");
         ubiQueries.add(ubiQuery5);
 
-        final SearchEngine searchEngine = Mockito.mock(SearchEngine.class);
-        when(searchEngine.getUbiQueries()).thenReturn(ubiQueries);
-        when(searchEngine.indexQuerySet(any())).thenReturn("query_set_id");
+        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 10);
 
-        final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters("name", "description", "sampling", 10);
-
-        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
-        final Map<String, Long> querySet = sampler.sample();
+        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler( parameters);
+        final Map<String, Long> querySet = sampler.sample(ubiQueries);
 
         Assertions.assertTrue(ubiQueries.size() <= Math.max(ubiQueries.size(), 10));
 
@@ -90,14 +81,10 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery6.setUserQuery("user5");
         ubiQueries.add(ubiQuery6);
 
-        final SearchEngine searchEngine = Mockito.mock(SearchEngine.class);
-        when(searchEngine.getUbiQueries()).thenReturn(ubiQueries);
-        when(searchEngine.indexQuerySet(any())).thenReturn("query_set_id");
+        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 10);
 
-        final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters("name", "description", "sampling", 10);
-
-        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
-        final Map<String, Long> querySet = sampler.sample();
+        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
+        final Map<String, Long> querySet = sampler.sample(ubiQueries);
 
         Assertions.assertTrue(ubiQueries.size() <= Math.max(ubiQueries.size(), 10));
 
@@ -128,14 +115,10 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery5.setUserQuery("user1");
         ubiQueries.add(ubiQuery5);
 
-        final SearchEngine searchEngine = Mockito.mock(SearchEngine.class);
-        when(searchEngine.getUbiQueries()).thenReturn(ubiQueries);
-        when(searchEngine.indexQuerySet(any())).thenReturn("query_set_id");
+        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 10);
 
-        final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters("name", "description", "sampling", 10);
-
-        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
-        final Map<String, Long> querySet = sampler.sample();
+        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
+        final Map<String, Long> querySet = sampler.sample(ubiQueries);
 
         Assertions.assertEquals(1, querySet.size());
 
@@ -166,14 +149,10 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery5.setUserQuery("user5");
         ubiQueries.add(ubiQuery5);
 
-        final SearchEngine searchEngine = Mockito.mock(SearchEngine.class);
-        when(searchEngine.getUbiQueries()).thenReturn(ubiQueries);
-        when(searchEngine.indexQuerySet(any())).thenReturn("query_set_id");
+        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 3);
 
-        final ProbabilityProportionalToSizeParameters parameters = new ProbabilityProportionalToSizeParameters("name", "description", "sampling", 3);
-
-        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
-        final Map<String, Long> querySet = sampler.sample();
+        final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
+        final Map<String, Long> querySet = sampler.sample(ubiQueries);
 
         Assertions.assertTrue(ubiQueries.size() <= Math.max(ubiQueries.size(), 3));
 
