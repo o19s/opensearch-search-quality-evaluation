@@ -104,7 +104,7 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
 
             final UniformRealDistribution uniform = new UniformRealDistribution(0, 1);
 
-            for (int i = 1; i < parameters.getQuerySetSize(); i++) {
+            for (int i = 1; i <= parameters.getQuerySetSize(); i++) {
 
                 final double r = uniform.sample();
 
