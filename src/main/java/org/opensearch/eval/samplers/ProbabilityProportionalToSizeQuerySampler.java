@@ -49,7 +49,7 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
     }
 
     @Override
-    public String sample() throws Exception {
+    public Map<String, Long> sample() throws Exception {
 
         final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
@@ -121,8 +121,7 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
 
             }
 
-            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(),
-                    parameters.getSampling(), querySet);
+            return querySet;
 
         } else {
             return null;

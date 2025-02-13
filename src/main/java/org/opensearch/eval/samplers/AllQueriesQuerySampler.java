@@ -41,7 +41,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
     }
 
     @Override
-    public String sample() throws Exception {
+    public Map<String, Long> sample() throws Exception {
 
         final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
@@ -63,15 +63,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
         }
 
-        if(!queries.isEmpty()) {
-
-            return indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(),
-                    parameters.getSampling(), queries);
-
-        } else {
-            return null;
-        }
-
+        return queries;
     }
 
 }

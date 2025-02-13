@@ -35,6 +35,7 @@ import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Map;
 
 public class App {
 
@@ -145,7 +146,8 @@ public class App {
                     final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
 
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
-                    final String querySetId = sampler.sample();
+                    final Map<String, Long> querySet = sampler.sample();
+                    final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                     if(querySetId != null) {
                         System.out.println("Query set created: " + querySetId);
@@ -158,7 +160,8 @@ public class App {
                     final ProbabilityProportionalToSizeParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeParameters.class);
 
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
-                    final String querySetId = sampler.sample();
+                    final Map<String, Long> querySet = sampler.sample();
+                    final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                     if(querySetId != null) {
                         System.out.println("Query set created: " + querySetId);

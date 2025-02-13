@@ -34,39 +34,45 @@ public abstract class AbstractQuerySampler {
 
     /**
      * Samples the queries and inserts the query set into an index.
-     * @return A query set ID.
+     * @return A query set with frequencies.
      */
-    public abstract String sample() throws Exception;
+    public abstract Map<String, Long> sample() throws Exception;
 
     /**
      * Index the query set.
      */
-    protected String indexQuerySet(final SearchEngine searchEngine, final String name, final String description,
+    public String indexQuerySet(final SearchEngine searchEngine, final String name, final String description,
                                    final String sampling, Map<String, Long> queries) throws Exception {
 
         LOGGER.info("Indexing {} queries for query set {}", queries.size(), name);
 
-        final Collection<Map<String, Long>> querySetQueries = new ArrayList<>();
+        if (!queries.isEmpty()) {
 
-        // Convert the queries map to an object.
-        for(final String query : queries.keySet()) {
+            final Collection<Map<String, Long>> querySetQueries = new ArrayList<>();
 
-            // Map of the query itself to the frequency of the query.
-            final Map<String, Long> querySetQuery = new HashMap<>();
-            querySetQuery.put(query, queries.get(query));
+            // Convert the queries map to an object.
+            for (final String query : queries.keySet()) {
 
-            querySetQueries.add(querySetQuery);
+                // Map of the query itself to the frequency of the query.
+                final Map<String, Long> querySetQuery = new HashMap<>();
+                querySetQuery.put(query, queries.get(query));
 
+                querySetQueries.add(querySetQuery);
+
+            }
+
+            final QuerySet querySet = new QuerySet();
+            querySet.setName(name);
+            querySet.setDescription(description);
+            querySet.setSampling(sampling);
+            querySet.setQuerySetQueries(querySetQueries);
+            querySet.setTimestamp(TimeUtils.getTimestamp());
+
+            return searchEngine.indexQuerySet(querySet);
+
+        } else {
+            return null;
         }
-
-        final QuerySet querySet = new QuerySet();
-        querySet.setName(name);
-        querySet.setDescription(description);
-        querySet.setSampling(sampling);
-        querySet.setQuerySetQueries(querySetQueries);
-        querySet.setTimestamp(TimeUtils.getTimestamp());
-
-        return searchEngine.indexQuerySet(querySet);
 
     }
 
