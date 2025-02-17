@@ -10,6 +10,7 @@ package org.opensearch.eval.model.ubi.query;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -58,12 +59,21 @@ public class UbiQuery {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         final UbiQuery ubiQuery = (UbiQuery) o;
-        return userQuery == ubiQuery.userQuery;
+        return Objects.equals(userQuery, ubiQuery.userQuery);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(userQuery);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this).
+                append("userQuery", userQuery).
+                append("queryId", queryId).
+                append("timestamp", timestamp).
+                toString();
     }
 
     /**

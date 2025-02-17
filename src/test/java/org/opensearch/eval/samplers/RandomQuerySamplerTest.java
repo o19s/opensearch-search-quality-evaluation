@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-public class TopNQuerySamplerTest extends AbstractSamplerTest {
+public class RandomQuerySamplerTest extends AbstractSamplerTest {
 
     @Test
     public void simpleSample() {
@@ -55,14 +55,14 @@ public class TopNQuerySamplerTest extends AbstractSamplerTest {
         ubiQuery8.setUserQuery("user8");
         ubiQueries.add(ubiQuery8);
 
-        final TopNQuerySamplerParameters parameters = new TopNQuerySamplerParameters("name", "description", "sampling", 2);
+        final RandomQuerySamplerParameters parameters = new RandomQuerySamplerParameters("name", "description", "sampling", 2);
 
-        final TopNQuerySampler sampler = new TopNQuerySampler(parameters);
+        final RandomQuerySampler sampler = new RandomQuerySampler(parameters);
         final Map<String, Long> querySet = sampler.sample(ubiQueries);
 
+        showQueries(querySet);
+
         Assertions.assertEquals(2, querySet.size());
-        Assertions.assertTrue(querySet.containsKey("user1"));
-        Assertions.assertTrue(querySet.containsKey("user2"));
 
     }
 

@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-public class ProbabilityProportionalToSizeQuerySamplerTest {
+public class ProbabilityProportionalToSizeQuerySamplerTest extends AbstractSamplerTest {
 
     @Test
     public void simpleSample() throws Exception {

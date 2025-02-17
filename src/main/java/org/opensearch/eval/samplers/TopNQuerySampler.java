@@ -57,20 +57,11 @@ public class TopNQuerySampler extends AbstractQuerySampler {
         } else {
 
             // For getting the frequency of each user query.
-            final Map<String, Long> counts = ubiQueries.stream()
-                    .collect(Collectors.groupingBy(UbiQuery::getUserQuery, Collectors.counting()));
-
-            for(final String ubiQuery : counts.keySet()) {
-                System.out.println(ubiQuery);
-            }
+            final Map<String, Long> counts = ubiQueries.stream().collect(Collectors.groupingBy(UbiQuery::getUserQuery, Collectors.counting()));
 
             // Sort the queries by frequency, highest to lowest.
             final TreeMap<String, Long> sortedMap = new TreeMap<>(Comparator.comparing(counts::get, Comparator.reverseOrder()));
             sortedMap.putAll(counts);
-
-            for(final Map.Entry<String, Long> entry : sortedMap.entrySet()) {
-                System.out.println(entry.getKey() + " " + entry.getValue());
-            }
 
             final Map<String, Long> topNQueries = sortedMap.entrySet().stream()
                     .limit(parameters.getQuerySetSize())

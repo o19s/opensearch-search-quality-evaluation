@@ -62,8 +62,7 @@ public class RandomQuerySampler extends AbstractQuerySampler {
             Collections.shuffle(randomNumbers);
 
             // For getting the frequency of each user query.
-            final Map<UbiQuery, Long> counts = ubiQueries.stream()
-                    .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+            final Map<String, Long> counts = ubiQueries.stream().collect(Collectors.groupingBy(UbiQuery::getUserQuery, Collectors.counting()));
 
             for(final int randomNumber : randomNumbers) {
 
@@ -72,7 +71,7 @@ public class RandomQuerySampler extends AbstractQuerySampler {
                         .findFirst()
                         .orElse(null);
 
-                querySet.put(randomQuery.getQuery(), counts.get(randomQuery.getUserQuery()));
+                querySet.put(randomQuery.getUserQuery(), counts.get(randomQuery.getUserQuery()));
 
             }
 
