@@ -57,14 +57,15 @@ public class RandomQuerySampler extends AbstractQuerySampler {
 
         } else {
 
-            // Create random integers up to the max query set size.
+            // Create random integers up to the max query set size and then shuffle them.
             final List<Integer> randomNumbers = IntStream.range(0, parameters.getQuerySetSize()).boxed().collect(Collectors.toList());
             Collections.shuffle(randomNumbers);
 
+            // For getting the frequency of each user query.
             final Map<UbiQuery, Long> counts = ubiQueries.stream()
                     .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
 
-            for(int randomNumber : randomNumbers) {
+            for(final int randomNumber : randomNumbers) {
 
                 final UbiQuery randomQuery = ubiQueries.stream()
                         .skip(randomNumber)
@@ -72,7 +73,6 @@ public class RandomQuerySampler extends AbstractQuerySampler {
                         .orElse(null);
 
                 querySet.put(randomQuery.getQuery(), counts.get(randomQuery.getUserQuery()));
-
 
             }
 

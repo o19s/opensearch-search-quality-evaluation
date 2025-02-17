@@ -43,7 +43,7 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery5.setUserQuery("user5");
         ubiQueries.add(ubiQuery5);
 
-        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 10);
+        final ProbabilityProportionalToSizeSamplerParameters parameters = new ProbabilityProportionalToSizeSamplerParameters("name", "description", "sampling", 10);
 
         final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler( parameters);
         final Map<String, Long> querySet = sampler.sample(ubiQueries);
@@ -81,7 +81,7 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery6.setUserQuery("user5");
         ubiQueries.add(ubiQuery6);
 
-        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 10);
+        final ProbabilityProportionalToSizeSamplerParameters parameters = new ProbabilityProportionalToSizeSamplerParameters("name", "description", "sampling", 10);
 
         final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
         final Map<String, Long> querySet = sampler.sample(ubiQueries);
@@ -115,7 +115,7 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery5.setUserQuery("user1");
         ubiQueries.add(ubiQuery5);
 
-        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 10);
+        final ProbabilityProportionalToSizeSamplerParameters parameters = new ProbabilityProportionalToSizeSamplerParameters("name", "description", "sampling", 10);
 
         final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
         final Map<String, Long> querySet = sampler.sample(ubiQueries);
@@ -149,7 +149,7 @@ public class ProbabilityProportionalToSizeQuerySamplerTest {
         ubiQuery5.setUserQuery("user5");
         ubiQueries.add(ubiQuery5);
 
-        final ProbabilityProportionalToSizeParametersQuery parameters = new ProbabilityProportionalToSizeParametersQuery("name", "description", "sampling", 3);
+        final ProbabilityProportionalToSizeSamplerParameters parameters = new ProbabilityProportionalToSizeSamplerParameters("name", "description", "sampling", 3);
 
         final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
         final Map<String, Long> querySet = sampler.sample(ubiQueries);
