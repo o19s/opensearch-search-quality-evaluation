@@ -28,7 +28,7 @@ import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.RunQuerySetParameters;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
-import org.opensearch.eval.samplers.AllQueriesQueryQuerySamplerParameters;
+import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParametersQuery;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 
@@ -145,7 +145,7 @@ public class App {
 
                 if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
-                    final AllQueriesQueryQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQueryQuerySamplerParameters.class);
+                    final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
 
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
                     // TODO: Allow for selecting the queries by date.

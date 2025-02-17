@@ -24,13 +24,13 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
     public static final String NAME = "all";
 
     private final SearchEngine searchEngine;
-    private final AllQueriesQueryQuerySamplerParameters parameters;
+    private final AllQueriesQuerySamplerParameters parameters;
 
     /**
      * Creates a new sampler.
      * @param searchEngine The OpenSearch {@link SearchEngine engine}.
      */
-    public AllQueriesQuerySampler(final SearchEngine searchEngine, final AllQueriesQueryQuerySamplerParameters parameters) {
+    public AllQueriesQuerySampler(final SearchEngine searchEngine, final AllQueriesQuerySamplerParameters parameters) {
         this.searchEngine = searchEngine;
         this.parameters = parameters;
     }
