@@ -24,17 +24,20 @@ import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.RunQuerySetParameters;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
-import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParameters;
+import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParametersQuery;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 
 import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.Collection;
+import java.util.Map;
 
 public class App {
 
@@ -145,7 +148,10 @@ public class App {
                     final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
 
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
-                    final String querySetId = sampler.sample();
+                    // TODO: Allow for selecting the queries by date.
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
+                    final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                     if(querySetId != null) {
                         System.out.println("Query set created: " + querySetId);
@@ -155,10 +161,13 @@ public class App {
 
                 } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
-                    final ProbabilityProportionalToSizeParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeParameters.class);
+                    final ProbabilityProportionalToSizeParametersQuery parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeParametersQuery.class);
 
-                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
-                    final String querySetId = sampler.sample();
+                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
+                    // TODO: Allow for selecting the queries by date.
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
+                    final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                     if(querySetId != null) {
                         System.out.println("Query set created: " + querySetId);
