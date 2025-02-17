@@ -31,6 +31,8 @@ import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParametersQuery;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
+import org.opensearch.eval.samplers.RandomQuerySampler;
+import org.opensearch.eval.samplers.RandomQuerySamplerParameters;
 
 import java.io.File;
 import java.net.URI;
@@ -154,7 +156,7 @@ public class App {
                     final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                     if(querySetId != null) {
-                        System.out.println("Query set created: " + querySetId);
+                        System.out.println("Query set created using all queries: " + querySetId);
                     } else {
                         System.err.println("No queries found for query set.");
                     }
@@ -169,8 +171,25 @@ public class App {
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
-                    if(querySetId != null) {
-                        System.out.println("Query set created: " + querySetId);
+                    if (querySetId != null) {
+                        System.out.println("Query set created using PPTSS: " + querySetId);
+                    } else {
+                        System.err.println("No queries found for query set.");
+                    }
+
+                } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+
+                    final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
+
+                    final RandomQuerySampler sampler = new RandomQuerySampler(parameters);
+
+                    // TODO: Allow for selecting the queries by date.
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
+                    final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+
+                    if (querySetId != null) {
+                        System.out.println("Query set created using random sampling: " + querySetId);
                     } else {
                         System.err.println("No queries found for query set.");
                     }

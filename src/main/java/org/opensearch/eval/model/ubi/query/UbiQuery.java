@@ -13,6 +13,7 @@ import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a UBI query.
@@ -51,6 +52,19 @@ public class UbiQuery {
     @JsonProperty("query_response_hit_ids")
     @SerializedName("query_response_hit_ids")
     private List<String> queryResponseHitIds;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final UbiQuery person = (UbiQuery) o;
+        return Objects.equals(userQuery, person.userQuery);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userQuery);
+    }
 
     /**
      * Creates a new UBI query object.
