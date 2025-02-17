@@ -51,6 +51,10 @@ public class TopNQuerySamplerTest {
         ubiQuery5.setUserQuery("user7");
         ubiQueries.add(ubiQuery7);
 
+        final UbiQuery ubiQuery8 = new UbiQuery();
+        ubiQuery5.setUserQuery("user8");
+        ubiQueries.add(ubiQuery8);
+
         final TopNQuerySamplerParameters parameters = new TopNQuerySamplerParameters("name", "description", "sampling", 2);
 
         final TopNQuerySampler sampler = new TopNQuerySampler(parameters);
