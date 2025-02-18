@@ -196,7 +196,7 @@ public class App {
                 }
 
                 if (querySetId != null) {
-                    System.out.println("Query set created using top N sampling: " + querySetId);
+                    System.out.println("Query set created: " + querySetId);
                 } else {
                     System.err.println("No queries found for query set.");
                 }

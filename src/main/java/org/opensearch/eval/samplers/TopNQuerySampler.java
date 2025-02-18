@@ -45,19 +45,17 @@ public class TopNQuerySampler extends AbstractQuerySampler {
         // Remove duplicates from the queries.
         final Set<UbiQuery> queriesWithoutDuplicates = new HashSet<>(ubiQueries);
 
+        // For getting the frequency of each user query.
+        final Map<String, Long> counts = ubiQueries.stream().collect(Collectors.groupingBy(UbiQuery::getUserQuery, Collectors.counting()));
+
         if(parameters.getQuerySetSize() >= queriesWithoutDuplicates.size()) {
 
-            // Take all queries since the requested size is equal to or greater than
-            // the total number of queries.
+            // Take all queries since the requested size is equal to or greater than the total number of queries.
             for(final UbiQuery ubiQuery : queriesWithoutDuplicates) {
-                // TODO: Get the frequency for the user query.
-                querySet.put(ubiQuery.getQuery(), 1L);
+                querySet.put(ubiQuery.getUserQuery(), counts.get(ubiQuery.getUserQuery()));
             }
 
         } else {
-
-            // For getting the frequency of each user query.
-            final Map<String, Long> counts = ubiQueries.stream().collect(Collectors.groupingBy(UbiQuery::getUserQuery, Collectors.counting()));
 
             // Sort the queries by frequency, highest to lowest.
             final TreeMap<String, Long> sortedMap = new TreeMap<>(Comparator.comparing(counts::get, Comparator.reverseOrder()));

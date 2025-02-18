@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -47,22 +48,17 @@ public class RandomQuerySampler extends AbstractQuerySampler {
 
         final Map<String, Long> querySet = new HashMap<>();
 
+        // For getting the frequency of each user query.
+        final Map<String, Long> counts = ubiQueries.stream().collect(Collectors.groupingBy(UbiQuery::getUserQuery, Collectors.counting()));
+
         if(parameters.getQuerySetSize() >= queries.size()) {
 
-            // Take all queries since the requested size is equal to or greater than
-            // the total number of queries.
-            for(final UbiQuery ubiQuery : queries) {
-                querySet.put(ubiQuery.getQuery(), 1L);
-            }
+            querySet.putAll(counts);
 
         } else {
 
             // Create random integers up to the max query set size and then shuffle them.
-            final List<Integer> randomNumbers = IntStream.range(0, parameters.getQuerySetSize()).boxed().collect(Collectors.toList());
-            Collections.shuffle(randomNumbers);
-
-            // For getting the frequency of each user query.
-            final Map<String, Long> counts = ubiQueries.stream().collect(Collectors.groupingBy(UbiQuery::getUserQuery, Collectors.counting()));
+            final Set<Integer> randomNumbers = generateRandomNumbers(parameters.getQuerySetSize(), ubiQueries.size());
 
             for(final int randomNumber : randomNumbers) {
 
@@ -78,6 +74,19 @@ public class RandomQuerySampler extends AbstractQuerySampler {
         }
 
         return querySet;
+
+    }
+
+    private Set<Integer> generateRandomNumbers(final int n, final int max) {
+
+        final Random random = new Random();
+        final Set<Integer> randomIndexes = new HashSet<>();
+
+        while (randomIndexes.size() < n) {
+            randomIndexes.add(random.nextInt(max));
+        }
+
+        return randomIndexes;
 
     }
 

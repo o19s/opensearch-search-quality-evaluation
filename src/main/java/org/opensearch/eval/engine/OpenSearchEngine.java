@@ -9,6 +9,7 @@
 package org.opensearch.eval.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -233,7 +234,10 @@ public class OpenSearchEngine extends SearchEngine {
         while (searchHits != null && !searchHits.isEmpty()) {
 
             for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
-                ubiQueries.add(searchResponse.hits().hits().get(i).source());
+                final UbiQuery ubiQuery = searchResponse.hits().hits().get(i).source();
+                if(StringUtils.isNotEmpty(ubiQuery.getUserQuery())) {
+                    ubiQueries.add(ubiQuery);
+                }
             }
 
             if (scrollId != null) {
