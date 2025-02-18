@@ -29,13 +29,13 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
 
     private static final Logger LOGGER = LogManager.getLogger(ProbabilityProportionalToSizeQuerySampler.class);
 
-    private final ProbabilityProportionalToSizeParametersQuery parameters;
+    private final ProbabilityProportionalToSizeSamplerParameters parameters;
 
     /**
      * Creates a new PPTSS sampler.
-     * @param parameters The {@link ProbabilityProportionalToSizeParametersQuery parameters} for the sampling.
+     * @param parameters The {@link ProbabilityProportionalToSizeSamplerParameters parameters} for the sampling.
      */
-    public ProbabilityProportionalToSizeQuerySampler(final ProbabilityProportionalToSizeParametersQuery parameters) {
+    public ProbabilityProportionalToSizeQuerySampler(final ProbabilityProportionalToSizeSamplerParameters parameters) {
         this.parameters = parameters;
     }
 
