@@ -16,6 +16,20 @@ public abstract class AbstractQuerySamplerParameters {
     private final String sampling;
     private final int querySetSize;
     private final String application;
+    private final String startTimestamp;
+    private final String endTimestamp;
+
+    public AbstractQuerySamplerParameters(final String sampler, final String name, final String description, final String sampling,
+                                          final int querySetSize, final String application, final String startTimestamp, final String endTimestamp) {
+        this.sampler = sampler;
+        this.name = name;
+        this.description = description;
+        this.sampling = sampling;
+        this.querySetSize = querySetSize;
+        this.application = application;
+        this.startTimestamp = startTimestamp;
+        this.endTimestamp = endTimestamp;
+    }
 
     public AbstractQuerySamplerParameters(final String sampler, final String name, final String description, final String sampling,
                                           final int querySetSize, final String application) {
@@ -25,6 +39,8 @@ public abstract class AbstractQuerySamplerParameters {
         this.sampling = sampling;
         this.querySetSize = querySetSize;
         this.application = application;
+        this.startTimestamp = "";
+        this.endTimestamp = "";
     }
 
     public AbstractQuerySamplerParameters(final String sampler, final String name, final String description, final String sampling,
@@ -35,6 +51,8 @@ public abstract class AbstractQuerySamplerParameters {
         this.sampling = sampling;
         this.querySetSize = querySetSize;
         this.application = "";
+        this.startTimestamp = "";
+        this.endTimestamp = "";
     }
 
     public String getName() {
@@ -59,6 +77,14 @@ public abstract class AbstractQuerySamplerParameters {
 
     public String getApplication() {
         return application;
+    }
+
+    public String getStartTimestamp() {
+        return startTimestamp;
+    }
+
+    public String getEndTimestamp() {
+        return endTimestamp;
     }
 
 }

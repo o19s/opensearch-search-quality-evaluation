@@ -53,6 +53,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.data.ClickThroughRate;
 import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.data.QueryResultMetric;
@@ -221,7 +222,7 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public Collection<UbiQuery> getUbiQueries(final String application) throws IOException {
+    public Collection<UbiQuery> getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException {
 
         final Collection<UbiQuery> ubiQueries = new ArrayList<>();
 
@@ -229,15 +230,22 @@ public class OpenSearchEngine extends SearchEngine {
 
         final SearchResponse<UbiQuery> searchResponse;
 
+        final TermQuery applicationQuery = TermQuery.of(q -> q.value(FieldValue.of(application)).field("application"));
+        final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
+
         if(!StringUtils.isNotEmpty(application)) {
+
             searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
-                    .query(TermQuery.of(q -> q.value(FieldValue.of(application)).field("application")).toQuery())
+                    .query(applicationQuery.toQuery())
                     .size(1000)
                     .scroll(scrollTime), UbiQuery.class);
+
         } else {
+
             searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
                     .size(1000)
                     .scroll(scrollTime), UbiQuery.class);
+
         }
 
         String scrollId = searchResponse.scrollId();

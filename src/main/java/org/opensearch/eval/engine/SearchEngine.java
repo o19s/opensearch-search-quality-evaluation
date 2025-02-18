@@ -1,6 +1,15 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
 package org.opensearch.eval.engine;
 
 import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.data.QueryResultMetric;
 import org.opensearch.eval.model.data.QuerySet;
@@ -138,10 +147,11 @@ public abstract class SearchEngine {
     /**
      * Get all UBI queries.
      * @param application The application to filter by, or, <code>""</code> or <code>null</code> to retrieve all queries.
+     * @param timeFilter A {@link TimeFilter} for filtering UBI queries by a start and end timestamps.
      * @return A collection of all {@link UbiQuery}.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
      */
-    public abstract Collection<UbiQuery> getUbiQueries(final String application) throws IOException;
+    public abstract Collection<UbiQuery> getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException;
 
     /**
      * Index a query set run result.

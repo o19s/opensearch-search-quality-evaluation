@@ -24,6 +24,7 @@ import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.RunQuerySetParameters;
@@ -153,8 +154,8 @@ public class App {
                     final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
@@ -163,8 +164,8 @@ public class App {
                     final ProbabilityProportionalToSizeSamplerParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeSamplerParameters.class);
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
@@ -173,8 +174,8 @@ public class App {
                     final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
                     final RandomQuerySampler sampler = new RandomQuerySampler(parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
@@ -183,8 +184,8 @@ public class App {
                     final TopNQuerySamplerParameters parameters = gson.fromJson(jsonString, TopNQuerySamplerParameters.class);
                     final TopNQuerySampler sampler = new TopNQuerySampler(parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 

@@ -4,5 +4,7 @@
   "description": "",
   "sampling": "",
   "querySetSize": 250,
-  "application": ""
+  "application": "",
+  "startTimestamp": "",
+  "endTimestamp": ""
 }
