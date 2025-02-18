@@ -8,6 +8,9 @@
  */
 package org.opensearch.eval.samplers;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.opensearch.eval.engine.OpenSearchEngine;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
 import java.util.Collection;
@@ -26,6 +29,8 @@ import java.util.stream.IntStream;
  * It does not allow duplicate queries into the query set.
  */
 public class RandomQuerySampler extends AbstractQuerySampler {
+
+    private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
 
     public static final String NAME = "random";
 
@@ -58,11 +63,10 @@ public class RandomQuerySampler extends AbstractQuerySampler {
         } else {
 
             // Create random integers up to the max query set size and then shuffle them.
-            final Set<Integer> randomNumbers = generateRandomNumbers(parameters.getQuerySetSize(), ubiQueries.size());
-
+            final Set<Integer> randomNumbers = generateRandomNumbers(parameters.getQuerySetSize(), queries.size());
             for(final int randomNumber : randomNumbers) {
 
-                final UbiQuery randomQuery = ubiQueries.stream()
+                final UbiQuery randomQuery = queries.stream()
                         .skip(randomNumber)
                         .findFirst()
                         .orElse(null);
@@ -83,7 +87,8 @@ public class RandomQuerySampler extends AbstractQuerySampler {
         final Set<Integer> randomIndexes = new HashSet<>();
 
         while (randomIndexes.size() < n) {
-            randomIndexes.add(random.nextInt(max));
+            final int randomNumber = random.nextInt(max);
+            randomIndexes.add(randomNumber);
         }
 
         return randomIndexes;
