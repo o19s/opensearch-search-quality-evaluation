@@ -3,5 +3,6 @@
   "name": "",
   "description": "",
   "sampling": "",
-  "querySetSize": 250
+  "querySetSize": 250,
+  "application": ""
 }

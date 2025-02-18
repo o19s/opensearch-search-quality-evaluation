@@ -15,6 +15,17 @@ public abstract class AbstractQuerySamplerParameters {
     private final String description;
     private final String sampling;
     private final int querySetSize;
+    private final String application;
+
+    public AbstractQuerySamplerParameters(final String sampler, final String name, final String description, final String sampling,
+                                          final int querySetSize, final String application) {
+        this.sampler = sampler;
+        this.name = name;
+        this.description = description;
+        this.sampling = sampling;
+        this.querySetSize = querySetSize;
+        this.application = application;
+    }
 
     public AbstractQuerySamplerParameters(final String sampler, final String name, final String description, final String sampling,
                                           final int querySetSize) {
@@ -23,6 +34,7 @@ public abstract class AbstractQuerySamplerParameters {
         this.description = description;
         this.sampling = sampling;
         this.querySetSize = querySetSize;
+        this.application = "";
     }
 
     public String getName() {
@@ -43,6 +55,10 @@ public abstract class AbstractQuerySamplerParameters {
 
     public String getSampler() {
         return sampler;
+    }
+
+    public String getApplication() {
+        return application;
     }
 
 }

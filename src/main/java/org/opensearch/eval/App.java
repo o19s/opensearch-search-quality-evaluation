@@ -154,7 +154,7 @@ public class App {
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
@@ -164,7 +164,7 @@ public class App {
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
@@ -174,7 +174,7 @@ public class App {
                     final RandomQuerySampler sampler = new RandomQuerySampler(parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
@@ -184,7 +184,7 @@ public class App {
                     final TopNQuerySampler sampler = new TopNQuerySampler(parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication());
                     final Map<String, Long> querySet = sampler.sample(ubiQueries);
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 

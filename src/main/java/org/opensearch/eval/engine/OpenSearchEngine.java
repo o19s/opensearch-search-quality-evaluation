@@ -29,6 +29,7 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
+import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -220,13 +221,24 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public Collection<UbiQuery> getUbiQueries() throws IOException {
+    public Collection<UbiQuery> getUbiQueries(final String application) throws IOException {
 
         final Collection<UbiQuery> ubiQueries = new ArrayList<>();
 
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
+        final SearchResponse<UbiQuery> searchResponse;
+
+        if(!StringUtils.isNotEmpty(application)) {
+            searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
+                    .query(TermQuery.of(q -> q.value(FieldValue.of(application)).field("application")).toQuery())
+                    .size(1000)
+                    .scroll(scrollTime), UbiQuery.class);
+        } else {
+            searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
+                    .size(1000)
+                    .scroll(scrollTime), UbiQuery.class);
+        }
 
         String scrollId = searchResponse.scrollId();
         List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();

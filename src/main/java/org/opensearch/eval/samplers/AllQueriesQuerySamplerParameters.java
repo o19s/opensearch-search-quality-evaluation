@@ -13,8 +13,13 @@ public class AllQueriesQuerySamplerParameters extends AbstractQuerySamplerParame
     public static final String NAME = "all";
 
     public AllQueriesQuerySamplerParameters(final String name, final String description, final String sampling,
+                                            final int querySetSize, final String application) {
+        super(NAME, name, description, sampling, querySetSize, application);
+    }
+
+    public AllQueriesQuerySamplerParameters(final String name, final String description, final String sampling,
                                             final int querySetSize) {
-        super(NAME, name, description, sampling, querySetSize);
+        super(NAME, name, description, sampling, querySetSize, "");
     }
 
 }

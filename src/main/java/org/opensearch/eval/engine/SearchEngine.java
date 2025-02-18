@@ -137,10 +137,11 @@ public abstract class SearchEngine {
 
     /**
      * Get all UBI queries.
+     * @param application The application to filter by, or, <code>""</code> or <code>null</code> to retrieve all queries.
      * @return A collection of all {@link UbiQuery}.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
      */
-    public abstract Collection<UbiQuery> getUbiQueries() throws IOException;
+    public abstract Collection<UbiQuery> getUbiQueries(final String application) throws IOException;
 
     /**
      * Index a query set run result.
