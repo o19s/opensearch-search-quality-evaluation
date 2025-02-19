@@ -226,27 +226,40 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Collection<UbiQuery> ubiQueries = new ArrayList<>();
 
+        final List<Query> queries = new ArrayList<>();
+
+        if(StringUtils.isNotEmpty(application)) {
+            // Just a certain application.
+            final TermQuery applicationQuery = TermQuery.of(tq -> tq.field("application").value(FieldValue.of(application)));
+            queries.add(applicationQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
+            // Just a start timestamp.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())));
+            queries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Just an end timestamp.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").lte(JsonData.of(timeFilter.getEndTimestamp())));
+            queries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Both start and end timestamps.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
+            queries.add(timestampQuery.toQuery());
+        }
+
+        final BoolQuery boolQuery = BoolQuery.of(bq -> bq.must(queries));
+
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<UbiQuery> searchResponse;
-
-        final TermQuery applicationQuery = TermQuery.of(q -> q.value(FieldValue.of(application)).field("application"));
-        final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
-
-        if(!StringUtils.isNotEmpty(application)) {
-
-            searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
-                    .query(applicationQuery.toQuery())
-                    .size(1000)
-                    .scroll(scrollTime), UbiQuery.class);
-
-        } else {
-
-            searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
-                    .size(1000)
-                    .scroll(scrollTime), UbiQuery.class);
-
-        }
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
+                .query(boolQuery.toQuery())
+                .size(1000)
+                .scroll(scrollTime), UbiQuery.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
