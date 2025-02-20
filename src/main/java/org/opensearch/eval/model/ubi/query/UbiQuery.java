@@ -10,9 +10,11 @@ package org.opensearch.eval.model.ubi.query;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a UBI query.
@@ -51,6 +53,28 @@ public class UbiQuery {
     @JsonProperty("query_response_hit_ids")
     @SerializedName("query_response_hit_ids")
     private List<String> queryResponseHitIds;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        final UbiQuery ubiQuery = (UbiQuery) o;
+        return Objects.equals(userQuery, ubiQuery.userQuery);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userQuery);
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this).
+                append("userQuery", userQuery).
+                append("queryId", queryId).
+                append("timestamp", timestamp).
+                toString();
+    }
 
     /**
      * Creates a new UBI query object.

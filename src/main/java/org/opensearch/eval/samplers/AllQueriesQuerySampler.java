@@ -9,7 +9,6 @@
 package org.opensearch.eval.samplers;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
 import java.util.Collection;
@@ -23,15 +22,12 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
     public static final String NAME = "all";
 
-    private final SearchEngine searchEngine;
     private final AllQueriesQuerySamplerParameters parameters;
 
     /**
      * Creates a new sampler.
-     * @param searchEngine The OpenSearch {@link SearchEngine engine}.
      */
-    public AllQueriesQuerySampler(final SearchEngine searchEngine, final AllQueriesQuerySamplerParameters parameters) {
-        this.searchEngine = searchEngine;
+    public AllQueriesQuerySampler(final AllQueriesQuerySamplerParameters parameters) {
         this.parameters = parameters;
     }
 

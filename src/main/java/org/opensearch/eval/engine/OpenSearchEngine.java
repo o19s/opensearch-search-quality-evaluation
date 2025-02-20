@@ -9,6 +9,7 @@
 package org.opensearch.eval.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,6 +29,7 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
+import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -51,6 +53,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.data.ClickThroughRate;
 import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.data.QueryResultMetric;
@@ -219,13 +222,44 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public Collection<UbiQuery> getUbiQueries() throws IOException {
+    public Collection<UbiQuery> getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException {
 
         final Collection<UbiQuery> ubiQueries = new ArrayList<>();
 
+        final List<Query> queries = new ArrayList<>();
+
+        if(StringUtils.isNotEmpty(application)) {
+            // Just a certain application.
+            final TermQuery applicationQuery = TermQuery.of(tq -> tq.field("application").value(FieldValue.of(application)));
+            queries.add(applicationQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
+            // Just a start timestamp.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())));
+            queries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Just an end timestamp.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").lte(JsonData.of(timeFilter.getEndTimestamp())));
+            queries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Both start and end timestamps.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
+            queries.add(timestampQuery.toQuery());
+        }
+
+        final BoolQuery boolQuery = BoolQuery.of(bq -> bq.must(queries));
+
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME)
+                .query(boolQuery.toQuery())
+                .size(1000)
+                .scroll(scrollTime), UbiQuery.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
@@ -233,7 +267,10 @@ public class OpenSearchEngine extends SearchEngine {
         while (searchHits != null && !searchHits.isEmpty()) {
 
             for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
-                ubiQueries.add(searchResponse.hits().hits().get(i).source());
+                final UbiQuery ubiQuery = searchResponse.hits().hits().get(i).source();
+                if(StringUtils.isNotEmpty(ubiQuery.getUserQuery())) {
+                    ubiQueries.add(ubiQuery);
+                }
             }
 
             if (scrollId != null) {
