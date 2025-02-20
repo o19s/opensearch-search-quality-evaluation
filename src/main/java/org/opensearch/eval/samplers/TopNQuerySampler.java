@@ -35,9 +35,7 @@ public class TopNQuerySampler extends AbstractQuerySampler {
 
     @Override
     public Map<String, Long> sample() throws IOException {
-
         return searchEngine.getUbiQueries(parameters.getQuerySetSize());
-
     }
 
 }
