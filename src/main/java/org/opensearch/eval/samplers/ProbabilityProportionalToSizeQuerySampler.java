@@ -11,8 +11,10 @@ package org.opensearch.eval.samplers;
 import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -29,13 +31,15 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
 
     private static final Logger LOGGER = LogManager.getLogger(ProbabilityProportionalToSizeQuerySampler.class);
 
+    private final SearchEngine searchEngine;
     private final ProbabilityProportionalToSizeSamplerParameters parameters;
 
     /**
      * Creates a new PPTSS sampler.
      * @param parameters The {@link ProbabilityProportionalToSizeSamplerParameters parameters} for the sampling.
      */
-    public ProbabilityProportionalToSizeQuerySampler(final ProbabilityProportionalToSizeSamplerParameters parameters) {
+    public ProbabilityProportionalToSizeQuerySampler(final SearchEngine searchEngine, final ProbabilityProportionalToSizeSamplerParameters parameters) {
+        this.searchEngine = searchEngine;
         this.parameters = parameters;
     }
 
@@ -45,7 +49,9 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
     }
 
     @Override
-    public Map<String, Long> sample(final Collection<UbiQuery> ubiQueries) throws Exception {
+    public Map<String, Long> sample() throws IOException {
+
+        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
         // Get all user queries except empty queries.
         final List<String> userQueries = ubiQueries.stream()

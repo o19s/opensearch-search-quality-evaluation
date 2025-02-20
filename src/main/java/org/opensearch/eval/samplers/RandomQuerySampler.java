@@ -11,18 +11,17 @@ package org.opensearch.eval.samplers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.OpenSearchEngine;
+import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
+import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * A sampler that randomly selects a given number of queries.
@@ -30,13 +29,15 @@ import java.util.stream.IntStream;
  */
 public class RandomQuerySampler extends AbstractQuerySampler {
 
-    private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(RandomQuerySampler.class.getName());
 
     public static final String NAME = "random";
 
+    final SearchEngine searchEngine;
     final RandomQuerySamplerParameters parameters;
 
-    public RandomQuerySampler(final RandomQuerySamplerParameters parameters) {
+    public RandomQuerySampler(final SearchEngine searchEngine,  RandomQuerySamplerParameters parameters) {
+        this.searchEngine = searchEngine;
         this.parameters = parameters;
     }
 
@@ -46,7 +47,9 @@ public class RandomQuerySampler extends AbstractQuerySampler {
     }
 
     @Override
-    public Map<String, Long> sample(final Collection<UbiQuery> ubiQueries) {
+    public Map<String, Long> sample() throws IOException {
+
+        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
         // Remove duplicates from the queries.
         final Set<UbiQuery> queries = new HashSet<>(ubiQueries);

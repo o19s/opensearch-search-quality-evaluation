@@ -151,41 +151,37 @@ public class App {
                 if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
-                    final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(parameters);
+                    final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
+                    final Map<String, Long> querySet = sampler.sample();
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                 } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final ProbabilityProportionalToSizeSamplerParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeSamplerParameters.class);
-                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
+                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
+                    final Map<String, Long> querySet = sampler.sample();
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                 } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
-                    final RandomQuerySampler sampler = new RandomQuerySampler(parameters);
+                    final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
+                    final Map<String, Long> querySet = sampler.sample();
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                 } else if(TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final TopNQuerySamplerParameters parameters = gson.fromJson(jsonString, TopNQuerySamplerParameters.class);
-                    final TopNQuerySampler sampler = new TopNQuerySampler(parameters);
+                    final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
+                    final Map<String, Long> querySet = sampler.sample();
                     querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
                 } else {

@@ -220,6 +220,47 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
+    public Map<String, Long> getUbiQueries(final int n) throws IOException {
+
+        final Map<String, Long> querySet = new HashMap<>();
+
+        final Aggregation userQueryAggregation = Aggregation.of(a -> a
+                .terms(t -> t
+                        .field("user_query")
+                        .size(n)
+                )
+        );
+
+        final Map<String, Aggregation> aggregations = new HashMap<>();
+        aggregations.put("By_User_Query", userQueryAggregation);
+
+        final SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .aggregations(aggregations)
+                .from(0)
+                .size(0)
+                .build();
+
+        System.out.println(searchRequest.toJsonString());
+
+        final SearchResponse<Void> searchResponse = client.search(searchRequest, Void.class);
+
+        final Map<String, Aggregate> aggs = searchResponse.aggregations();
+        final StringTermsAggregate byUserQuery = aggs.get("By_User_Query").sterms();
+        final List<StringTermsBucket> byActionBuckets = byUserQuery.buckets().array();
+
+        for (final StringTermsBucket bucket : byActionBuckets) {
+
+            LOGGER.info("Adding user query to query set: {} with frequency {}", bucket.key(), bucket.docCount());
+            querySet.put(bucket.key(), bucket.docCount());
+
+        }
+
+        return querySet;
+
+    }
+
+    @Override
     public Collection<UbiQuery> getUbiQueries() throws IOException {
 
         final Collection<UbiQuery> ubiQueries = new ArrayList<>();
@@ -667,8 +708,6 @@ public class OpenSearchEngine extends SearchEngine {
                 .from(0)
                 .size(0)
                 .build();
-
-        System.out.println(searchRequest.toJsonString());
 
         final SearchResponse<Void> searchResponse = client.search(searchRequest, Void.class);
 

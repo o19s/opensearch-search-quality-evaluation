@@ -1,7 +1,7 @@
 {
-  "sampler": "pptss",
+  "sampler": "topn",
   "name": "",
   "description": "",
   "sampling": "",
-  "querySetSize": 250
+  "querySetSize": 5
 }
