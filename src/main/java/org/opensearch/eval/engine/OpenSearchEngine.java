@@ -241,8 +241,6 @@ public class OpenSearchEngine extends SearchEngine {
                 .size(0)
                 .build();
 
-        System.out.println(searchRequest.toJsonString());
-
         final SearchResponse<Void> searchResponse = client.search(searchRequest, Void.class);
 
         final Map<String, Aggregate> aggs = searchResponse.aggregations();
