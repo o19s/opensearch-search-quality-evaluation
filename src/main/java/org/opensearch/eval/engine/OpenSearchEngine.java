@@ -26,8 +26,11 @@ import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScore;
+import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.RandomScoreFunction;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
@@ -78,6 +81,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.opensearch.client.opensearch._types.query_dsl.FunctionScore.Kind.RandomScore;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
@@ -216,6 +220,32 @@ public class OpenSearchEngine extends SearchEngine {
         } else {
             return searchResponse.hits().hits().getFirst().source().getJudgment();
         }
+
+    }
+
+    @Override
+    public Map<String, Long> getRandomUbiQueries(final int n) throws IOException {
+
+        final RandomScoreFunction randomScore = new RandomScoreFunction.Builder().build();
+        final FunctionScore functionScore = new FunctionScore.Builder().randomScore(randomScore).build();
+
+        SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .query(functionScore.filter())
+                .size(n + 1)
+                .build();
+
+        final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
+
+        final Map<String, Long> querySet = new HashMap<>();
+
+        // Is having the frequency for the random queries useful?
+        searchResponse.hits().hits().forEach(hit -> {
+            LOGGER.info("Adding random user query: {}", hit.source().getUserQuery());
+            querySet.put(hit.source().getUserQuery(), 1L);
+        });
+
+        return querySet;
 
     }
 

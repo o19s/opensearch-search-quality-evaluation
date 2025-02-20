@@ -144,6 +144,14 @@ public abstract class SearchEngine {
     public abstract Map<String, Long> getUbiQueries(final int n) throws IOException;
 
     /**
+     * Get random UBI queries.
+     * @param n The number of random queries to return.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Map<String, Long> getRandomUbiQueries(final int n) throws IOException;
+
+    /**
      * Get all UBI queries.
      * @return A collection of all {@link UbiQuery}.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
