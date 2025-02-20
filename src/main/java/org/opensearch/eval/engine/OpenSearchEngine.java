@@ -229,7 +229,7 @@ public class OpenSearchEngine extends SearchEngine {
         final RandomScoreFunction randomScore = new RandomScoreFunction.Builder().build();
         final FunctionScore functionScore = new FunctionScore.Builder().randomScore(randomScore).build();
 
-        SearchRequest searchRequest = new SearchRequest.Builder()
+        final SearchRequest searchRequest = new SearchRequest.Builder()
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
                 .query(functionScore.filter())
                 .size(n + 1)
