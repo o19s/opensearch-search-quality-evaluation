@@ -284,8 +284,13 @@ public class OpenSearchEngine extends SearchEngine {
         final Map<String, Aggregation> aggregations = new HashMap<>();
         aggregations.put("By_User_Query", userQueryAggregation);
 
+        final ExistsQuery existsQuery = new ExistsQuery.Builder()
+                .field("user_query")
+                .build();
+
         final SearchRequest searchRequest = new SearchRequest.Builder()
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .query(existsQuery.toQuery())
                 .aggregations(aggregations)
                 .from(0)
                 .size(0)
