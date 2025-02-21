@@ -26,6 +26,7 @@ import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.FunctionScore;
 import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
@@ -238,9 +239,18 @@ public class OpenSearchEngine extends SearchEngine {
                 .functions(List.of(functionScore))
                 .build();
 
+        final ExistsQuery existsQuery = new ExistsQuery.Builder()
+                .field("user_query")
+                .build();
+
+        final BoolQuery boolQuery = new BoolQuery.Builder()
+                .must(q -> q.exists(existsQuery))
+                .must(q -> q.functionScore(functionScoreQuery))
+                .build();
+
         final SearchRequest searchRequest = new SearchRequest.Builder()
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
-                .query(new Query.Builder().functionScore(functionScoreQuery).build())
+                .query(boolQuery.toQuery())
                 .collapse(FieldCollapse.of(c -> c.field("user_query")))
                 .size(n)
                 .build();
