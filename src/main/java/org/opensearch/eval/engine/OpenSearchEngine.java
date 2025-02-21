@@ -97,6 +97,8 @@ public class OpenSearchEngine extends SearchEngine {
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
 
+    private static final String USER_QUERY_FIELD = "user_query";
+
     private final OpenSearchClient client;
 
     // Used to cache the query ID->user_query to avoid unnecessary lookups to OpenSearch.
@@ -229,7 +231,7 @@ public class OpenSearchEngine extends SearchEngine {
     public Map<String, Long> getRandomUbiQueries(final int n) throws IOException {
 
         final long seed = System.currentTimeMillis();
-        final RandomScoreFunction randomScoreFunction = new RandomScoreFunction.Builder().seed(String.valueOf(seed)).field("user_query").build();
+        final RandomScoreFunction randomScoreFunction = new RandomScoreFunction.Builder().seed(String.valueOf(seed)).field(USER_QUERY_FIELD).build();
         final FunctionScore functionScore = new FunctionScore.Builder().randomScore(randomScoreFunction).build();
 
         final MatchAllQuery matchAllQuery = new MatchAllQuery.Builder().build();
@@ -240,7 +242,7 @@ public class OpenSearchEngine extends SearchEngine {
                 .build();
 
         final ExistsQuery existsQuery = new ExistsQuery.Builder()
-                .field("user_query")
+                .field(USER_QUERY_FIELD)
                 .build();
 
         final BoolQuery boolQuery = new BoolQuery.Builder()
@@ -251,7 +253,7 @@ public class OpenSearchEngine extends SearchEngine {
         final SearchRequest searchRequest = new SearchRequest.Builder()
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
                 .query(boolQuery.toQuery())
-                .collapse(FieldCollapse.of(c -> c.field("user_query")))
+                .collapse(FieldCollapse.of(c -> c.field(USER_QUERY_FIELD)))
                 .size(n)
                 .build();
 
@@ -276,7 +278,7 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Aggregation userQueryAggregation = Aggregation.of(a -> a
                 .terms(t -> t
-                        .field("user_query")
+                        .field(USER_QUERY_FIELD)
                         .size(n)
                 )
         );
@@ -285,7 +287,7 @@ public class OpenSearchEngine extends SearchEngine {
         aggregations.put("By_User_Query", userQueryAggregation);
 
         final ExistsQuery existsQuery = new ExistsQuery.Builder()
-                .field("user_query")
+                .field(USER_QUERY_FIELD)
                 .build();
 
         final SearchRequest searchRequest = new SearchRequest.Builder()
@@ -840,7 +842,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 
-        final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("user_query").query(FieldValue.of(userQuery))))
+        final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field(USER_QUERY_FIELD).query(FieldValue.of(userQuery))))
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
                 .build();
 
