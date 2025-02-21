@@ -23,7 +23,7 @@ public class RandomQuerySampler extends AbstractQuerySampler {
     final SearchEngine searchEngine;
     final RandomQuerySamplerParameters parameters;
 
-    public RandomQuerySampler(final SearchEngine searchEngine,  RandomQuerySamplerParameters parameters) {
+    public RandomQuerySampler(final SearchEngine searchEngine, final RandomQuerySamplerParameters parameters) {
         this.searchEngine = searchEngine;
         this.parameters = parameters;
     }

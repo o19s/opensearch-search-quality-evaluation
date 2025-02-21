@@ -27,6 +27,7 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.FunctionScore;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -42,6 +43,7 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
+import org.opensearch.client.opensearch.core.search.FieldCollapse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
 import org.opensearch.client.opensearch.generic.Bodies;
@@ -81,7 +83,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.opensearch.client.opensearch._types.query_dsl.FunctionScore.Kind.RandomScore;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
@@ -226,13 +227,22 @@ public class OpenSearchEngine extends SearchEngine {
     @Override
     public Map<String, Long> getRandomUbiQueries(final int n) throws IOException {
 
-        final RandomScoreFunction randomScore = new RandomScoreFunction.Builder().build();
-        final FunctionScore functionScore = new FunctionScore.Builder().randomScore(randomScore).build();
+        final long seed = System.currentTimeMillis();
+        final RandomScoreFunction randomScoreFunction = new RandomScoreFunction.Builder().seed(String.valueOf(seed)).field("user_query").build();
+        final FunctionScore functionScore = new FunctionScore.Builder().randomScore(randomScoreFunction).build();
+
+        final MatchAllQuery matchAllQuery = new MatchAllQuery.Builder().build();
+
+        final FunctionScoreQuery functionScoreQuery = new FunctionScoreQuery.Builder()
+                .query(matchAllQuery.toQuery())
+                .functions(List.of(functionScore))
+                .build();
 
         final SearchRequest searchRequest = new SearchRequest.Builder()
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
-                .query(functionScore.filter())
-                .size(n + 1)
+                .query(new Query.Builder().functionScore(functionScoreQuery).build())
+                .collapse(FieldCollapse.of(c -> c.field("user_query")))
+                .size(n)
                 .build();
 
         final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
@@ -304,7 +314,7 @@ public class OpenSearchEngine extends SearchEngine {
 
             for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
                 final UbiQuery ubiQuery = searchResponse.hits().hits().get(i).source();
-                if(StringUtils.isNotEmpty(ubiQuery.getUserQuery())) {
+                if (StringUtils.isNotEmpty(ubiQuery.getUserQuery())) {
                     ubiQueries.add(ubiQuery);
                 }
             }
