@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -28,7 +29,6 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
 
     /**
      * Creates a new sampler.
-     * @param searchEngine The OpenSearch {@link SearchEngine engine}.
      */
     public AllQueriesQuerySampler(final SearchEngine searchEngine, final AllQueriesQuerySamplerParameters parameters) {
         this.searchEngine = searchEngine;
@@ -40,8 +40,11 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
         return NAME;
     }
 
+
     @Override
-    public Map<String, Long> sample(final Collection<UbiQuery> ubiQueries) throws Exception {
+    public Map<String, Long> sample() throws IOException {
+
+        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
 
         final Map<String, Long> queries = new HashMap<>();
 
@@ -62,6 +65,7 @@ public class AllQueriesQuerySampler extends AbstractQuerySampler {
         }
 
         return queries;
+
     }
 
 }
