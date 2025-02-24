@@ -12,8 +12,8 @@ import java.util.List;
 
 public class RelevanceScores {
 
-    private List<Double> relevanceScores;
-    private double frogs;
+    private final List<Double> relevanceScores;
+    private final double frogs;
 
     public RelevanceScores(final List<Double> relevanceScores, final double frogs) {
         this.relevanceScores = relevanceScores;

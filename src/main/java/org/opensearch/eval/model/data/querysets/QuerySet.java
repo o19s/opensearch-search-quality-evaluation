@@ -6,14 +6,18 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.model.data;
+package org.opensearch.eval.model.data.querysets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opensearch.eval.model.data.AbstractData;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * A query set.
+ */
 public class QuerySet extends AbstractData {
 
     @JsonProperty("name")
@@ -100,4 +104,5 @@ public class QuerySet extends AbstractData {
     public void setSearchConfig(String searchConfig) {
         this.searchConfig = searchConfig;
     }
+
 }

@@ -1,7 +1,7 @@
 {
-  "sampler": "pptss",
+  "sampler": "random",
   "name": "",
   "description": "",
   "sampling": "",
-  "querySetSize": 250
+  "querySetSize": 15
 }

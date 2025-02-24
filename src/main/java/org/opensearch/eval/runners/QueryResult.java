@@ -29,7 +29,7 @@ public class QueryResult {
      * @param query The query used to generate this result.
      * @param orderedDocumentIds A list of ordered document IDs in the same order as they appeared
      *                           in the query.
-     * @param k The k used for metrics calculation, i.e. DCG@k.
+     * @param k The k used for metrics calculation, i.e., DCG@k.
      * @param searchMetrics A collection of {@link SearchMetric} for this query.
      * @param frogs The percentage of documents not having a judgment.
      */

@@ -1,8 +1,8 @@
-package org.opensearch.eval.runners;
+package org.opensearch.eval.model.data.querysets;
 
 import com.google.gson.annotations.SerializedName;
 
-public class RunQuerySetParameters {
+public class QuerySetRunParameters {
 
     @SerializedName("query_set_id")
     private String querySetId;

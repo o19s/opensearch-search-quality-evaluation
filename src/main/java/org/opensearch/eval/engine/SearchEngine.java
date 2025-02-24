@@ -1,10 +1,10 @@
 package org.opensearch.eval.engine;
 
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.data.Judgment;
-import org.opensearch.eval.model.data.QueryResultMetric;
-import org.opensearch.eval.model.data.QuerySet;
+import org.opensearch.eval.model.data.judgments.Judgment;
+import org.opensearch.eval.model.data.querysets.QuerySet;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
+import org.opensearch.eval.runners.QueryResult;
 import org.opensearch.eval.runners.QuerySetRunResult;
 
 import java.io.IOException;
@@ -84,22 +84,6 @@ public abstract class SearchEngine {
     public abstract String indexJudgments(final Collection<Judgment> judgments) throws Exception;
 
     /**
-     * Index the query result metrics.
-     * @param queryResultMetric The {@link QueryResultMetric}.
-     * @throws Exception Thrown if the metrics cannot be indexed.
-     */
-    public abstract void indexQueryResultMetric(final QueryResultMetric queryResultMetric) throws Exception;
-
-    /**
-     * Bulk index a set of documents.
-     * @param index The index to use.
-     * @param documents A map of document IDs to documents.
-     * @return <code>true</code> if the bulk index completed without error.
-     * @throws IOException Thrown if the bulk index encounters an error.
-     */
-    public abstract boolean bulkIndex(String index, Map<String, Object> documents) throws IOException;
-
-    /**
      * Get all judgments.
      * @return A collection of {@link Judgment}.
      * @throws IOException Thrown if the judgments cannot be retrieved.
@@ -136,6 +120,22 @@ public abstract class SearchEngine {
     public abstract String indexQuerySet(QuerySet querySet) throws IOException;
 
     /**
+     * Get the top <code>n</code> UBI queries.
+     * @param n The number of top queries to return.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Map<String, Long> getUbiQueries(final int n) throws IOException;
+
+    /**
+     * Get random UBI queries.
+     * @param n The number of random queries to return.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Map<String, Long> getRandomUbiQueries(final int n) throws IOException;
+
+    /**
      * Get all UBI queries.
      * @return A collection of all {@link UbiQuery}.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
@@ -145,9 +145,10 @@ public abstract class SearchEngine {
     /**
      * Index a query set run result.
      * @param querySetRunResult The {@link QuerySetRunResult} to index.
+     * @return The count of {@link QueryResult} objects indexed.
      * @throws Exception Thrown if the query set run result cannot be indexed.
      */
-    public abstract void indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception;
+    public abstract long indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception;
 
     /**
      * Gets a query set from the index.
