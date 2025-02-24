@@ -146,7 +146,7 @@ public class App {
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);
                 final JsonObject jsonObject = jsonElement.getAsJsonObject();
                 final String samplerType = jsonObject.get("sampler").getAsString();
-                final String querySetId;
+                String querySetId = null;
 
                 if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
@@ -155,7 +155,11 @@ public class App {
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
 
                 } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
@@ -164,7 +168,11 @@ public class App {
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
 
                 } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
@@ -173,7 +181,11 @@ public class App {
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
 
                 } else if(TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
@@ -182,7 +194,11 @@ public class App {
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
 
                 } else {
 
