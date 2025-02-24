@@ -248,6 +248,7 @@ public class OpenSearchEngine extends SearchEngine {
         final BoolQuery boolQuery = new BoolQuery.Builder()
                 .must(q -> q.exists(existsQuery))
                 .must(q -> q.functionScore(functionScoreQuery))
+                .mustNot(q -> q.term(m -> m.field("user_query").value(FieldValue.of(""))))
                 .build();
 
         final SearchRequest searchRequest = new SearchRequest.Builder()
@@ -290,9 +291,14 @@ public class OpenSearchEngine extends SearchEngine {
                 .field(USER_QUERY_FIELD)
                 .build();
 
+        final BoolQuery boolQuery = new BoolQuery.Builder()
+                .must(q -> q.exists(existsQuery))
+                .mustNot(q -> q.term(m -> m.field("user_query").value(FieldValue.of(""))))
+                .build();
+
         final SearchRequest searchRequest = new SearchRequest.Builder()
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
-                .query(existsQuery.toQuery())
+                .query(boolQuery.toQuery())
                 .aggregations(aggregations)
                 .from(0)
                 .size(0)
