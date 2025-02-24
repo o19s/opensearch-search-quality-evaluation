@@ -9,6 +9,7 @@
 package org.opensearch.eval.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,6 +34,7 @@ import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.RandomScoreFunction;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
+import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -299,7 +301,48 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public Map<String, Long> getUbiQueries(final String application, final String timeFilter) throws IOException {
+    public Collection<UbiQuery> getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException {
+
+        final Collection<UbiQuery> ubiQueries = new ArrayList<>();
+
+        final Time scrollTime = new Time.Builder().time("10m").build();
+
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
+
+        String scrollId = searchResponse.scrollId();
+        List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
+
+        while (searchHits != null && !searchHits.isEmpty()) {
+
+            for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
+                final UbiQuery ubiQuery = searchResponse.hits().hits().get(i).source();
+                if (StringUtils.isNotEmpty(ubiQuery.getUserQuery())) {
+                    ubiQueries.add(ubiQuery);
+                }
+            }
+
+            if (scrollId != null) {
+                final ScrollRequest scrollRequest = new ScrollRequest.Builder().scrollId(scrollId).build();
+                final ScrollResponse<UbiQuery> scrollResponse = client.scroll(scrollRequest, UbiQuery.class);
+
+                scrollId = scrollResponse.scrollId();
+                searchHits = scrollResponse.hits().hits();
+            } else {
+                break;
+            }
+
+        }
+
+        // TODO: Clear the scroll.
+        // final ClearScrollRequest clearScrollRequest = new ClearScrollRequest.Builder().scrollId(scrollId).build();
+        // client.clearScroll(clearScrollRequest);
+
+        return ubiQueries;
+
+    }
+
+    @Override
+    public Map<String, Long> getUbiQueries(final int n, final String application, final TimeFilter timeFilter) throws IOException {
 
         final Map<String, Long> querySet = new HashMap<>();
 
@@ -313,12 +356,17 @@ public class OpenSearchEngine extends SearchEngine {
         final Map<String, Aggregation> aggregations = new HashMap<>();
         aggregations.put("By_User_Query", userQueryAggregation);
 
-        final ExistsQuery existsQuery = new ExistsQuery.Builder()
-                .field(USER_QUERY_FIELD)
-                .build();
+        final List<Query> mustQueries = new ArrayList<>();
+        mustQueries.add(new ExistsQuery.Builder().field("user_query").build().toQuery());
+
+        if(StringUtils.isNotEmpty(application)) {
+            mustQueries.add(new TermQuery.Builder().field("application").value(FieldValue.of(application)).build().toQuery());
+        }
+
+        // TODO: Add query for timeFilter.
 
         final BoolQuery boolQuery = new BoolQuery.Builder()
-                .must(q -> q.exists(existsQuery))
+                .must(mustQueries)
                 .mustNot(q -> q.term(m -> m.field("user_query").value(FieldValue.of(""))))
                 .build();
 

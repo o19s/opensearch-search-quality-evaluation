@@ -52,7 +52,7 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
     @Override
     public Map<String, Long> sample(final TimeFilter timeFilter) throws IOException {
 
-        final Map<String, Long> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
+        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
 
         // Get all user queries except empty queries.
         final List<String> userQueries = ubiQueries.stream()

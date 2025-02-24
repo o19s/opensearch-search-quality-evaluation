@@ -153,11 +153,11 @@ public abstract class SearchEngine {
     public abstract Map<String, Long> getUbiQueries(final int n, final String application, final TimeFilter timeFilter) throws IOException;
 
     /**
-     * Get the top <code>n</code> UBI queries.
+     * Get all UBI queries.
      * @return The user queries with their frequencies.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
      */
-    public abstract Map<String, Long> getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException;
+    public abstract Collection<UbiQuery>  getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException;
 
     /**
      * Get random UBI queries.
