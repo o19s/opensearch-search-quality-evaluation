@@ -11,10 +11,12 @@ package org.opensearch.eval.samplers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.data.QuerySet;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.utils.TimeUtils;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,11 +36,10 @@ public abstract class AbstractQuerySampler {
     public abstract String getName();
 
     /**
-     * Samples the queries and inserts the query set into an index.
-     * @param ubiQueries A collection of {@link UbiQuery queries}.
+     * Samples the queries.
      * @return A query set with frequencies.
      */
-    public abstract Map<String, Long> sample(Collection<UbiQuery> ubiQueries) throws Exception;
+    public abstract Map<String, Long> sample(final TimeFilter timeFilter) throws IOException;
 
     /**
      * Index the query set.

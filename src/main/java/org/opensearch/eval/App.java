@@ -25,11 +25,8 @@ import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
 import org.opensearch.eval.model.TimeFilter;
-import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.RunQuerySetParameters;
-import org.opensearch.eval.samplers.AllQueriesQuerySampler;
-import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeSamplerParameters;
 import org.opensearch.eval.samplers.RandomQuerySampler;
@@ -41,7 +38,6 @@ import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Collection;
 import java.util.Map;
 
 public class App {
@@ -147,47 +143,49 @@ public class App {
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);
                 final JsonObject jsonObject = jsonElement.getAsJsonObject();
                 final String samplerType = jsonObject.get("sampler").getAsString();
-                final String querySetId;
+                String querySetId = null;
 
-                if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
-
-                    final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
-                    final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(parameters);
-
-                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
-
-                } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+                if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final ProbabilityProportionalToSizeSamplerParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeSamplerParameters.class);
-                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
+                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
 
                 } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
-                    final RandomQuerySampler sampler = new RandomQuerySampler(parameters);
+                    final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
 
                 } else if(TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final TopNQuerySamplerParameters parameters = gson.fromJson(jsonString, TopNQuerySamplerParameters.class);
-                    final TopNQuerySampler sampler = new TopNQuerySampler(parameters);
+                    final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
-                    querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
 
                 } else {
 

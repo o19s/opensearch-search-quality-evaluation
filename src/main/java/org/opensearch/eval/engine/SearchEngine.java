@@ -145,13 +145,27 @@ public abstract class SearchEngine {
     public abstract String indexQuerySet(QuerySet querySet) throws IOException;
 
     /**
-     * Get all UBI queries.
-     * @param application The application to filter by, or, <code>""</code> or <code>null</code> to retrieve all queries.
-     * @param timeFilter A {@link TimeFilter} for filtering UBI queries by a start and end timestamps.
-     * @return A collection of all {@link UbiQuery}.
+     * Get the top <code>n</code> UBI queries.
+     * @param n The number of top queries to return.
+     * @return The user queries with their frequencies.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
      */
-    public abstract Collection<UbiQuery> getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException;
+    public abstract Map<String, Long> getUbiQueries(final int n, final String application, final TimeFilter timeFilter) throws IOException;
+
+    /**
+     * Get the top <code>n</code> UBI queries.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Map<String, Long> getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException;
+
+    /**
+     * Get random UBI queries.
+     * @param n The number of random queries to return.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Map<String, Long> getRandomUbiQueries(final int n, final String application, final TimeFilter timeFilter) throws IOException;
 
     /**
      * Index a query set run result.
