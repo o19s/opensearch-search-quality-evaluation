@@ -100,6 +100,7 @@ public class OpenSearchEngine extends SearchEngine {
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
 
     private static final String USER_QUERY_FIELD = "user_query";
+    private static final String APPLICATION_FIELD = "application";
 
     private final OpenSearchClient client;
 
@@ -232,32 +233,6 @@ public class OpenSearchEngine extends SearchEngine {
     @Override
     public Map<String, Long> getRandomUbiQueries(final int n, final String application, final TimeFilter timeFilter) throws IOException {
 
-//        final List<Query> queries = new ArrayList<>();
-//
-//        if(StringUtils.isNotEmpty(application)) {
-//            // Just a certain application.
-//            final TermQuery applicationQuery = TermQuery.of(tq -> tq.field("application").value(FieldValue.of(application)));
-//            queries.add(applicationQuery.toQuery());
-//        }
-//
-//        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
-//            // Just a start timestamp.
-//            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())));
-//            queries.add(timestampQuery.toQuery());
-//        }
-//
-//        if(StringUtils.isEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
-//            // Just an end timestamp.
-//            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").lte(JsonData.of(timeFilter.getEndTimestamp())));
-//            queries.add(timestampQuery.toQuery());
-//        }
-//
-//        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
-//            // Both start and end timestamps.
-//            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
-//            queries.add(timestampQuery.toQuery());
-//        }
-
         final long seed = System.currentTimeMillis();
         final RandomScoreFunction randomScoreFunction = new RandomScoreFunction.Builder().seed(String.valueOf(seed)).field(USER_QUERY_FIELD).build();
         final FunctionScore functionScore = new FunctionScore.Builder().randomScore(randomScoreFunction).build();
@@ -269,14 +244,38 @@ public class OpenSearchEngine extends SearchEngine {
                 .functions(List.of(functionScore))
                 .build();
 
-        final ExistsQuery existsQuery = new ExistsQuery.Builder()
-                .field(USER_QUERY_FIELD)
-                .build();
+        final List<Query> mustQueries = new ArrayList<>();
+
+        mustQueries.add(new ExistsQuery.Builder().field(USER_QUERY_FIELD).build().toQuery());
+        mustQueries.add(functionScoreQuery.toQuery());
+
+        if(StringUtils.isNotEmpty(application)) {
+            // Just a certain application.
+            final TermQuery applicationQuery = TermQuery.of(tq -> tq.field("application").value(FieldValue.of(application)));
+            mustQueries.add(applicationQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
+            // Just a start timestamp.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Just an end timestamp.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").lte(JsonData.of(timeFilter.getEndTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Both start and end timestamps.
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
 
         final BoolQuery boolQuery = new BoolQuery.Builder()
-                .must(q -> q.exists(existsQuery))
-                .must(q -> q.functionScore(functionScoreQuery))
-                .mustNot(q -> q.term(m -> m.field("user_query").value(FieldValue.of(""))))
+                .must(mustQueries)
+                .mustNot(q -> q.term(m -> m.field(USER_QUERY_FIELD).value(FieldValue.of(""))))
                 .build();
 
         final SearchRequest searchRequest = new SearchRequest.Builder()
@@ -307,7 +306,25 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Time scrollTime = new Time.Builder().time("10m").build();
 
-        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).size(1000).scroll(scrollTime), UbiQuery.class);
+        final List<Query> mustQueries = new ArrayList<>();
+        mustQueries.add(new MatchAllQuery.Builder().build().toQuery());
+
+        if(StringUtils.isNotEmpty(application)) {
+            mustQueries.add(new TermQuery.Builder().field("application").value(FieldValue.of(application)).build().toQuery());
+        }
+
+        // TODO: Add query for timeFilter.
+
+        final BoolQuery boolQuery = new BoolQuery.Builder()
+                .must(mustQueries)
+                .mustNot(q -> q.term(m -> m.field(USER_QUERY_FIELD).value(FieldValue.of(""))))
+                .build();
+
+        final SearchResponse<UbiQuery> searchResponse = client.search(s -> s
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .query(boolQuery.toQuery())
+                .size(1000)
+                .scroll(scrollTime), UbiQuery.class);
 
         String scrollId = searchResponse.scrollId();
         List<Hit<UbiQuery>> searchHits = searchResponse.hits().hits();
@@ -357,17 +374,17 @@ public class OpenSearchEngine extends SearchEngine {
         aggregations.put("By_User_Query", userQueryAggregation);
 
         final List<Query> mustQueries = new ArrayList<>();
-        mustQueries.add(new ExistsQuery.Builder().field("user_query").build().toQuery());
+        mustQueries.add(new ExistsQuery.Builder().field(USER_QUERY_FIELD).build().toQuery());
 
         if(StringUtils.isNotEmpty(application)) {
-            mustQueries.add(new TermQuery.Builder().field("application").value(FieldValue.of(application)).build().toQuery());
+            mustQueries.add(new TermQuery.Builder().field(APPLICATION_FIELD).value(FieldValue.of(application)).build().toQuery());
         }
 
         // TODO: Add query for timeFilter.
 
         final BoolQuery boolQuery = new BoolQuery.Builder()
                 .must(mustQueries)
-                .mustNot(q -> q.term(m -> m.field("user_query").value(FieldValue.of(""))))
+                .mustNot(q -> q.term(m -> m.field(USER_QUERY_FIELD).value(FieldValue.of(""))))
                 .build();
 
         final SearchRequest searchRequest = new SearchRequest.Builder()
