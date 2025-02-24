@@ -11,6 +11,7 @@ package org.opensearch.eval.runners;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.data.querysets.QuerySetRunParameters;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,10 +32,10 @@ public abstract class AbstractQuerySetRunner {
 
     /**
      * Runs the query set.
-     * @param querySetParameters A {@link RunQuerySetParameters parameters}.
+     * @param querySetParameters A {@link QuerySetRunParameters parameters}.
      * @return The query set {@link QuerySetRunResult results} and calculated metrics.
      */
-    abstract QuerySetRunResult run(RunQuerySetParameters querySetParameters) throws Exception;
+    public abstract QuerySetRunResult run(QuerySetRunParameters querySetParameters) throws Exception;
 
     /**
      * Gets the judgments for a query / document pairs.

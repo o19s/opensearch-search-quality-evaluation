@@ -6,7 +6,7 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.model.data;
+package org.opensearch.eval.model.data.judgments;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.opensearch.eval.utils.MathUtils;

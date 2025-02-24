@@ -1,10 +1,14 @@
-package org.opensearch.eval.model.data;
+package org.opensearch.eval.model.data.querysets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opensearch.eval.model.data.AbstractData;
 
 import java.util.UUID;
 
-public class QueryResultMetric extends AbstractData {
+/**
+ * The result from running a single query from a query set.
+ */
+public class QueryResult extends AbstractData {
 
     @JsonProperty("timestamp")
     private String timestamp;
@@ -33,11 +37,11 @@ public class QueryResultMetric extends AbstractData {
     @JsonProperty("frogs_percent")
     private double frogsPercent;
 
-    public QueryResultMetric(String id) {
+    public QueryResult(String id) {
         super(id);
     }
 
-    public QueryResultMetric() {
+    public QueryResult() {
         super(UUID.randomUUID().toString());
     }
 

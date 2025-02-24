@@ -6,7 +6,9 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.model.data;
+package org.opensearch.eval.model.data.judgments;
+
+import org.opensearch.eval.model.data.AbstractData;
 
 import java.util.UUID;
 

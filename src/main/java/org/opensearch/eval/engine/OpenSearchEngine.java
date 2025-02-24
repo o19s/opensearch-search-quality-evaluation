@@ -58,14 +58,13 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.data.ClickThroughRate;
-import org.opensearch.eval.model.data.Judgment;
-import org.opensearch.eval.model.data.QueryResultMetric;
-import org.opensearch.eval.model.data.QuerySet;
-import org.opensearch.eval.model.data.RankAggregatedClickThrough;
+import org.opensearch.eval.model.data.judgments.ClickThroughRate;
+import org.opensearch.eval.model.data.judgments.Judgment;
+import org.opensearch.eval.model.data.querysets.QueryResult;
+import org.opensearch.eval.model.data.querysets.QuerySet;
+import org.opensearch.eval.model.data.judgments.RankAggregatedClickThrough;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
-import org.opensearch.eval.runners.QueryResult;
 import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -401,27 +400,6 @@ public class OpenSearchEngine extends SearchEngine {
         }
 
         return judgments;
-
-    }
-
-    @Override
-    public boolean bulkIndex(String index, Map<String, Object> documents) throws IOException {
-
-        final ArrayList<BulkOperation> bulkOperations = new ArrayList<>();
-
-        for (final String id : documents.keySet()) {
-            final Object document = documents.get(id);
-            bulkOperations.add(new BulkOperation.Builder().index(IndexOperation.of(io -> io.index(index).id(id).document(document))).build());
-        }
-
-        final BulkRequest.Builder bulkReq = new BulkRequest.Builder()
-                .index(index)
-                .operations(bulkOperations)
-                .refresh(Refresh.WaitFor);
-
-        final BulkResponse bulkResponse = client.bulk(bulkReq.build());
-
-        return !bulkResponse.errors();
 
     }
 
@@ -1001,20 +979,6 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
-    @Override
-    public void indexQueryResultMetric(final QueryResultMetric queryResultMetric) throws Exception {
-
-        // TODO: Use bulk imports.
-
-        final IndexRequest<QueryResultMetric> indexRequest = new IndexRequest.Builder<QueryResultMetric>()
-                .index(Constants.DASHBOARD_METRICS_INDEX_NAME)
-                .id(queryResultMetric.getId())
-                .document(queryResultMetric).build();
-
-        client.index(indexRequest);
-
-    }
-
     /**
      * Index the judgments.
      *
@@ -1045,9 +1009,11 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public void indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception {
+    public long indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception {
 
-        LOGGER.info("Indexing query run results.");
+        LOGGER.info("Indexing query run results...");
+
+        long indexedCount = 0;
 
         // Now, index the metrics as expected by the dashboards.
 
@@ -1058,11 +1024,13 @@ public class OpenSearchEngine extends SearchEngine {
 
         final String timestamp = TimeUtils.getTimestamp();
 
-        for (final QueryResult queryResult : querySetRunResult.getQueryResults()) {
+        for (final org.opensearch.eval.runners.QueryResult queryResult : querySetRunResult.getQueryResults()) {
+
+            final List<BulkOperation> bulkOperations = new ArrayList<>();
 
             for (final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
-                final QueryResultMetric queryResultMetric = new QueryResultMetric();
+                final QueryResult queryResultMetric = new QueryResult();
                 queryResultMetric.setTimestamp(timestamp);
                 queryResultMetric.setSearchConfig(querySetRunResult.getSearchConfig());
                 queryResultMetric.setQuerySetId(querySetRunResult.getQuerySetId());
@@ -1073,11 +1041,23 @@ public class OpenSearchEngine extends SearchEngine {
                 queryResultMetric.setEvaluationId(querySetRunResult.getRunId());
                 queryResultMetric.setFrogsPercent(queryResult.getFrogs());
 
-                indexQueryResultMetric(queryResultMetric);
+                bulkOperations.add(new BulkOperation.Builder().index(IndexOperation.of(io -> io.index(Constants.DASHBOARD_METRICS_INDEX_NAME).id(queryResultMetric.getId()).document(queryResultMetric))).build());
 
             }
 
+            final BulkRequest bulkRequest = new BulkRequest.Builder()
+                    .index(Constants.DASHBOARD_METRICS_INDEX_NAME)
+                    .operations(bulkOperations)
+                    .refresh(Refresh.False)
+                    .build();
+
+            final BulkResponse bulkResponse = client.bulk(bulkRequest);
+
+            indexedCount += bulkResponse.items().size();
+
         }
+
+        return indexedCount;
 
     }
 
