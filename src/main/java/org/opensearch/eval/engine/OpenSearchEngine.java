@@ -263,8 +263,6 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Map<String, Long> querySet = new HashMap<>();
 
-        // Is having the frequency for the random queries useful?
-
         searchResponse.hits().hits().forEach(hit -> {
             final long count = getUserQueryCount(hit.source().getUserQuery());
             LOGGER.info("Adding user query to query set: {} with frequency {}", hit.source().getUserQuery(), count);
