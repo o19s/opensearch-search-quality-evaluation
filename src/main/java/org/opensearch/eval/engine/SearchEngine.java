@@ -159,6 +159,14 @@ public abstract class SearchEngine {
     public abstract Collection<UbiQuery> getUbiQueries() throws IOException;
 
     /**
+     * Gets the count of UBI queries having the given user query.
+     * @param userQuery The user query
+     * @return The count of UBI queries having the given user query.
+     * @throws IOException Thrown if the count cannot be retrieved.
+     */
+    public abstract long getUserQueryCount(final String userQuery);
+
+    /**
      * Index a query set run result.
      * @param querySetRunResult The {@link QuerySetRunResult} to index.
      * @throws Exception Thrown if the query set run result cannot be indexed.
