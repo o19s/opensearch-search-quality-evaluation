@@ -9,6 +9,7 @@
 package org.opensearch.eval.engine;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.core5.http.HttpHost;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,12 +26,18 @@ import org.opensearch.client.opensearch._types.aggregations.LongTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScore;
+import org.opensearch.client.opensearch._types.query_dsl.FunctionScoreQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.RandomScoreFunction;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
@@ -38,6 +45,7 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
+import org.opensearch.client.opensearch.core.search.FieldCollapse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.TrackHits;
 import org.opensearch.client.opensearch.generic.Bodies;
@@ -89,6 +97,8 @@ import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHO
 public class OpenSearchEngine extends SearchEngine {
 
     private static final Logger LOGGER = LogManager.getLogger(OpenSearchEngine.class.getName());
+
+    private static final String USER_QUERY_FIELD = "user_query";
 
     private final OpenSearchClient client;
 
@@ -219,6 +229,100 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
+    public Map<String, Long> getRandomUbiQueries(final int n) throws IOException {
+
+        final long seed = System.currentTimeMillis();
+        final RandomScoreFunction randomScoreFunction = new RandomScoreFunction.Builder().seed(String.valueOf(seed)).field(USER_QUERY_FIELD).build();
+        final FunctionScore functionScore = new FunctionScore.Builder().randomScore(randomScoreFunction).build();
+
+        final MatchAllQuery matchAllQuery = new MatchAllQuery.Builder().build();
+
+        final FunctionScoreQuery functionScoreQuery = new FunctionScoreQuery.Builder()
+                .query(matchAllQuery.toQuery())
+                .functions(List.of(functionScore))
+                .build();
+
+        final ExistsQuery existsQuery = new ExistsQuery.Builder()
+                .field(USER_QUERY_FIELD)
+                .build();
+
+        final BoolQuery boolQuery = new BoolQuery.Builder()
+                .must(q -> q.exists(existsQuery))
+                .must(q -> q.functionScore(functionScoreQuery))
+                .mustNot(q -> q.term(m -> m.field("user_query").value(FieldValue.of(""))))
+                .build();
+
+        final SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .query(boolQuery.toQuery())
+                .collapse(FieldCollapse.of(c -> c.field(USER_QUERY_FIELD)))
+                .size(n)
+                .build();
+
+        final SearchResponse<UbiQuery> searchResponse = client.search(searchRequest, UbiQuery.class);
+
+        final Map<String, Long> querySet = new HashMap<>();
+
+        searchResponse.hits().hits().forEach(hit -> {
+            final long count = getUserQueryCount(hit.source().getUserQuery());
+            LOGGER.info("Adding user query to query set: {} with frequency {}", hit.source().getUserQuery(), count);
+            querySet.put(hit.source().getUserQuery(), count);
+        });
+
+        return querySet;
+
+    }
+
+    @Override
+    public Map<String, Long> getUbiQueries(final int n) throws IOException {
+
+        final Map<String, Long> querySet = new HashMap<>();
+
+        final Aggregation userQueryAggregation = Aggregation.of(a -> a
+                .terms(t -> t
+                        .field(USER_QUERY_FIELD)
+                        .size(n)
+                )
+        );
+
+        final Map<String, Aggregation> aggregations = new HashMap<>();
+        aggregations.put("By_User_Query", userQueryAggregation);
+
+        final ExistsQuery existsQuery = new ExistsQuery.Builder()
+                .field(USER_QUERY_FIELD)
+                .build();
+
+        final BoolQuery boolQuery = new BoolQuery.Builder()
+                .must(q -> q.exists(existsQuery))
+                .mustNot(q -> q.term(m -> m.field("user_query").value(FieldValue.of(""))))
+                .build();
+
+        final SearchRequest searchRequest = new SearchRequest.Builder()
+                .index(Constants.UBI_QUERIES_INDEX_NAME)
+                .query(boolQuery.toQuery())
+                .aggregations(aggregations)
+                .from(0)
+                .size(0)
+                .build();
+
+        final SearchResponse<Void> searchResponse = client.search(searchRequest, Void.class);
+
+        final Map<String, Aggregate> aggs = searchResponse.aggregations();
+        final StringTermsAggregate byUserQuery = aggs.get("By_User_Query").sterms();
+        final List<StringTermsBucket> byActionBuckets = byUserQuery.buckets().array();
+
+        for (final StringTermsBucket bucket : byActionBuckets) {
+
+            LOGGER.info("Adding user query to query set: {} with frequency {}", bucket.key(), bucket.docCount());
+            querySet.put(bucket.key(), bucket.docCount());
+
+        }
+
+        return querySet;
+
+    }
+
+    @Override
     public Collection<UbiQuery> getUbiQueries() throws IOException {
 
         final Collection<UbiQuery> ubiQueries = new ArrayList<>();
@@ -233,7 +337,10 @@ public class OpenSearchEngine extends SearchEngine {
         while (searchHits != null && !searchHits.isEmpty()) {
 
             for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
-                ubiQueries.add(searchResponse.hits().hits().get(i).source());
+                final UbiQuery ubiQuery = searchResponse.hits().hits().get(i).source();
+                if (StringUtils.isNotEmpty(ubiQuery.getUserQuery())) {
+                    ubiQueries.add(ubiQuery);
+                }
             }
 
             if (scrollId != null) {
@@ -253,6 +360,27 @@ public class OpenSearchEngine extends SearchEngine {
         // client.clearScroll(clearScrollRequest);
 
         return ubiQueries;
+
+    }
+
+    @Override
+    public long getUserQueryCount(final String userQuery) {
+
+        try {
+
+            final Query query = Query.of(q -> q.term(m -> m.field("user_query").value(FieldValue.of(userQuery))));
+
+            final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
+            final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).query(query).trackTotalHits(trackHits).size(0), UbiQuery.class);
+
+            return searchResponse.hits().total().value();
+
+        } catch (IOException ex) {
+
+            LOGGER.error("Unable to determine count of user query: {}", userQuery);
+            return -1;
+
+        }
 
     }
 
@@ -664,8 +792,6 @@ public class OpenSearchEngine extends SearchEngine {
                 .size(0)
                 .build();
 
-        System.out.println(searchRequest.toJsonString());
-
         final SearchResponse<Void> searchResponse = client.search(searchRequest, Void.class);
 
         final Map<String, Aggregate> aggs = searchResponse.aggregations();
@@ -744,7 +870,7 @@ public class OpenSearchEngine extends SearchEngine {
 
     private Collection<String> getQueryIdsHavingUserQuery(final String userQuery) throws Exception {
 
-        final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field("user_query").query(FieldValue.of(userQuery))))
+        final SearchRequest searchRequest = new SearchRequest.Builder().query(q -> q.match(m -> m.field(USER_QUERY_FIELD).query(FieldValue.of(userQuery))))
                 .index(Constants.UBI_QUERIES_INDEX_NAME)
                 .build();
 

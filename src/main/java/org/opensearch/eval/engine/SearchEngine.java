@@ -136,11 +136,35 @@ public abstract class SearchEngine {
     public abstract String indexQuerySet(QuerySet querySet) throws IOException;
 
     /**
+     * Get the top <code>n</code> UBI queries.
+     * @param n The number of top queries to return.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Map<String, Long> getUbiQueries(final int n) throws IOException;
+
+    /**
+     * Get random UBI queries.
+     * @param n The number of random queries to return.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Map<String, Long> getRandomUbiQueries(final int n) throws IOException;
+
+    /**
      * Get all UBI queries.
      * @return A collection of all {@link UbiQuery}.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
      */
     public abstract Collection<UbiQuery> getUbiQueries() throws IOException;
+
+    /**
+     * Gets the count of UBI queries having the given user query.
+     * @param userQuery The user query
+     * @return The count of UBI queries having the given user query.
+     * @throws IOException Thrown if the count cannot be retrieved.
+     */
+    public abstract long getUserQueryCount(final String userQuery);
 
     /**
      * Index a query set run result.

@@ -29,8 +29,12 @@ import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.RunQuerySetParameters;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
-import org.opensearch.eval.samplers.ProbabilityProportionalToSizeParametersQuery;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
+import org.opensearch.eval.samplers.ProbabilityProportionalToSizeSamplerParameters;
+import org.opensearch.eval.samplers.RandomQuerySampler;
+import org.opensearch.eval.samplers.RandomQuerySamplerParameters;
+import org.opensearch.eval.samplers.TopNQuerySampler;
+import org.opensearch.eval.samplers.TopNQuerySamplerParameters;
 
 import java.io.File;
 import java.net.URI;
@@ -142,43 +146,71 @@ public class App {
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);
                 final JsonObject jsonObject = jsonElement.getAsJsonObject();
                 final String samplerType = jsonObject.get("sampler").getAsString();
+                String querySetId = null;
 
                 if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
-
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
-                    // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
-                    final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
 
-                    if(querySetId != null) {
-                        System.out.println("Query set created: " + querySetId);
+                    // TODO: Allow for selecting the queries by date.
+                    final Map<String, Long> querySet = sampler.sample();
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("No queries found for query set.");
+                        System.err.println("The query set was empty.");
                     }
 
                 } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
-                    final ProbabilityProportionalToSizeParametersQuery parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeParametersQuery.class);
+                    final ProbabilityProportionalToSizeSamplerParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeSamplerParameters.class);
+                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
-                    final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(parameters);
                     // TODO: Allow for selecting the queries by date.
-                    final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
-                    final Map<String, Long> querySet = sampler.sample(ubiQueries);
-                    final String querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
-
-                    if(querySetId != null) {
-                        System.out.println("Query set created: " + querySetId);
+                    final Map<String, Long> querySet = sampler.sample();
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("No queries found for query set.");
+                        System.err.println("The query set was empty.");
+                    }
+
+                } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+
+                    final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
+                    final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
+
+                    // TODO: Allow for selecting the queries by date.
+                    final Map<String, Long> querySet = sampler.sample();
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
+                    }
+
+                } else if(TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+
+                    final TopNQuerySamplerParameters parameters = gson.fromJson(jsonString, TopNQuerySamplerParameters.class);
+                    final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
+
+                    // TODO: Allow for selecting the queries by date.
+                    final Map<String, Long> querySet = sampler.sample();
+                    if(!querySet.isEmpty()) {
+                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
+                    } else {
+                        System.err.println("The query set was empty.");
                     }
 
                 } else {
 
                     System.err.println("Invalid sampler: " + samplerType);
+                    throw new IllegalArgumentException("Invalid sampler: " + samplerType);
 
+                }
+
+                if (querySetId != null) {
+                    System.out.println("Query set created: " + querySetId);
+                } else {
+                    System.err.println("No queries found for query set.");
                 }
 
             } else {
