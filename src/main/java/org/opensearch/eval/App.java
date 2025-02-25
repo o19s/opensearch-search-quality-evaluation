@@ -24,11 +24,9 @@ import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
-import org.opensearch.eval.model.ubi.query.UbiQuery;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.RunQuerySetParameters;
-import org.opensearch.eval.samplers.AllQueriesQuerySampler;
-import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeSamplerParameters;
 import org.opensearch.eval.samplers.RandomQuerySampler;
@@ -40,7 +38,6 @@ import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Collection;
 import java.util.Map;
 
 public class App {
@@ -148,26 +145,14 @@ public class App {
                 final String samplerType = jsonObject.get("sampler").getAsString();
                 String querySetId = null;
 
-                if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
-
-                    final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
-                    final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
-
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
-                    if(!querySet.isEmpty()) {
-                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
-                    } else {
-                        System.err.println("The query set was empty.");
-                    }
-
-                } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+                if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final ProbabilityProportionalToSizeSamplerParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeSamplerParameters.class);
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
@@ -179,8 +164,9 @@ public class App {
                     final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
                     final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
@@ -192,8 +178,9 @@ public class App {
                     final TopNQuerySamplerParameters parameters = gson.fromJson(jsonString, TopNQuerySamplerParameters.class);
                     final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {

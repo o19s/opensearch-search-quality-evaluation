@@ -1,6 +1,15 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
 package org.opensearch.eval.engine;
 
 import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.data.Judgment;
 import org.opensearch.eval.model.data.QueryResultMetric;
 import org.opensearch.eval.model.data.QuerySet;
@@ -141,7 +150,14 @@ public abstract class SearchEngine {
      * @return The user queries with their frequencies.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
      */
-    public abstract Map<String, Long> getUbiQueries(final int n) throws IOException;
+    public abstract Map<String, Long> getUbiQueries(final int n, final String application, final TimeFilter timeFilter) throws IOException;
+
+    /**
+     * Get all UBI queries.
+     * @return The user queries with their frequencies.
+     * @throws IOException Thrown if the UBI queries cannot be retrieved.
+     */
+    public abstract Collection<UbiQuery>  getUbiQueries(final String application, final TimeFilter timeFilter) throws IOException;
 
     /**
      * Get random UBI queries.
@@ -149,14 +165,7 @@ public abstract class SearchEngine {
      * @return The user queries with their frequencies.
      * @throws IOException Thrown if the UBI queries cannot be retrieved.
      */
-    public abstract Map<String, Long> getRandomUbiQueries(final int n) throws IOException;
-
-    /**
-     * Get all UBI queries.
-     * @return A collection of all {@link UbiQuery}.
-     * @throws IOException Thrown if the UBI queries cannot be retrieved.
-     */
-    public abstract Collection<UbiQuery> getUbiQueries() throws IOException;
+    public abstract Map<String, Long> getRandomUbiQueries(final int n, final String application, final TimeFilter timeFilter) throws IOException;
 
     /**
      * Gets the count of UBI queries having the given user query.

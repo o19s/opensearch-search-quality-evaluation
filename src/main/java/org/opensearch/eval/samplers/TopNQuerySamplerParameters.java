@@ -10,8 +10,12 @@ package org.opensearch.eval.samplers;
 
 public class TopNQuerySamplerParameters extends AbstractQuerySamplerParameters {
 
+    public TopNQuerySamplerParameters(String name, String description, String sampling, int querySetSize, final String application) {
+        super("topn", name, description, sampling, querySetSize, application);
+    }
+
     public TopNQuerySamplerParameters(String name, String description, String sampling, int querySetSize) {
-        super("topn", name, description, sampling, querySetSize);
+        super("topn", name, description, sampling, querySetSize, "");
     }
 
 }

@@ -3,5 +3,8 @@
   "name": "",
   "description": "",
   "sampling": "",
-  "querySetSize": 15
+  "querySetSize": 250,
+  "application": "",
+  "startTimestamp": "",
+  "endTimestamp": ""
 }
