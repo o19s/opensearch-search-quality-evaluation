@@ -79,7 +79,7 @@ resource "aws_opensearch_domain" "opensearch_ubi" {
     volume_size = 10
   }
 
-  access_policies = data.aws_iam_policy_document.access_policy.json
+  #access_policies = data.aws_iam_policy_document.access_policy.json
 
 }
 
