@@ -126,4 +126,8 @@ public class Constants {
             "              }\n" +
             "          }";
 
+    private Constants() {
+        // Utility class.
+    }
+
 }
