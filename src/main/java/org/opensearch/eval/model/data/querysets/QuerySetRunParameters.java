@@ -2,6 +2,9 @@ package org.opensearch.eval.model.data.querysets;
 
 import com.google.gson.annotations.SerializedName;
 
+/**
+ * The parameters used to run a query set.
+ */
 public class QuerySetRunParameters {
 
     @SerializedName("query_set_id")

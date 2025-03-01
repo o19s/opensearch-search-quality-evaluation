@@ -94,7 +94,7 @@ public class App {
                 final JudgmentParameters judgmentParameters = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), JudgmentParameters.class);
 
                 // Create the judgments index if it does not already exist.
-                searchEngine.createIndex(Constants.JUDGMENTS_INDEX_NAME, Constants.JUDGMENTS_INDEX_MAPPING);
+                searchEngine.createIndexIfNotExists(Constants.JUDGMENTS_INDEX_NAME, Constants.JUDGMENTS_INDEX_MAPPING);
 
                 if (CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(judgmentParameters.getJudgmentSetGenerator())) {
 
@@ -142,7 +142,7 @@ public class App {
             if(file.exists()) {
 
                 // Create the query set index if it does not already exist.
-                searchEngine.createIndex(Constants.QUERY_SETS_INDEX_NAME, Constants.QUERY_SETS_INDEX_MAPPING);
+                searchEngine.createIndexIfNotExists(Constants.QUERY_SETS_INDEX_NAME, Constants.QUERY_SETS_INDEX_MAPPING);
 
                 final String jsonString = Files.readString(file.toPath(), StandardCharsets.UTF_8);
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);

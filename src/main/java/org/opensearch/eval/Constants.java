@@ -3,11 +3,6 @@ package org.opensearch.eval;
 public class Constants {
 
     /**
-     * The name of the index that stores the implicit judgments.
-     */
-    public static final String JUDGMENTS_INDEX_NAME = "judgments";
-
-    /**
      * The name of the UBI index containing the queries. This should not be changed.
      */
     public static final String UBI_QUERIES_INDEX_NAME = "ubi_queries";
@@ -18,14 +13,24 @@ public class Constants {
     public static final String UBI_EVENTS_INDEX_NAME = "ubi_events";
 
     /**
+     * The name of the index that stores the judgments.
+     */
+    public static final String JUDGMENTS_INDEX_NAME = "srw_judgments";
+
+    /**
      * The name of the index that stores the query sets.
      */
-    public final static String QUERY_SETS_INDEX_NAME = "search_quality_eval_query_sets";
+    public final static String QUERY_SETS_INDEX_NAME = "srw_query_sets";
+
+    /**
+     * THe name of the index that stores the results from each query in a query set run.
+     */
+    public static final String QUERY_RESULTS_INDEX_NAME = "srw_query_results";
 
     /**
      * The name of the index that stores the metrics for the dashboard.
      */
-    public final static String DASHBOARD_METRICS_INDEX_NAME = "sqe_metrics";
+    public final static String METRICS_INDEX_NAME = "srw_metrics";
 
     /**
      * The judgments index mapping.
@@ -61,9 +66,20 @@ public class Constants {
             "          }";
 
     /**
-     * The metrics index mapping.
+     * The query sets index mapping.
      */
-    public static final String METRICS_MAPPING_INDEX_MAPPING = "{\n" +
+    public final static String QUERY_RESULTS_MAPPING = "{\n" +
+            "              \"properties\": {\n" +
+            "                \"id\": { \"type\": \"keyword\" },\n" +
+            "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
+            "                \"result_set\": { \"type\": \"object\" },\n" +
+            "              }\n" +
+            "          }";
+
+    /**
+     * The query results index mapping.
+     */
+    public static final String METRICS_INDEX_MAPPING = "{\n" +
             "              \"properties\": {\n" +
             "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
             "                \"search_config\": { \"type\": \"keyword\" },\n" +

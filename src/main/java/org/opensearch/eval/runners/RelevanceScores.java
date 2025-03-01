@@ -10,6 +10,9 @@ package org.opensearch.eval.runners;
 
 import java.util.List;
 
+/**
+ * Captures the relevance scores for a query.
+ */
 public class RelevanceScores {
 
     private final List<Double> relevanceScores;

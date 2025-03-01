@@ -37,7 +37,6 @@ import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
-import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
@@ -61,11 +60,13 @@ import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.data.judgments.ClickThroughRate;
 import org.opensearch.eval.model.data.judgments.Judgment;
-import org.opensearch.eval.model.data.querysets.QueryResult;
+import org.opensearch.eval.model.data.querysets.QueryRunMetric;
+import org.opensearch.eval.model.data.querysets.QueryRunResults;
 import org.opensearch.eval.model.data.querysets.QuerySet;
 import org.opensearch.eval.model.data.judgments.RankAggregatedClickThrough;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
+import org.opensearch.eval.runners.QueryResult;
 import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -86,8 +87,8 @@ import java.util.UUID;
 
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
+import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.COEC_CTR_INDEX_NAME;
+import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.COEC_RANK_AGGREGATED_CTR_INDEX_NAME;
 import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHOLDER;
 
 /**
@@ -127,7 +128,7 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public boolean createIndex(final String index, final String mappingJson) throws IOException {
+    public boolean createIndexIfNotExists(final String index, final String mappingJson) throws IOException {
 
         final boolean doesIndexExist = doesIndexExist(index);
 
@@ -952,7 +953,7 @@ public class OpenSearchEngine extends SearchEngine {
                 r.setPosition(position);
                 r.setCtr(rankAggregatedClickThrough.get(position));
 
-                final IndexRequest<RankAggregatedClickThrough> indexRequest = new IndexRequest.Builder<RankAggregatedClickThrough>().index(INDEX_RANK_AGGREGATED_CTR).id(id).document(r).build();
+                final IndexRequest<RankAggregatedClickThrough> indexRequest = new IndexRequest.Builder<RankAggregatedClickThrough>().index(COEC_RANK_AGGREGATED_CTR_INDEX_NAME).id(id).document(r).build();
                 client.index(indexRequest);
 
             }
@@ -990,7 +991,7 @@ public class OpenSearchEngine extends SearchEngine {
                     LOGGER.debug("Clickthrough rate: {}", ctr);
 
                     // TODO: This index needs created.
-                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(INDEX_QUERY_DOC_CTR).id(id).document(ctr).build();
+                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(COEC_CTR_INDEX_NAME).id(id).document(ctr).build();
                     client.index(indexRequest);
 
                 }
@@ -1037,38 +1038,56 @@ public class OpenSearchEngine extends SearchEngine {
 
         long indexedCount = 0;
 
-        // Now, index the metrics as expected by the dashboards.
+        // Index the metrics as expected by the dashboards.
 
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
 
-        createIndex(Constants.DASHBOARD_METRICS_INDEX_NAME, Constants.METRICS_MAPPING_INDEX_MAPPING);
+        createIndexIfNotExists(Constants.METRICS_INDEX_NAME, Constants.METRICS_INDEX_MAPPING);
+        createIndexIfNotExists(Constants.QUERY_RESULTS_INDEX_NAME, Constants.QUERY_RESULTS_MAPPING);
 
         final String timestamp = TimeUtils.getTimestamp();
 
-        for (final org.opensearch.eval.runners.QueryResult queryResult : querySetRunResult.getQueryResults()) {
+        for (final QueryResult queryResult : querySetRunResult.getQueryResults()) {
 
             final List<BulkOperation> bulkOperations = new ArrayList<>();
 
             for (final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
-                final QueryResult queryResultMetric = new QueryResult();
-                queryResultMetric.setTimestamp(timestamp);
-                queryResultMetric.setSearchConfig(querySetRunResult.getSearchConfig());
-                queryResultMetric.setQuerySetId(querySetRunResult.getQuerySetId());
-                queryResultMetric.setQuery(queryResult.getQuery());
-                queryResultMetric.setMetric(searchMetric.getName());
-                queryResultMetric.setValue(searchMetric.getValue());
-                queryResultMetric.setApplication(querySetRunResult.getApplication());
-                queryResultMetric.setEvaluationId(querySetRunResult.getRunId());
-                queryResultMetric.setFrogsPercent(queryResult.getFrogs());
+                final QueryRunMetric queryRunMetric = new QueryRunMetric();
+                queryRunMetric.setQuerySetRunId(querySetRunResult.getRunId());
+                queryRunMetric.setTimestamp(timestamp);
+                queryRunMetric.setSearchConfig(querySetRunResult.getSearchConfig());
+                queryRunMetric.setQuerySetId(querySetRunResult.getQuerySetId());
+                queryRunMetric.setQuery(queryResult.getQuery());
+                queryRunMetric.setMetric(searchMetric.getName());
+                queryRunMetric.setValue(searchMetric.getValue());
+                queryRunMetric.setApplication(querySetRunResult.getApplication());
+                queryRunMetric.setEvaluationId(querySetRunResult.getRunId());
+                queryRunMetric.setFrogsPercent(queryResult.getFrogs());
 
-                bulkOperations.add(new BulkOperation.Builder().index(IndexOperation.of(io -> io.index(Constants.DASHBOARD_METRICS_INDEX_NAME).id(queryResultMetric.getId()).document(queryResultMetric))).build());
+                bulkOperations.add(new BulkOperation.Builder().index(
+                        IndexOperation.of(io -> io.index(Constants.METRICS_INDEX_NAME)
+                                .id(queryRunMetric.getId())
+                                .document(queryRunMetric)))
+                        .build());
 
             }
 
+            // Index the query result.
+            final QueryRunResults queryRunResults = new QueryRunResults();
+            queryRunResults.setQuerySetId(querySetRunResult.getQuerySetId());
+            queryRunResults.setResultSet(queryResult.getOrderedDocumentIds());
+
+            bulkOperations.add(new BulkOperation.Builder().index(
+                    IndexOperation.of(io -> io.index(Constants.QUERY_RESULTS_INDEX_NAME)
+                            .id(queryRunResults.getId())
+                            .document(queryRunResults)))
+                    .build());
+
+            // Index the metrics and the query results.
             final BulkRequest bulkRequest = new BulkRequest.Builder()
-                    .index(Constants.DASHBOARD_METRICS_INDEX_NAME)
+                    .index(Constants.METRICS_INDEX_NAME)
                     .operations(bulkOperations)
                     .refresh(Refresh.False)
                     .build();

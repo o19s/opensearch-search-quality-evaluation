@@ -33,7 +33,7 @@ public abstract class SearchEngine {
      * @return <code>true</code> if the index was created successfully.
      * @throws IOException Thrown if the index could not be created.
      */
-    public abstract boolean createIndex(String index, String mapping) throws IOException;
+    public abstract boolean createIndexIfNotExists(String index, String mapping) throws IOException;
 
     /**
      * Get a user query for a given query ID.
@@ -146,7 +146,6 @@ public abstract class SearchEngine {
      * Gets the count of UBI queries having the given user query.
      * @param userQuery The user query
      * @return The count of UBI queries having the given user query.
-     * @throws IOException Thrown if the count cannot be retrieved.
      */
     public abstract long getUserQueryCount(final String userQuery);
 
