@@ -6,15 +6,19 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.model.data.judgments;
+package org.opensearch.eval.model.dao.judgments;
 
-import org.opensearch.eval.model.data.AbstractData;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opensearch.eval.model.dao.AbstractData;
 
 import java.util.UUID;
 
 public class RankAggregatedClickThrough extends AbstractData {
 
+    @JsonProperty("position")
     private int position;
+
+    @JsonProperty("ctr")
     private double ctr;
 
     public RankAggregatedClickThrough(String id) {

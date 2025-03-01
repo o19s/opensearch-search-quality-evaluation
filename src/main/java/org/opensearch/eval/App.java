@@ -26,7 +26,7 @@ import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.QuerySetRunResult;
-import org.opensearch.eval.model.data.querysets.QuerySetRunParameters;
+import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;

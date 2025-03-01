@@ -58,12 +58,12 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.data.judgments.ClickThroughRate;
-import org.opensearch.eval.model.data.judgments.Judgment;
-import org.opensearch.eval.model.data.querysets.QueryRunMetric;
-import org.opensearch.eval.model.data.querysets.QueryRunResults;
-import org.opensearch.eval.model.data.querysets.QuerySet;
-import org.opensearch.eval.model.data.judgments.RankAggregatedClickThrough;
+import org.opensearch.eval.model.dao.judgments.ClickThroughRate;
+import org.opensearch.eval.model.dao.judgments.Judgment;
+import org.opensearch.eval.model.dao.judgments.RankAggregatedClickThrough;
+import org.opensearch.eval.model.dao.querysets.QueryRunMetric;
+import org.opensearch.eval.model.dao.querysets.QueryRunResults;
+import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.QueryResult;
@@ -87,8 +87,6 @@ import java.util.UUID;
 
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.COEC_CTR_INDEX_NAME;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.COEC_RANK_AGGREGATED_CTR_INDEX_NAME;
 import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHOLDER;
 
 /**
@@ -943,6 +941,8 @@ public class OpenSearchEngine extends SearchEngine {
 
         if (!rankAggregatedClickThrough.isEmpty()) {
 
+            createIndexIfNotExists(Constants.COEC_RANK_AGGREGATED_CTR_INDEX_NAME, Constants.COEC_RANK_AGGREGATED_CTR_INDEX_MAPPING);
+
             // TODO: Use bulk indexing.
 
             for (final int position : rankAggregatedClickThrough.keySet()) {
@@ -953,7 +953,11 @@ public class OpenSearchEngine extends SearchEngine {
                 r.setPosition(position);
                 r.setCtr(rankAggregatedClickThrough.get(position));
 
-                final IndexRequest<RankAggregatedClickThrough> indexRequest = new IndexRequest.Builder<RankAggregatedClickThrough>().index(COEC_RANK_AGGREGATED_CTR_INDEX_NAME).id(id).document(r).build();
+                final IndexRequest<RankAggregatedClickThrough> indexRequest = new IndexRequest.Builder<RankAggregatedClickThrough>()
+                        .index(Constants.COEC_RANK_AGGREGATED_CTR_INDEX_NAME)
+                        .id(id).document(r)
+                        .build();
+
                 client.index(indexRequest);
 
             }
@@ -973,6 +977,8 @@ public class OpenSearchEngine extends SearchEngine {
 
         if (!clickthroughRates.isEmpty()) {
 
+            createIndexIfNotExists(Constants.COEC_CTR_INDEX_NAME, Constants.COEC_CTR_INDEX_MAPPING);
+
             // TODO: Use bulk inserts.
 
             for (final String userQuery : clickthroughRates.keySet()) {
@@ -991,7 +997,7 @@ public class OpenSearchEngine extends SearchEngine {
                     LOGGER.debug("Clickthrough rate: {}", ctr);
 
                     // TODO: This index needs created.
-                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(COEC_CTR_INDEX_NAME).id(id).document(ctr).build();
+                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(Constants.COEC_CTR_INDEX_NAME).id(id).document(ctr).build();
                     client.index(indexRequest);
 
                 }

@@ -1,4 +1,4 @@
-package org.opensearch.eval.model.data.querysets;
+package org.opensearch.eval.model.dao.querysets;
 
 import com.google.gson.annotations.SerializedName;
 

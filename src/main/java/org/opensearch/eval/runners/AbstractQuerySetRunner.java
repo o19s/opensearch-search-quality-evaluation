@@ -11,7 +11,7 @@ package org.opensearch.eval.runners;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
-import org.opensearch.eval.model.data.querysets.QuerySetRunParameters;
+import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
 
 import java.util.ArrayList;
 import java.util.List;

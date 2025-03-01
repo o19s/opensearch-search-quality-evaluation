@@ -1,8 +1,8 @@
 package org.opensearch.eval.engine;
 
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.data.judgments.Judgment;
-import org.opensearch.eval.model.data.querysets.QuerySet;
+import org.opensearch.eval.model.dao.judgments.Judgment;
+import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.QueryResult;
 import org.opensearch.eval.runners.QuerySetRunResult;

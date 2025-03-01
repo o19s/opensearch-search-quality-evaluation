@@ -6,18 +6,28 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.model.data.judgments;
+package org.opensearch.eval.model.dao.judgments;
 
-import org.opensearch.eval.model.data.AbstractData;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.opensearch.eval.model.dao.AbstractData;
 
 import java.util.UUID;
 
 public class ClickThroughRate extends AbstractData {
 
+    @JsonProperty("user_query")
     private String userQuery;
+
+    @JsonProperty("clicks")
     private long clicks;
+
+    @JsonProperty("events")
     private long events;
+
+    @JsonProperty("ctr")
     private double ctr;
+
+    @JsonProperty("object_id")
     private String objectId;
 
     public ClickThroughRate() {

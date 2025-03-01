@@ -11,7 +11,7 @@ package org.opensearch.eval.samplers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
-import org.opensearch.eval.model.data.querysets.QuerySet;
+import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.utils.TimeUtils;
 
 import java.io.IOException;

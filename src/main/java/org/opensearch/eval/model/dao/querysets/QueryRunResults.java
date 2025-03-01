@@ -1,7 +1,7 @@
-package org.opensearch.eval.model.data.querysets;
+package org.opensearch.eval.model.dao.querysets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.opensearch.eval.model.data.AbstractData;
+import org.opensearch.eval.model.dao.AbstractData;
 
 import java.util.List;
 import java.util.UUID;

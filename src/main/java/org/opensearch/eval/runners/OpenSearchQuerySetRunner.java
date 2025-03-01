@@ -15,8 +15,8 @@ import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
-import org.opensearch.eval.model.data.querysets.QuerySet;
-import org.opensearch.eval.model.data.querysets.QuerySetRunParameters;
+import org.opensearch.eval.model.dao.querysets.QuerySet;
+import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,7 +71,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                 for (final String userQuery : queryMap.keySet()) {
 
                     // This is to keep OpenSearch from rejecting queries.
-                    // TODO: Look at using the Workload Management in 2.18.0.
+                    // TODO: Look at using the Workload Management new in 2.18.0.
                     Thread.sleep(50);
 
                     // These are the documents returned for the query.

@@ -13,24 +13,42 @@ public class Constants {
     public static final String UBI_EVENTS_INDEX_NAME = "ubi_events";
 
     /**
+     * The name of the COEC rank-aggregated click through index.
+     */
+    public static final String COEC_RANK_AGGREGATED_CTR_INDEX_NAME = "srw_coec_rank_aggregated_ctr";
+
+    /**
+     * The COEC rank-aggregated index mapping.
+     */
+    public final static String COEC_RANK_AGGREGATED_CTR_INDEX_MAPPING = "{\n" +
+            "              \"properties\": {\n" +
+            "                \"position\": { \"type\": \"keyword\" },\n" +
+            "                \"ctr\": { \"type\": \"keyword\" }\n" +
+            "              }\n" +
+            "          }";
+
+    /**
+     * The name of the COEC clickthrough index.
+     */
+    public static final String COEC_CTR_INDEX_NAME = "srw_coec_ctr";
+
+    /**
+     * The COEC clickthrough index mapping.
+     */
+    public final static String COEC_CTR_INDEX_MAPPING = "{\n" +
+            "              \"properties\": {\n" +
+            "                \"user_query\": { \"type\": \"keyword\" },\n" +
+            "                \"clicks\": { \"type\": \"keyword\" },\n" +
+            "                \"events\": { \"type\": \"keyword\" },\n" +
+            "                \"ctr\": { \"type\": \"keyword\" },\n" +
+            "                \"object_id\": { \"type\": \"keyword\" }\n" +
+            "              }\n" +
+            "          }";
+
+    /**
      * The name of the index that stores the judgments.
      */
     public static final String JUDGMENTS_INDEX_NAME = "srw_judgments";
-
-    /**
-     * The name of the index that stores the query sets.
-     */
-    public final static String QUERY_SETS_INDEX_NAME = "srw_query_sets";
-
-    /**
-     * THe name of the index that stores the results from each query in a query set run.
-     */
-    public static final String QUERY_RESULTS_INDEX_NAME = "srw_query_results";
-
-    /**
-     * The name of the index that stores the metrics for the dashboard.
-     */
-    public final static String METRICS_INDEX_NAME = "srw_metrics";
 
     /**
      * The judgments index mapping.
@@ -52,6 +70,11 @@ public class Constants {
             "          }";
 
     /**
+     * The name of the index that stores the query sets.
+     */
+    public final static String QUERY_SETS_INDEX_NAME = "srw_query_sets";
+
+    /**
      * The query sets index mapping.
      */
     public final static String QUERY_SETS_INDEX_MAPPING = "{\n" +
@@ -66,15 +89,25 @@ public class Constants {
             "          }";
 
     /**
+     * THe name of the index that stores the results from each query in a query set run.
+     */
+    public static final String QUERY_RESULTS_INDEX_NAME = "srw_query_results";
+
+    /**
      * The query sets index mapping.
      */
     public final static String QUERY_RESULTS_MAPPING = "{\n" +
             "              \"properties\": {\n" +
             "                \"id\": { \"type\": \"keyword\" },\n" +
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
-            "                \"result_set\": { \"type\": \"object\" },\n" +
+            "                \"result_set\": { \"type\": \"object\" }\n" +
             "              }\n" +
             "          }";
+
+    /**
+     * The name of the index that stores the metrics for the dashboard.
+     */
+    public final static String METRICS_INDEX_NAME = "srw_metrics";
 
     /**
      * The query results index mapping.
