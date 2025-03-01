@@ -37,6 +37,7 @@ import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
@@ -261,10 +262,10 @@ public class OpenSearchEngine extends SearchEngine {
 
         final Map<String, Long> querySet = new HashMap<>();
 
-        // Is having the frequency for the random queries useful?
         searchResponse.hits().hits().forEach(hit -> {
-            LOGGER.info("Adding random user query: {}", hit.source().getUserQuery());
-            querySet.put(hit.source().getUserQuery(), 1L);
+            final long count = getUserQueryCount(hit.source().getUserQuery());
+            LOGGER.info("Adding user query to query set: {} with frequency {}", hit.source().getUserQuery(), count);
+            querySet.put(hit.source().getUserQuery(), count);
         });
 
         return querySet;
@@ -358,6 +359,27 @@ public class OpenSearchEngine extends SearchEngine {
         // client.clearScroll(clearScrollRequest);
 
         return ubiQueries;
+
+    }
+
+    @Override
+    public long getUserQueryCount(final String userQuery) {
+
+        try {
+
+            final Query query = Query.of(q -> q.term(m -> m.field("user_query").value(FieldValue.of(userQuery))));
+
+            final TrackHits trackHits = new TrackHits.Builder().enabled(true).build();
+            final SearchResponse<UbiQuery> searchResponse = client.search(s -> s.index(Constants.UBI_QUERIES_INDEX_NAME).query(query).trackTotalHits(trackHits).size(0), UbiQuery.class);
+
+            return searchResponse.hits().total().value();
+
+        } catch (IOException ex) {
+
+            LOGGER.error("Unable to determine count of user query: {}", userQuery);
+            return -1;
+
+        }
 
     }
 

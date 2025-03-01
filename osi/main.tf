@@ -21,10 +21,6 @@ locals {
   account_id = data.aws_caller_identity.current.account_id
 }
 
-output "ingest_endpoint_url" {
-  value = tolist(aws_osis_pipeline.ubi_events_pipeline.ingest_endpoint_urls)[0]
-}
-
 resource "aws_iam_role" "ubi" {
   name = "ubiosisrole"
   assume_role_policy = jsonencode({
@@ -33,10 +29,11 @@ resource "aws_iam_role" "ubi" {
       {
         Action = "sts:AssumeRole"
         Effect = "Allow"
+        Sid    = ""
         Principal = {
           Service = "osis-pipelines.amazonaws.com"
         }
-      }
+      },
     ]
   })
 }
@@ -52,6 +49,7 @@ data "aws_iam_policy_document" "access_policy" {
 
     actions = ["es:*"]
   }
+
 }
 
 resource "aws_opensearch_domain" "opensearch_ubi" {
@@ -82,6 +80,7 @@ resource "aws_opensearch_domain" "opensearch_ubi" {
   }
 
   #access_policies = data.aws_iam_policy_document.access_policy.json
+
 }
 
 resource "aws_iam_policy" "ubi" {
@@ -128,7 +127,132 @@ resource "aws_s3_bucket" "ubi_queries_events_bucket" {
 
 resource "aws_osis_pipeline" "ubi_events_pipeline" {
   pipeline_name               = "ubi-pipeline"
-  pipeline_configuration_body = file("blueprint-terraform.yaml")
+  pipeline_configuration_body = <<-EOT
+    version: "2"
+    ubi-pipeline:
+      source:
+        http:
+          path: "/ubi"
+      processor:
+        - date:
+            from_time_received: true
+            destination: "@timestamp"
+      route:
+        - ubi-events: '/type == "event"'
+        - ubi-queries: '/type == "query"'
+      sink:
+        - opensearch:
+            hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
+            index: "ubi_events"
+            aws:
+              sts_role_arn: "${aws_iam_role.ubi.arn}"   
+              region: "${data.aws_region.current.name}"
+            routes: [ubi-events]
+            template_type: index-template
+            template_content: >
+              {
+                "template" : {
+                  "mappings" : {
+                    "properties": {
+                      "application": { "type": "keyword", "ignore_above": 256 },
+                      "action_name": { "type": "keyword", "ignore_above": 100 },
+                      "client_id": { "type": "keyword", "ignore_above": 100 },
+                      "query_id": { "type": "keyword", "ignore_above": 100 },
+                      "message": { "type": "keyword", "ignore_above": 1024 },
+                      "message_type": { "type": "keyword", "ignore_above": 100 },
+                      "user_query":  { "type": "keyword" },
+                      "timestamp": {
+                        "type": "date",
+                        "format":"strict_date_time",
+                        "ignore_malformed": true, 
+                        "doc_values": true
+                      },
+                      "event_attributes": {
+                        "dynamic": true,
+                        "properties": {
+                          "position": {
+                            "properties": {
+                              "ordinal": { "type": "integer" },
+                              "x": { "type": "integer" },
+                              "y": { "type": "integer" },
+                              "page_depth": { "type": "integer" },
+                              "scroll_depth": { "type": "integer" },
+                              "trail": { "type": "text",
+                                "fields": { "keyword": { "type": "keyword", "ignore_above": 256 }
+                                }
+                              }
+                            }
+                          },
+                          "object": {
+                            "properties": {
+                              "internal_id": { "type": "keyword" },
+                              "object_id": { "type": "keyword", "ignore_above": 256 },
+                              "object_id_field": { "type": "keyword", "ignore_above": 100 },
+                              "name": { "type": "keyword", "ignore_above": 256 },
+                              "description": { "type": "text",
+                                "fields": { "keyword": { "type": "keyword", "ignore_above": 256 } }
+                              },
+                              "object_detail": { "type": "object" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+        - s3:
+            aws:
+              sts_role_arn: "${aws_iam_role.ubi.arn}"
+              region: "${data.aws_region.current.name}"
+            bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
+            object_key:
+              path_prefix: ubi_events/
+            threshold:
+              event_collect_timeout: "60s"
+            codec:
+              ndjson:
+            routes: [ubi-events]
+        - opensearch:
+            hosts: ["https://${aws_opensearch_domain.opensearch_ubi.endpoint}"]
+            index: "ubi_queries"
+            aws:
+              sts_role_arn: "${aws_iam_role.ubi.arn}"   
+              region: "${data.aws_region.current.name}"
+            routes: [ubi-queries]
+            template_type: index-template
+            template_content: >
+              {
+                "template" : {
+                  "mappings" : {
+                    "properties": {
+                      "timestamp": { "type": "date", "format": "strict_date_time" },
+                      "query_id": { "type": "keyword", "ignore_above": 100 },
+                      "query": { "type": "text" },
+                      "query_response_id": { "type": "keyword", "ignore_above": 100 },
+                      "query_response_hit_ids": { "type": "keyword" },
+                      "user_query":  { "type": "keyword" },
+                      "query_attributes": { "type": "flat_object" },
+                      "client_id": { "type": "keyword", "ignore_above": 100 },
+                      "application":  { "type":  "keyword", "ignore_above": 100 }
+                    }
+                  }
+                }
+              }
+        - s3:
+            aws:
+              sts_role_arn: "${aws_iam_role.ubi.arn}"
+              region: "${data.aws_region.current.name}"
+            bucket: "${aws_s3_bucket.ubi_queries_events_bucket.id}"
+            object_key:
+              path_prefix: ubi_queries/
+            threshold:
+              event_collect_timeout: "60s"
+            codec:
+              ndjson:
+            routes: [ubi-queries]
+
+        EOT
   max_units                   = 1
   min_units                   = 1
   log_publishing_options {
@@ -148,4 +272,8 @@ output "opensearch_domain_endpoint" {
 
 output "opensearch_ingest_pipeline_endpoint" {
   value = aws_osis_pipeline.ubi_events_pipeline.ingest_endpoint_urls
+}
+
+output "ingest_endpoint_url" {
+  value = tolist(aws_osis_pipeline.ubi_events_pipeline.ingest_endpoint_urls)[0]
 }
