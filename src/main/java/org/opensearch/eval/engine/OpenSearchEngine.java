@@ -511,9 +511,10 @@ public class OpenSearchEngine extends SearchEngine {
 
         if (!pipeline.isEmpty()) {
             params.put("search_pipeline", pipeline);
+            params.put("size", String.valueOf(k));
+            params.put("from", "0");
         }
 
-        // TODO: Need to consider k, or it needs to be the responsibility of the person to put k in the query.
         final Response searchResponse = genericClient.execute(
                 Requests.builder()
                         .endpoint(index + "/_search")
@@ -540,62 +541,6 @@ public class OpenSearchEngine extends SearchEngine {
             }
 
         }
-
-        // The following commented code uses a wrapper query.
-//        final String encodedQuery = Base64.getEncoder().encodeToString(parsedQuery.getBytes(StandardCharsets.UTF_8));
-
-//        final WrapperQuery wrapperQuery = new WrapperQuery.Builder()
-//                .query(encodedQuery)
-//                .build();
-
-        // TODO: Only return the idField since that's all we need.
-        //       final SearchRequest searchRequest;
-
-//        if(!pipeline.isEmpty()) {
-//
-//            searchRequest = new SearchRequest.Builder()
-//                    .index(index)
-//                    .query(q -> q.wrapper(wrapperQuery))
-//                    .from(0)
-//                    .size(k)
-//                    .pipeline(pipeline)
-//                    .build();
-//
-//        } else {
-//
-//            searchRequest = new SearchRequest.Builder()
-//                    .index(index)
-//                    .query(q -> q.wrapper(wrapperQuery))
-//                    .from(0)
-//                    .size(k)
-//                    .build();
-//
-//        }
-
-//        final SearchResponse<ObjectNode> searchResponse = client.search(searchRequest, ObjectNode.class);
-
-//        final List<String> orderedDocumentIds = new ArrayList<>();
-//
-//        LOGGER.info("Encoded query: {}", encodedQuery);
-//        LOGGER.info("Found hits: {}", searchResponse.hits().hits().size());
-//
-//        for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
-//
-//            final String documentId;
-//
-//            if ("_id".equals(idField)) {
-//                documentId = searchResponse.hits().hits().get(i).id();
-//            } else {
-//                // TODO: Need to check this field actually exists.
-//                // TODO: Does this work?
-//                final Hit<ObjectNode> hit = searchResponse.hits().hits().get(i);
-//                documentId = hit.source().get(idField).toString();
-//
-//            }
-//
-//            orderedDocumentIds.add(documentId);
-//
-//        }
 
         return orderedDocumentIds;
 
