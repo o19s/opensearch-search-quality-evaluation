@@ -85,6 +85,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
+import static org.opensearch.client.opensearch.core.bulk.OperationType.Index;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
 import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHOLDER;
@@ -1073,7 +1074,8 @@ public class OpenSearchEngine extends SearchEngine {
                 queryRunMetric.setFrogsPercent(queryResult.getFrogs());
 
                 bulkOperations.add(new BulkOperation.Builder().index(
-                        IndexOperation.of(io -> io.index(Constants.METRICS_INDEX_NAME)
+                        IndexOperation.of(io -> io
+                                .index(Constants.METRICS_INDEX_NAME)
                                 .id(queryRunMetric.getId())
                                 .document(queryRunMetric)))
                         .build());
@@ -1084,18 +1086,24 @@ public class OpenSearchEngine extends SearchEngine {
             final QueryRunResults queryRunResults = new QueryRunResults();
             queryRunResults.setQuerySetId(querySetRunResult.getQuerySetId());
             queryRunResults.setResultSet(queryResult.getOrderedDocumentIds());
+            queryRunResults.setQuery(queryResult.getQuery());
 
-            bulkOperations.add(new BulkOperation.Builder().index(
-                    IndexOperation.of(io -> io.index(Constants.QUERY_RESULTS_INDEX_NAME)
-                            .id(queryRunResults.getId())
-                            .document(queryRunResults)))
-                    .build());
+            final IndexRequest<QueryRunResults> ir = new IndexRequest.Builder<QueryRunResults>().index(Constants.QUERY_RESULTS_INDEX_NAME).id(queryRunResults.getId()).document(queryRunResults).build();
+            client.index(ir);
+
+//
+//            bulkOperations.add(new BulkOperation.Builder().index(
+//                    IndexOperation.of(io -> io
+//                            .index(Constants.QUERY_RESULTS_INDEX_NAME)
+//                            .id(queryRunResults.getId())
+//                            .document(queryRunResults)))
+//                    .build());
 
             // Index the metrics and the query results.
             final BulkRequest bulkRequest = new BulkRequest.Builder()
                     .index(Constants.METRICS_INDEX_NAME)
                     .operations(bulkOperations)
-                    .refresh(Refresh.False)
+                    .refresh(Refresh.True)
                     .build();
 
             final BulkResponse bulkResponse = client.bulk(bulkRequest);

@@ -18,6 +18,9 @@ public class QueryRunResults extends AbstractData {
     @JsonProperty("result_set")
     private List<String> resultSet;
 
+    @JsonProperty("query")
+    private String query;
+
     public String getQuerySetId() {
         return querySetId;
     }
@@ -32,6 +35,14 @@ public class QueryRunResults extends AbstractData {
 
     public void setResultSet(List<String> resultSet) {
         this.resultSet = resultSet;
+    }
+
+    public String getQuery() {
+        return query;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
     }
 
 }

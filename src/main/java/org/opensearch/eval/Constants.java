@@ -100,7 +100,8 @@ public class Constants {
             "              \"properties\": {\n" +
             "                \"id\": { \"type\": \"keyword\" },\n" +
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
-            "                \"result_set\": { \"type\": \"object\" }\n" +
+            "                \"query\": { \"type\": \"keyword\" },\n" +
+            "                \"result_set\": { \"type\": \"keyword\" }\n" +
             "              }\n" +
             "          }";
 
