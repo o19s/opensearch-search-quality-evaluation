@@ -1036,14 +1036,6 @@ public class OpenSearchEngine extends SearchEngine {
             final IndexRequest<QueryRunResults> ir = new IndexRequest.Builder<QueryRunResults>().index(Constants.QUERY_RESULTS_INDEX_NAME).id(queryRunResults.getId()).document(queryRunResults).build();
             client.index(ir);
 
-//
-//            bulkOperations.add(new BulkOperation.Builder().index(
-//                    IndexOperation.of(io -> io
-//                            .index(Constants.QUERY_RESULTS_INDEX_NAME)
-//                            .id(queryRunResults.getId())
-//                            .document(queryRunResults)))
-//                    .build());
-
             // Index the metrics and the query results.
             final BulkRequest bulkRequest = new BulkRequest.Builder()
                     .index(Constants.METRICS_INDEX_NAME)
