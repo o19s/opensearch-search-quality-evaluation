@@ -12,6 +12,7 @@ import org.apache.commons.math3.distribution.UniformRealDistribution;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 
 import java.io.IOException;
@@ -49,9 +50,9 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
     }
 
     @Override
-    public Map<String, Long> sample() throws IOException {
+    public Map<String, Long> sample(final TimeFilter timeFilter) throws IOException {
 
-        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries();
+        final Collection<UbiQuery> ubiQueries = searchEngine.getUbiQueries(parameters.getApplication(), timeFilter);
 
         // Get all user queries except empty queries.
         final List<String> userQueries = ubiQueries.stream()
