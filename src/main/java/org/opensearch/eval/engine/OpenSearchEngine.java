@@ -513,24 +513,21 @@ public class OpenSearchEngine extends SearchEngine {
         }
 
         params.put("size", String.valueOf(k));
-        params.put("track_total_hits", String.valueOf(true));
+        params.put("track_total_hits", "true");
 
         final Response searchResponse = genericClient.execute(
                 Requests.builder()
                         .endpoint(index + "/_search")
-                        .method("POST")
-                        .query(params)
+                        .method("GET")
                         .json(parsedQuery)
+                        .query(params)
                         .build());
 
         final JsonNode json = searchResponse.getBody()
                 .map(b -> Bodies.json(b, JsonNode.class, client._transport().jsonpMapper()))
                 .orElse(null);
 
-        System.out.println(json.get("hits").get("total").toPrettyString());
-
         final int numberOfResults = json.get("hits").get("total").get("value").asInt();
-        System.out.println("Total number of hits for user query " + userQuery + ": " + numberOfResults);
 
         final List<String> orderedDocumentIds = new ArrayList<>();
 
