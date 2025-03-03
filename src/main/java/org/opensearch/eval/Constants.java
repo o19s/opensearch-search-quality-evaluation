@@ -115,7 +115,7 @@ public class Constants {
      */
     public static final String METRICS_INDEX_MAPPING = "{\n" +
             "              \"properties\": {\n" +
-            "                \"datetime\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+            "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
             "                \"search_config\": { \"type\": \"keyword\" },\n" +
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
             "                \"query\": { \"type\": \"keyword\" },\n" +
