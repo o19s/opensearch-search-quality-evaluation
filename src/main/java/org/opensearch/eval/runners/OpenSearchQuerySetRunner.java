@@ -15,6 +15,7 @@ import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
+import org.opensearch.eval.model.QueryRun;
 import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
 
@@ -75,7 +76,7 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                     Thread.sleep(50);
 
                     // These are the documents returned for the query.
-                    final List<String> orderedDocumentIds = searchEngine.runQuery(
+                    final QueryRun queryRun = searchEngine.runQuery(
                             querySetParameters.getIndex(),
                             querySetParameters.getQuery(),
                             querySetParameters.getK(),
@@ -85,10 +86,10 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
                     // Calculate the metrics given the documents returned for the user_query.
                     final int k = querySetParameters.getK();
-                    final RelevanceScores relevanceScores = getRelevanceScores(querySetParameters.getJudgmentsId(), userQuery, orderedDocumentIds, k);
+                    final RelevanceScores relevanceScores = getRelevanceScores(querySetParameters.getJudgmentsId(), userQuery, queryRun.getDocumentIds(), k);
                     final Collection<SearchMetric> searchMetrics = calculateSearchMetrics(querySetParameters, k, relevanceScores);
 
-                    queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics, relevanceScores.getFrogs()));
+                    queryResults.add(new QueryResult(userQuery, queryRun.getDocumentIds(), k, searchMetrics, relevanceScores.getFrogs(), queryRun.getNumberOfResults()));
 
                 }
 

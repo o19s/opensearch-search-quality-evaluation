@@ -58,6 +58,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.QueryRun;
 import org.opensearch.eval.model.dao.judgments.ClickThroughRate;
 import org.opensearch.eval.model.dao.judgments.Judgment;
 import org.opensearch.eval.model.dao.judgments.RankAggregatedClickThrough;
@@ -85,7 +86,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.opensearch.client.opensearch.core.bulk.OperationType.Index;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
 import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHOLDER;
@@ -178,7 +178,6 @@ public class OpenSearchEngine extends SearchEngine {
         }
 
     }
-
 
     @Override
     public QuerySet getQuerySet(final String querySetId) throws IOException {
@@ -496,7 +495,7 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException {
+    public QueryRun runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException {
 
         // Replace the query placeholder with the user query.
         final String parsedQuery = query.replace(QUERY_PLACEHOLDER, userQuery);
@@ -511,9 +510,10 @@ public class OpenSearchEngine extends SearchEngine {
 
         if (!pipeline.isEmpty()) {
             params.put("search_pipeline", pipeline);
-            params.put("size", String.valueOf(k));
-            params.put("from", "0");
         }
+
+        params.put("size", String.valueOf(k));
+        params.put("track_total_hits", String.valueOf(true));
 
         final Response searchResponse = genericClient.execute(
                 Requests.builder()
@@ -527,10 +527,14 @@ public class OpenSearchEngine extends SearchEngine {
                 .map(b -> Bodies.json(b, JsonNode.class, client._transport().jsonpMapper()))
                 .orElse(null);
 
+        System.out.println(json.get("hits").get("total").toPrettyString());
+
+        final int numberOfResults = json.get("hits").get("total").get("value").asInt();
+        System.out.println("Total number of hits for user query " + userQuery + ": " + numberOfResults);
+
         final List<String> orderedDocumentIds = new ArrayList<>();
 
         final JsonNode hits = json.get("hits").get("hits");
-        // System.out.println("Number of hits for user query " + userQuery + ": " + hits.size());
 
         for (int i = 0; i < hits.size(); i++) {
 
@@ -542,7 +546,9 @@ public class OpenSearchEngine extends SearchEngine {
 
         }
 
-        return orderedDocumentIds;
+        searchResponse.close();
+
+        return new QueryRun(orderedDocumentIds, numberOfResults);
 
     }
 
@@ -1034,6 +1040,7 @@ public class OpenSearchEngine extends SearchEngine {
             queryRunResults.setQuery(queryResult.getQuery());
             queryRunResults.setTimestamp(timestamp);
             queryRunResults.setEvaluationId(querySetRunResult.getRunId());
+            queryRunResults.setNumberOfResults(queryResult.getNumberOfResults());
 
             final IndexRequest<QueryRunResults> ir = new IndexRequest.Builder<QueryRunResults>().index(Constants.QUERY_RESULTS_INDEX_NAME).id(queryRunResults.getId()).document(queryRunResults).build();
             client.index(ir);

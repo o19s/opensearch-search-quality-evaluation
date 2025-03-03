@@ -1,3 +1,11 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
 package org.opensearch.eval;
 
 public class Constants {
@@ -103,6 +111,7 @@ public class Constants {
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
             "                \"query\": { \"type\": \"keyword\" },\n" +
             "                \"result_set\": { \"type\": \"keyword\" },\n" +
+            "                \"number_of_results\": { \"type\": \"keyword\" },\n" +
             "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
             "              }\n" +
             "          }";

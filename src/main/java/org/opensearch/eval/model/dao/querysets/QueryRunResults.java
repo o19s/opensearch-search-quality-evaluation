@@ -1,3 +1,11 @@
+/*
+ * Copyright OpenSearch Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * The OpenSearch Contributors require contributions made to
+ * this file be licensed under the Apache-2.0 license or a
+ * compatible open source license.
+ */
 package org.opensearch.eval.model.dao.querysets;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,6 +34,9 @@ public class QueryRunResults extends AbstractData {
 
     @JsonProperty("evaluation_id")
     private String evaluationId;
+
+    @JsonProperty("number_of_results")
+    private int numberOfResults;
 
     public String getQuerySetId() {
         return querySetId;
@@ -65,6 +76,14 @@ public class QueryRunResults extends AbstractData {
 
     public void setEvaluationId(String evaluationId) {
         this.evaluationId = evaluationId;
+    }
+
+    public int getNumberOfResults() {
+        return numberOfResults;
+    }
+
+    public void setNumberOfResults(int numberOfResults) {
+        this.numberOfResults = numberOfResults;
     }
 
 }

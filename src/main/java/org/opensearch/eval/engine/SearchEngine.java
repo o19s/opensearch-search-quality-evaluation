@@ -1,6 +1,7 @@
 package org.opensearch.eval.engine;
 
 import org.opensearch.eval.model.ClickthroughRate;
+import org.opensearch.eval.model.QueryRun;
 import org.opensearch.eval.model.dao.judgments.Judgment;
 import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
@@ -9,7 +10,6 @@ import org.opensearch.eval.runners.QuerySetRunResult;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -106,10 +106,10 @@ public abstract class SearchEngine {
      * @param userQuery The user query.
      * @param idField The field in the index that uniquely identifies each document in the index.
      * @param pipeline The search pipeline. Pass <code>""</code> to not use a search pipeline.
-     * @return A list of document IDs from the search result.
+     * @return A {@link QueryRun}.
      * @throws IOException Thrown if the query cannot be run.
      */
-    public abstract List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException;
+    public abstract QueryRun runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException;
 
     /**
      * Index a query set.
