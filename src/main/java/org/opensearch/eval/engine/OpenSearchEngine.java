@@ -1032,6 +1032,8 @@ public class OpenSearchEngine extends SearchEngine {
             queryRunResults.setQuerySetId(querySetRunResult.getQuerySetId());
             queryRunResults.setResultSet(queryResult.getOrderedDocumentIds());
             queryRunResults.setQuery(queryResult.getQuery());
+            queryRunResults.setTimestamp(timestamp);
+            queryRunResults.setEvaluationId(querySetRunResult.getRunId());
 
             final IndexRequest<QueryRunResults> ir = new IndexRequest.Builder<QueryRunResults>().index(Constants.QUERY_RESULTS_INDEX_NAME).id(queryRunResults.getId()).document(queryRunResults).build();
             client.index(ir);

@@ -99,9 +99,11 @@ public class Constants {
     public final static String QUERY_RESULTS_MAPPING = "{\n" +
             "              \"properties\": {\n" +
             "                \"id\": { \"type\": \"keyword\" },\n" +
+            "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
             "                \"query\": { \"type\": \"keyword\" },\n" +
-            "                \"result_set\": { \"type\": \"keyword\" }\n" +
+            "                \"result_set\": { \"type\": \"keyword\" },\n" +
+            "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
             "              }\n" +
             "          }";
 

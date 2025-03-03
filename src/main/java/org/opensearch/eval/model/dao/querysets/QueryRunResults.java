@@ -21,6 +21,12 @@ public class QueryRunResults extends AbstractData {
     @JsonProperty("query")
     private String query;
 
+    @JsonProperty("timestamp")
+    private String timestamp;
+
+    @JsonProperty("evaluation_id")
+    private String evaluationId;
+
     public String getQuerySetId() {
         return querySetId;
     }
@@ -43,6 +49,22 @@ public class QueryRunResults extends AbstractData {
 
     public void setQuery(String query) {
         this.query = query;
+    }
+
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getEvaluationId() {
+        return evaluationId;
+    }
+
+    public void setEvaluationId(String evaluationId) {
+        this.evaluationId = evaluationId;
     }
 
 }
