@@ -1034,7 +1034,7 @@ public class OpenSearchEngine extends SearchEngine {
             final QueryRunResults queryRunResults = new QueryRunResults();
             queryRunResults.setQuerySetId(querySetRunResult.getQuerySetId());
             queryRunResults.setResultSet(queryResult.getOrderedDocumentIds());
-            queryRunResults.setUser_query(queryResult.getQuery());
+            queryRunResults.setUserQuery(queryResult.getQuery());
             queryRunResults.setTimestamp(timestamp);
             queryRunResults.setEvaluationId(querySetRunResult.getRunId());
             queryRunResults.setNumberOfResults(queryResult.getNumberOfResults());

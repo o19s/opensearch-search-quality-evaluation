@@ -54,11 +54,11 @@ public class QueryRunResults extends AbstractData {
         this.resultSet = resultSet;
     }
 
-    public String getUser_query() {
+    public String getUserQuery() {
         return user_query;
     }
 
-    public void setUser_query(String user_query) {
+    public void setUserQuery(String user_query) {
         this.user_query = user_query;
     }
 
