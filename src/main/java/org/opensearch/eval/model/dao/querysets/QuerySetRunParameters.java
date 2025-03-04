@@ -1,8 +1,11 @@
-package org.opensearch.eval.runners;
+package org.opensearch.eval.model.dao.querysets;
 
 import com.google.gson.annotations.SerializedName;
 
-public class RunQuerySetParameters {
+/**
+ * The parameters used to run a query set.
+ */
+public class QuerySetRunParameters {
 
     @SerializedName("query_set_id")
     private String querySetId;

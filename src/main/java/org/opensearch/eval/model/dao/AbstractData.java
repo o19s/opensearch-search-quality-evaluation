@@ -6,11 +6,11 @@
  * this file be licensed under the Apache-2.0 license or a
  * compatible open source license.
  */
-package org.opensearch.eval.model.data;
+package org.opensearch.eval.model.dao;
 
 public abstract class AbstractData {
 
-    private String id;
+    private final String id;
 
     public AbstractData(final String id) {
         this.id = id;

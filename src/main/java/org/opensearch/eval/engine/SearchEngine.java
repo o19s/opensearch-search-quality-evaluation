@@ -1,15 +1,15 @@
 package org.opensearch.eval.engine;
 
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.data.Judgment;
-import org.opensearch.eval.model.data.QueryResultMetric;
-import org.opensearch.eval.model.data.QuerySet;
+import org.opensearch.eval.model.QueryRun;
+import org.opensearch.eval.model.dao.judgments.Judgment;
+import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
+import org.opensearch.eval.runners.QueryResult;
 import org.opensearch.eval.runners.QuerySetRunResult;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,7 +33,7 @@ public abstract class SearchEngine {
      * @return <code>true</code> if the index was created successfully.
      * @throws IOException Thrown if the index could not be created.
      */
-    public abstract boolean createIndex(String index, String mapping) throws IOException;
+    public abstract boolean createIndexIfNotExists(String index, String mapping) throws IOException;
 
     /**
      * Get a user query for a given query ID.
@@ -84,22 +84,6 @@ public abstract class SearchEngine {
     public abstract String indexJudgments(final Collection<Judgment> judgments) throws Exception;
 
     /**
-     * Index the query result metrics.
-     * @param queryResultMetric The {@link QueryResultMetric}.
-     * @throws Exception Thrown if the metrics cannot be indexed.
-     */
-    public abstract void indexQueryResultMetric(final QueryResultMetric queryResultMetric) throws Exception;
-
-    /**
-     * Bulk index a set of documents.
-     * @param index The index to use.
-     * @param documents A map of document IDs to documents.
-     * @return <code>true</code> if the bulk index completed without error.
-     * @throws IOException Thrown if the bulk index encounters an error.
-     */
-    public abstract boolean bulkIndex(String index, Map<String, Object> documents) throws IOException;
-
-    /**
      * Get all judgments.
      * @return A collection of {@link Judgment}.
      * @throws IOException Thrown if the judgments cannot be retrieved.
@@ -122,10 +106,10 @@ public abstract class SearchEngine {
      * @param userQuery The user query.
      * @param idField The field in the index that uniquely identifies each document in the index.
      * @param pipeline The search pipeline. Pass <code>""</code> to not use a search pipeline.
-     * @return A list of document IDs from the search result.
+     * @return A {@link QueryRun}.
      * @throws IOException Thrown if the query cannot be run.
      */
-    public abstract List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException;
+    public abstract QueryRun runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException;
 
     /**
      * Index a query set.
@@ -162,16 +146,16 @@ public abstract class SearchEngine {
      * Gets the count of UBI queries having the given user query.
      * @param userQuery The user query
      * @return The count of UBI queries having the given user query.
-     * @throws IOException Thrown if the count cannot be retrieved.
      */
     public abstract long getUserQueryCount(final String userQuery);
 
     /**
      * Index a query set run result.
      * @param querySetRunResult The {@link QuerySetRunResult} to index.
+     * @return The count of {@link QueryResult} objects indexed.
      * @throws Exception Thrown if the query set run result cannot be indexed.
      */
-    public abstract void indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception;
+    public abstract long indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception;
 
     /**
      * Gets a query set from the index.

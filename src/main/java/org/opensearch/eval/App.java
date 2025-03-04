@@ -24,9 +24,9 @@ import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
-import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
-import org.opensearch.eval.runners.RunQuerySetParameters;
+import org.opensearch.eval.runners.QuerySetRunResult;
+import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
 import org.opensearch.eval.samplers.AllQueriesQuerySampler;
 import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
@@ -40,7 +40,6 @@ import java.io.File;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Collection;
 import java.util.Map;
 
 public class App {
@@ -95,7 +94,7 @@ public class App {
                 final JudgmentParameters judgmentParameters = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), JudgmentParameters.class);
 
                 // Create the judgments index if it does not already exist.
-                searchEngine.createIndex(Constants.JUDGMENTS_INDEX_NAME, Constants.JUDGMENTS_INDEX_MAPPING);
+                searchEngine.createIndexIfNotExists(Constants.JUDGMENTS_INDEX_NAME, Constants.JUDGMENTS_INDEX_MAPPING);
 
                 if (CoecClickModel.CLICK_MODEL_NAME.equalsIgnoreCase(judgmentParameters.getJudgmentSetGenerator())) {
 
@@ -123,10 +122,13 @@ public class App {
 
             if(file.exists()) {
 
-                final RunQuerySetParameters runQuerySetParameters = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), RunQuerySetParameters.class);
+                final QuerySetRunParameters querySetRunParameters = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), QuerySetRunParameters.class);
 
                 final OpenSearchQuerySetRunner openSearchQuerySetRunner = new OpenSearchQuerySetRunner(searchEngine);
-                openSearchQuerySetRunner.run(runQuerySetParameters);
+                final QuerySetRunResult querySetRunResult = openSearchQuerySetRunner.run(querySetRunParameters);
+                final long indexedCount = searchEngine.indexQueryRunResult(querySetRunResult);
+
+                System.out.println("Indexed " + indexedCount + " query run results.");
 
             } else {
                 System.err.println("The query set run parameters file does not exist.");
@@ -140,7 +142,7 @@ public class App {
             if(file.exists()) {
 
                 // Create the query set index if it does not already exist.
-                searchEngine.createIndex(Constants.QUERY_SETS_INDEX_NAME, Constants.QUERY_SETS_INDEX_MAPPING);
+                searchEngine.createIndexIfNotExists(Constants.QUERY_SETS_INDEX_NAME, Constants.QUERY_SETS_INDEX_MAPPING);
 
                 final String jsonString = Files.readString(file.toPath(), StandardCharsets.UTF_8);
                 final JsonElement jsonElement = JsonParser.parseString(jsonString);

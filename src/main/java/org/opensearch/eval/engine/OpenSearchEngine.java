@@ -37,7 +37,6 @@ import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
-import org.opensearch.client.opensearch.core.CountRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
@@ -59,11 +58,13 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.opensearch.eval.Constants;
 import org.opensearch.eval.metrics.SearchMetric;
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.data.ClickThroughRate;
-import org.opensearch.eval.model.data.Judgment;
-import org.opensearch.eval.model.data.QueryResultMetric;
-import org.opensearch.eval.model.data.QuerySet;
-import org.opensearch.eval.model.data.RankAggregatedClickThrough;
+import org.opensearch.eval.model.QueryRun;
+import org.opensearch.eval.model.dao.judgments.ClickThroughRate;
+import org.opensearch.eval.model.dao.judgments.Judgment;
+import org.opensearch.eval.model.dao.judgments.RankAggregatedClickThrough;
+import org.opensearch.eval.model.dao.querysets.QueryRunMetric;
+import org.opensearch.eval.model.dao.querysets.QueryRunResults;
+import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.QueryResult;
@@ -87,8 +88,6 @@ import java.util.UUID;
 
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_CLICK;
 import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.EVENT_IMPRESSION;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_QUERY_DOC_CTR;
-import static org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel.INDEX_RANK_AGGREGATED_CTR;
 import static org.opensearch.eval.runners.OpenSearchQuerySetRunner.QUERY_PLACEHOLDER;
 
 /**
@@ -128,7 +127,7 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public boolean createIndex(final String index, final String mappingJson) throws IOException {
+    public boolean createIndexIfNotExists(final String index, final String mappingJson) throws IOException {
 
         final boolean doesIndexExist = doesIndexExist(index);
 
@@ -179,7 +178,6 @@ public class OpenSearchEngine extends SearchEngine {
         }
 
     }
-
 
     @Override
     public QuerySet getQuerySet(final String querySetId) throws IOException {
@@ -426,27 +424,6 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
-    @Override
-    public boolean bulkIndex(String index, Map<String, Object> documents) throws IOException {
-
-        final ArrayList<BulkOperation> bulkOperations = new ArrayList<>();
-
-        for (final String id : documents.keySet()) {
-            final Object document = documents.get(id);
-            bulkOperations.add(new BulkOperation.Builder().index(IndexOperation.of(io -> io.index(index).id(id).document(document))).build());
-        }
-
-        final BulkRequest.Builder bulkReq = new BulkRequest.Builder()
-                .index(index)
-                .operations(bulkOperations)
-                .refresh(Refresh.WaitFor);
-
-        final BulkResponse bulkResponse = client.bulk(bulkReq.build());
-
-        return !bulkResponse.errors();
-
-    }
-
     /**
      * Gets the user query for a given query ID.
      *
@@ -518,7 +495,7 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public List<String> runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException {
+    public QueryRun runQuery(final String index, final String query, final int k, final String userQuery, final String idField, final String pipeline) throws IOException {
 
         // Replace the query placeholder with the user query.
         final String parsedQuery = query.replace(QUERY_PLACEHOLDER, userQuery);
@@ -535,23 +512,26 @@ public class OpenSearchEngine extends SearchEngine {
             params.put("search_pipeline", pipeline);
         }
 
-        // TODO: Need to consider k, or it needs to be the responsibility of the person to put k in the query.
+        params.put("size", String.valueOf(k));
+        params.put("track_total_hits", "true");
+
         final Response searchResponse = genericClient.execute(
                 Requests.builder()
                         .endpoint(index + "/_search")
-                        .method("POST")
-                        .query(params)
+                        .method("GET")
                         .json(parsedQuery)
+                        .query(params)
                         .build());
 
         final JsonNode json = searchResponse.getBody()
                 .map(b -> Bodies.json(b, JsonNode.class, client._transport().jsonpMapper()))
                 .orElse(null);
 
+        final int numberOfResults = json.get("hits").get("total").get("value").asInt();
+
         final List<String> orderedDocumentIds = new ArrayList<>();
 
         final JsonNode hits = json.get("hits").get("hits");
-        // System.out.println("Number of hits for user query " + userQuery + ": " + hits.size());
 
         for (int i = 0; i < hits.size(); i++) {
 
@@ -563,63 +543,9 @@ public class OpenSearchEngine extends SearchEngine {
 
         }
 
-        // The following commented code uses a wrapper query.
-//        final String encodedQuery = Base64.getEncoder().encodeToString(parsedQuery.getBytes(StandardCharsets.UTF_8));
+        searchResponse.close();
 
-//        final WrapperQuery wrapperQuery = new WrapperQuery.Builder()
-//                .query(encodedQuery)
-//                .build();
-
-        // TODO: Only return the idField since that's all we need.
-        //       final SearchRequest searchRequest;
-
-//        if(!pipeline.isEmpty()) {
-//
-//            searchRequest = new SearchRequest.Builder()
-//                    .index(index)
-//                    .query(q -> q.wrapper(wrapperQuery))
-//                    .from(0)
-//                    .size(k)
-//                    .pipeline(pipeline)
-//                    .build();
-//
-//        } else {
-//
-//            searchRequest = new SearchRequest.Builder()
-//                    .index(index)
-//                    .query(q -> q.wrapper(wrapperQuery))
-//                    .from(0)
-//                    .size(k)
-//                    .build();
-//
-//        }
-
-//        final SearchResponse<ObjectNode> searchResponse = client.search(searchRequest, ObjectNode.class);
-
-//        final List<String> orderedDocumentIds = new ArrayList<>();
-//
-//        LOGGER.info("Encoded query: {}", encodedQuery);
-//        LOGGER.info("Found hits: {}", searchResponse.hits().hits().size());
-//
-//        for (int i = 0; i < searchResponse.hits().hits().size(); i++) {
-//
-//            final String documentId;
-//
-//            if ("_id".equals(idField)) {
-//                documentId = searchResponse.hits().hits().get(i).id();
-//            } else {
-//                // TODO: Need to check this field actually exists.
-//                // TODO: Does this work?
-//                final Hit<ObjectNode> hit = searchResponse.hits().hits().get(i);
-//                documentId = hit.source().get(idField).toString();
-//
-//            }
-//
-//            orderedDocumentIds.add(documentId);
-//
-//        }
-
-        return orderedDocumentIds;
+        return new QueryRun(orderedDocumentIds, numberOfResults);
 
     }
 
@@ -964,6 +890,8 @@ public class OpenSearchEngine extends SearchEngine {
 
         if (!rankAggregatedClickThrough.isEmpty()) {
 
+            createIndexIfNotExists(Constants.COEC_RANK_AGGREGATED_CTR_INDEX_NAME, Constants.COEC_RANK_AGGREGATED_CTR_INDEX_MAPPING);
+
             // TODO: Use bulk indexing.
 
             for (final int position : rankAggregatedClickThrough.keySet()) {
@@ -974,7 +902,11 @@ public class OpenSearchEngine extends SearchEngine {
                 r.setPosition(position);
                 r.setCtr(rankAggregatedClickThrough.get(position));
 
-                final IndexRequest<RankAggregatedClickThrough> indexRequest = new IndexRequest.Builder<RankAggregatedClickThrough>().index(INDEX_RANK_AGGREGATED_CTR).id(id).document(r).build();
+                final IndexRequest<RankAggregatedClickThrough> indexRequest = new IndexRequest.Builder<RankAggregatedClickThrough>()
+                        .index(Constants.COEC_RANK_AGGREGATED_CTR_INDEX_NAME)
+                        .id(id).document(r)
+                        .build();
+
                 client.index(indexRequest);
 
             }
@@ -994,6 +926,8 @@ public class OpenSearchEngine extends SearchEngine {
 
         if (!clickthroughRates.isEmpty()) {
 
+            createIndexIfNotExists(Constants.COEC_CTR_INDEX_NAME, Constants.COEC_CTR_INDEX_MAPPING);
+
             // TODO: Use bulk inserts.
 
             for (final String userQuery : clickthroughRates.keySet()) {
@@ -1012,7 +946,7 @@ public class OpenSearchEngine extends SearchEngine {
                     LOGGER.debug("Clickthrough rate: {}", ctr);
 
                     // TODO: This index needs created.
-                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(INDEX_QUERY_DOC_CTR).id(id).document(ctr).build();
+                    final IndexRequest<ClickThroughRate> indexRequest = new IndexRequest.Builder<ClickThroughRate>().index(Constants.COEC_CTR_INDEX_NAME).id(id).document(ctr).build();
                     client.index(indexRequest);
 
                 }
@@ -1020,20 +954,6 @@ public class OpenSearchEngine extends SearchEngine {
             }
 
         }
-
-    }
-
-    @Override
-    public void indexQueryResultMetric(final QueryResultMetric queryResultMetric) throws Exception {
-
-        // TODO: Use bulk imports.
-
-        final IndexRequest<QueryResultMetric> indexRequest = new IndexRequest.Builder<QueryResultMetric>()
-                .index(Constants.DASHBOARD_METRICS_INDEX_NAME)
-                .id(queryResultMetric.getId())
-                .document(queryResultMetric).build();
-
-        client.index(indexRequest);
 
     }
 
@@ -1067,39 +987,75 @@ public class OpenSearchEngine extends SearchEngine {
     }
 
     @Override
-    public void indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception {
+    public long indexQueryRunResult(final QuerySetRunResult querySetRunResult) throws Exception {
 
-        LOGGER.info("Indexing query run results.");
+        LOGGER.info("Indexing query run results...");
 
-        // Now, index the metrics as expected by the dashboards.
+        long indexedCount = 0;
+
+        // Index the metrics as expected by the dashboards.
 
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/METRICS_SCHEMA.md
         // See https://github.com/o19s/opensearch-search-quality-evaluation/blob/main/opensearch-dashboard-prototyping/sample_data.ndjson
 
-        createIndex(Constants.DASHBOARD_METRICS_INDEX_NAME, Constants.METRICS_MAPPING_INDEX_MAPPING);
+        createIndexIfNotExists(Constants.METRICS_INDEX_NAME, Constants.METRICS_INDEX_MAPPING);
+        createIndexIfNotExists(Constants.QUERY_RESULTS_INDEX_NAME, Constants.QUERY_RESULTS_MAPPING);
 
         final String timestamp = TimeUtils.getTimestamp();
 
         for (final QueryResult queryResult : querySetRunResult.getQueryResults()) {
 
+            final List<BulkOperation> bulkOperations = new ArrayList<>();
+
             for (final SearchMetric searchMetric : queryResult.getSearchMetrics()) {
 
-                final QueryResultMetric queryResultMetric = new QueryResultMetric();
-                queryResultMetric.setTimestamp(timestamp);
-                queryResultMetric.setSearchConfig(querySetRunResult.getSearchConfig());
-                queryResultMetric.setQuerySetId(querySetRunResult.getQuerySetId());
-                queryResultMetric.setQuery(queryResult.getQuery());
-                queryResultMetric.setMetric(searchMetric.getName());
-                queryResultMetric.setValue(searchMetric.getValue());
-                queryResultMetric.setApplication(querySetRunResult.getApplication());
-                queryResultMetric.setEvaluationId(querySetRunResult.getRunId());
-                queryResultMetric.setFrogsPercent(queryResult.getFrogs());
+                final QueryRunMetric queryRunMetric = new QueryRunMetric();
+                queryRunMetric.setQuerySetRunId(querySetRunResult.getRunId());
+                queryRunMetric.setTimestamp(timestamp);
+                queryRunMetric.setSearchConfig(querySetRunResult.getSearchConfig());
+                queryRunMetric.setQuerySetId(querySetRunResult.getQuerySetId());
+                queryRunMetric.setQuery(queryResult.getQuery());
+                queryRunMetric.setMetric(searchMetric.getName());
+                queryRunMetric.setValue(searchMetric.getValue());
+                queryRunMetric.setApplication(querySetRunResult.getApplication());
+                queryRunMetric.setEvaluationId(querySetRunResult.getRunId());
+                queryRunMetric.setFrogsPercent(queryResult.getFrogs());
 
-                indexQueryResultMetric(queryResultMetric);
+                bulkOperations.add(new BulkOperation.Builder().index(
+                        IndexOperation.of(io -> io
+                                .index(Constants.METRICS_INDEX_NAME)
+                                .id(queryRunMetric.getId())
+                                .document(queryRunMetric)))
+                        .build());
 
             }
 
+            // Index the query result.
+            final QueryRunResults queryRunResults = new QueryRunResults();
+            queryRunResults.setQuerySetId(querySetRunResult.getQuerySetId());
+            queryRunResults.setResultSet(queryResult.getOrderedDocumentIds());
+            queryRunResults.setQuery(queryResult.getQuery());
+            queryRunResults.setTimestamp(timestamp);
+            queryRunResults.setEvaluationId(querySetRunResult.getRunId());
+            queryRunResults.setNumberOfResults(queryResult.getNumberOfResults());
+
+            final IndexRequest<QueryRunResults> ir = new IndexRequest.Builder<QueryRunResults>().index(Constants.QUERY_RESULTS_INDEX_NAME).id(queryRunResults.getId()).document(queryRunResults).build();
+            client.index(ir);
+
+            // Index the metrics and the query results.
+            final BulkRequest bulkRequest = new BulkRequest.Builder()
+                    .index(Constants.METRICS_INDEX_NAME)
+                    .operations(bulkOperations)
+                    .refresh(Refresh.True)
+                    .build();
+
+            final BulkResponse bulkResponse = client.bulk(bulkRequest);
+
+            indexedCount += bulkResponse.items().size();
+
         }
+
+        return indexedCount;
 
     }
 
