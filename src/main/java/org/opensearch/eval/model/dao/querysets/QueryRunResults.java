@@ -26,8 +26,8 @@ public class QueryRunResults extends AbstractData {
     @JsonProperty("result_set")
     private List<String> resultSet;
 
-    @JsonProperty("query")
-    private String query;
+    @JsonProperty("user_query")
+    private String user_query;
 
     @JsonProperty("timestamp")
     private String timestamp;
@@ -54,12 +54,12 @@ public class QueryRunResults extends AbstractData {
         this.resultSet = resultSet;
     }
 
-    public String getQuery() {
-        return query;
+    public String getUser_query() {
+        return user_query;
     }
 
-    public void setQuery(String query) {
-        this.query = query;
+    public void setUser_query(String user_query) {
+        this.user_query = user_query;
     }
 
     public String getTimestamp() {

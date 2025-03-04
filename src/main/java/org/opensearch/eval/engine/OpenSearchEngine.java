@@ -1014,7 +1014,7 @@ public class OpenSearchEngine extends SearchEngine {
                 queryRunMetric.setTimestamp(timestamp);
                 queryRunMetric.setSearchConfig(querySetRunResult.getSearchConfig());
                 queryRunMetric.setQuerySetId(querySetRunResult.getQuerySetId());
-                queryRunMetric.setQuery(queryResult.getQuery());
+                queryRunMetric.setUserQuery(queryResult.getQuery());
                 queryRunMetric.setMetric(searchMetric.getName());
                 queryRunMetric.setValue(searchMetric.getValue());
                 queryRunMetric.setApplication(querySetRunResult.getApplication());
@@ -1034,7 +1034,7 @@ public class OpenSearchEngine extends SearchEngine {
             final QueryRunResults queryRunResults = new QueryRunResults();
             queryRunResults.setQuerySetId(querySetRunResult.getQuerySetId());
             queryRunResults.setResultSet(queryResult.getOrderedDocumentIds());
-            queryRunResults.setQuery(queryResult.getQuery());
+            queryRunResults.setUser_query(queryResult.getQuery());
             queryRunResults.setTimestamp(timestamp);
             queryRunResults.setEvaluationId(querySetRunResult.getRunId());
             queryRunResults.setNumberOfResults(queryResult.getNumberOfResults());

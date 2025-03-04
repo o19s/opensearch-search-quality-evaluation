@@ -122,7 +122,7 @@ public class CoecClickModel extends ClickModel {
                 // TODO: What to do for query ID when the values are per user_query instead?
                 final Judgment judgment = new Judgment();
                 judgment.setQueryId(String.valueOf(queryId));
-                judgment.setQuery(userQuery);
+                judgment.setUserQuery(userQuery);
                 judgment.setDocument(ctr.getObjectId());
                 judgment.setJudgment(judgmentValue);
                 judgment.setJudgmentSetType(parameters.getJudgmentParameters().getJudgmentSetType());
