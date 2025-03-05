@@ -1,12 +1,12 @@
 {
-  "query_set_id": "651dd717-9aca-4917-855f-9ee729f11a68",
-  "judgments_id": "e8139bfe-9a94-4f3e-a421-9fcd1aa25e88",
+  "query_set_id": "29401b21-fee2-4b30-bb02-406f79649f89",
+  "judgments_id": "c9d80d76-aa19-4e48-8ba5-91ca710b98d2",
   "index": "ecommerce",
-  "search_pipeline": "hybrid-search-pipeline",
+  "search_pipeline": "",
   "id_field": "asin",
   "k": 10,
   "threshold": 1.0,
-  "query": "{\"_source\": {\"excludes\": [\"title_embedding\"]},\"query\": {\"hybrid\": {\"queries\": [{\"match\": {\"title_text\": {\"query\": \"%SearchText%\"}}},{\"neural\": {\"title_embedding\": {\"query_text\": \"%SearchText%\",\"k\": 50}}}]}}}",
+  "query": "{\"query\": {\"multi_match\": {\"query\": \"%SearchText%\", \"fields\": [\"id\", \"title\", \"category\", \"bullets\", \"description\", \"attrs.Brand\", \"attrs.Color\"] }}}",
   "not_used_query": "{\"query\": {\"match\": {\"description\": \"%SearchText%\"}}}",
   "application": "my-app",
   "search_config": "my-config"
