@@ -22,8 +22,8 @@ public class QueryRunMetric extends AbstractData {
     @JsonProperty("query_set_id")
     private String querySetId;
 
-    @JsonProperty("query")
-    private String query;
+    @JsonProperty("user_query")
+    private String userQuery;
 
     @JsonProperty("metric")
     private String metric;
@@ -72,12 +72,12 @@ public class QueryRunMetric extends AbstractData {
         this.querySetId = querySetId;
     }
 
-    public String getQuery() {
-        return query;
+    public String getUserQuery() {
+        return userQuery;
     }
 
-    public void setQuery(String query) {
-        this.query = query;
+    public void setUserQuery(String userQuery) {
+        this.userQuery = userQuery;
     }
 
     public String getMetric() {

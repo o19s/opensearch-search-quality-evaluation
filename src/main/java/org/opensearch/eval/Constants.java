@@ -70,7 +70,7 @@ public class Constants {
             "                \"judgment_set_name\": { \"type\": \"keyword\" },\n" +
             "                \"judgment_set_description\": { \"type\": \"keyword\" },\n" +
             "                \"judgment_set_parameters\": { \"type\": \"object\" },\n" +
-            "                \"query\": { \"type\": \"keyword\" },\n" +
+            "                \"user_query\": { \"type\": \"keyword\" },\n" +
             "                \"query_id\": { \"type\": \"keyword\" },\n" +
             "                \"document\": { \"type\": \"keyword\" },\n" +
             "                \"judgment\": { \"type\": \"float\" }\n" +
@@ -109,7 +109,7 @@ public class Constants {
             "                \"id\": { \"type\": \"keyword\" },\n" +
             "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
-            "                \"query\": { \"type\": \"keyword\" },\n" +
+            "                \"user_query\": { \"type\": \"keyword\" },\n" +
             "                \"result_set\": { \"type\": \"keyword\" },\n" +
             "                \"number_of_results\": { \"type\": \"keyword\" },\n" +
             "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
@@ -129,7 +129,7 @@ public class Constants {
             "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
             "                \"search_config\": { \"type\": \"keyword\" },\n" +
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
-            "                \"query\": { \"type\": \"keyword\" },\n" +
+            "                \"user_query\": { \"type\": \"keyword\" },\n" +
             "                \"metric\": { \"type\": \"keyword\" },\n" +
             "                \"value\": { \"type\": \"double\" },\n" +
             "                \"application\": { \"type\": \"keyword\" },\n" +

@@ -24,8 +24,8 @@ public class Judgment {
     @JsonProperty("query_id")
     private String queryId;
 
-    @JsonProperty("query")
-    private String query;
+    @JsonProperty("user_query")
+    private String userQuery;
 
     @JsonProperty("document")
     private String document;
@@ -59,20 +59,20 @@ public class Judgment {
     }
 
     public String toJudgmentString() {
-        return queryId + ", " + query + ", " + document + ", " + MathUtils.round(judgment);
+        return queryId + ", " + userQuery + ", " + document + ", " + MathUtils.round(judgment);
     }
 
     @Override
     public String toString() {
-        return "query_id: " + queryId + ", query: " + query + ", document: " + document + ", judgment: " + MathUtils.round(judgment);
+        return "query_id: " + queryId + ", query: " + userQuery + ", document: " + document + ", judgment: " + MathUtils.round(judgment);
     }
 
     public void setQueryId(String queryId) {
         this.queryId = queryId;
     }
 
-    public void setQuery(String query) {
-        this.query = query;
+    public void setUserQuery(String userQuery) {
+        this.userQuery = userQuery;
     }
 
     public void setDocument(String document) {
@@ -95,8 +95,8 @@ public class Judgment {
      * Gets the judgment's query.
      * @return The judgment's query.
      */
-    public String getQuery() {
-        return query;
+    public String getUserQuery() {
+        return userQuery;
     }
 
     /**
