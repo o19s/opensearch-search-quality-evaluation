@@ -111,7 +111,7 @@ public class Constants {
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
             "                \"user_query\": { \"type\": \"keyword\" },\n" +
             "                \"result_set\": { \"type\": \"keyword\" },\n" +
-            "                \"number_of_results\": { \"type\": \"keyword\" },\n" +
+            "                \"number_of_results\": { \"type\": \"integer\" },\n" +
             "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
             "              }\n" +
             "          }";
@@ -138,6 +138,24 @@ public class Constants {
             "              }\n" +
             "          }";
 
+    /**
+     * The name of the index that stores the search configurations.
+     */
+    public final static String SEARCH_CONFIGURATION_INDEX_NAME = "srw_search_configurations";
+
+    /**
+     * The query results index mapping.
+     */
+    public static final String SEARCH_CONFIGURATION_INDEX_MAPPING = "{\n" +
+            "              \"properties\": {\n" +
+            "                \"timestamp\": { \"type\": \"date\", \"format\": \"strict_date_time\" },\n" +
+            "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
+            "                \"result_sets\": { \"type\": \"keyword\" },\n" +
+            "                \"metrics\": { \"type\": \"keyword\" },\n" +
+            "                \"k\": { \"type\": \"integer\" }\n" +
+            "              }\n" +
+            "          }";
+    
     private Constants() {
         // Utility class.
     }
