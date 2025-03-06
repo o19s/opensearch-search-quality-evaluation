@@ -70,6 +70,7 @@ public class App {
         options.addOption("s", "create-query-set", true, "create a query set using sampling");
         options.addOption("r", "run-query-set", true, "run a query set");
         options.addOption("a", "add-search-configuration", true, "adds a search configuration");
+        options.addOption("e", "evaluate-search-configuration", true, "evaluates a search configuration");
         options.addOption("o", "opensearch", true, "OpenSearch URL, e.g. http://localhost:9200");
 
         final CommandLineParser parser = new DefaultParser();
@@ -227,7 +228,7 @@ public class App {
             final String searchConfigurationFile = cmd.getOptionValue("a");
             final File file = new File(searchConfigurationFile);
 
-            if(file.exists()) {
+            if (file.exists()) {
 
                 final SearchConfiguration searchConfiguration = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), SearchConfiguration.class);
                 final String searchConfigurationId = searchEngine.indexSearchConfiguration(searchConfiguration);
@@ -237,6 +238,14 @@ public class App {
             } else {
                 System.err.println("The search configuration file does not exist.");
             }
+
+        } else if(cmd.hasOption("e")) {
+
+            // Evaluate a search configuration.
+            final String searchConfigurationId = cmd.getOptionValue("e");
+            final String evaluationId = searchEngine.evaluateSearchConfiguration(searchConfigurationId);
+
+            System.out.println("Search configuration evaluation results: " + evaluationId);
 
         } else {
 

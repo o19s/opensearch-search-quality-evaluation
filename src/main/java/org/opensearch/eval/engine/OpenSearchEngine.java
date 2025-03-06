@@ -1076,4 +1076,24 @@ public class OpenSearchEngine extends SearchEngine {
 
     }
 
+    @Override
+    public String evaluateSearchConfiguration(final String searchConfigurationId) throws Exception {
+
+        // Get the search configuration by ID.
+        final Query query = Query.of(q -> q.term(m -> m.field("id").value(FieldValue.of(searchConfigurationId))));
+        final SearchResponse<SearchConfiguration> searchResponse = client.search(s -> s.index(Constants.SEARCH_CONFIGURATION_INDEX_NAME).query(query).size(1), SearchConfiguration.class);
+
+        if(searchResponse != null) {
+
+            // TODO: Calculate the metrics specified by the search configuration.
+            // TODO: Store the eval results.
+
+            return "the-eval-id";
+
+        } else {
+            return null;
+        }
+
+    }
+
 }

@@ -85,6 +85,14 @@ public abstract class SearchEngine {
     public abstract String indexSearchConfiguration(final SearchConfiguration searchConfiguration) throws Exception;
 
     /**
+     * Evaluate a search configuration.
+     * @param searchConfigurationId The search configuration ID.
+     * @return The ID ofo the search configuration evaluation results.
+     * @throws Exception Thrown if the search configuration evaluation fails.
+     */
+    public abstract String evaluateSearchConfiguration(final String searchConfigurationId) throws Exception;
+
+    /**
      * Index the judgments.
      * @param judgments A collection of {@link Judgment}.
      * @return The judgment set ID.
