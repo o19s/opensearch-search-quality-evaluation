@@ -4,6 +4,7 @@ import org.opensearch.eval.model.ClickthroughRate;
 import org.opensearch.eval.model.QueryRun;
 import org.opensearch.eval.model.dao.judgments.Judgment;
 import org.opensearch.eval.model.dao.querysets.QuerySet;
+import org.opensearch.eval.model.dao.searchconfigurations.SearchConfiguration;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.QueryResult;
 import org.opensearch.eval.runners.QuerySetRunResult;
@@ -74,6 +75,14 @@ public abstract class SearchEngine {
      * @throws Exception Thrown if the clickthrough rates cannot be indexed.
      */
     public abstract void indexClickthroughRates(final Map<String, Set<ClickthroughRate>> clickthroughRates) throws Exception;
+
+    /**
+     * Index the search configuration.
+     * @param searchConfiguration The {@link SearchConfiguration} to index.
+     * @return Returns the ID of the indexed search configuration.
+     * @throws Exception Thrown if the search configuration cannot be indexed.
+     */
+    public abstract String indexSearchConfiguration(final SearchConfiguration searchConfiguration) throws Exception;
 
     /**
      * Index the judgments.

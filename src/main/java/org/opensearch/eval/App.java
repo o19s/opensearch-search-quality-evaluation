@@ -24,6 +24,7 @@ import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.model.dao.searchconfigurations.SearchConfiguration;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.QuerySetRunResult;
 import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
@@ -68,6 +69,7 @@ public class App {
         options.addOption("c", "create-click-model", true, "create a click model");
         options.addOption("s", "create-query-set", true, "create a query set using sampling");
         options.addOption("r", "run-query-set", true, "run a query set");
+        options.addOption("a", "add-search-configuration", true, "adds a search configuration");
         options.addOption("o", "opensearch", true, "OpenSearch URL, e.g. http://localhost:9200");
 
         final CommandLineParser parser = new DefaultParser();
@@ -139,7 +141,7 @@ public class App {
             final String samplerOptionsFile = cmd.getOptionValue("s");
             final File file = new File(samplerOptionsFile);
 
-            if(file.exists()) {
+            if (file.exists()) {
 
                 // Create the query set index if it does not already exist.
                 searchEngine.createIndexIfNotExists(Constants.QUERY_SETS_INDEX_NAME, Constants.QUERY_SETS_INDEX_MAPPING);
@@ -150,53 +152,53 @@ public class App {
                 final String samplerType = jsonObject.get("sampler").getAsString();
                 String querySetId = null;
 
-                if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+                if (AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
                     final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    if(!querySet.isEmpty()) {
+                    if (!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
                         System.err.println("The query set was empty.");
                     }
 
-                } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+                } else if (ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final ProbabilityProportionalToSizeSamplerParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeSamplerParameters.class);
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    if(!querySet.isEmpty()) {
+                    if (!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
                         System.err.println("The query set was empty.");
                     }
 
-                } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+                } else if (RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
                     final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    if(!querySet.isEmpty()) {
+                    if (!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
                         System.err.println("The query set was empty.");
                     }
 
-                } else if(TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+                } else if (TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final TopNQuerySamplerParameters parameters = gson.fromJson(jsonString, TopNQuerySamplerParameters.class);
                     final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
 
                     // TODO: Allow for selecting the queries by date.
                     final Map<String, Long> querySet = sampler.sample();
-                    if(!querySet.isEmpty()) {
+                    if (!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
                         System.err.println("The query set was empty.");
@@ -219,6 +221,22 @@ public class App {
                 System.err.println("The query set run parameters file does not exist.");
             }
 
+        } else if(cmd.hasOption("a")) {
+
+            // Store the search configuration.
+            final String searchConfigurationFile = cmd.getOptionValue("a");
+            final File file = new File(searchConfigurationFile);
+
+            if(file.exists()) {
+
+                final SearchConfiguration searchConfiguration = gson.fromJson(Files.readString(file.toPath(), StandardCharsets.UTF_8), SearchConfiguration.class);
+                final String searchConfigurationId = searchEngine.indexSearchConfiguration(searchConfiguration);
+
+                System.out.println("Search configuration added: " + searchConfigurationId);
+
+            } else {
+                System.err.println("The search configuration file does not exist.");
+            }
 
         } else {
 

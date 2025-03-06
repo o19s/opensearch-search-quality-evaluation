@@ -111,7 +111,7 @@ public class Constants {
             "                \"query_set_id\": { \"type\": \"keyword\" },\n" +
             "                \"user_query\": { \"type\": \"keyword\" },\n" +
             "                \"result_set\": { \"type\": \"keyword\" },\n" +
-            "                \"number_of_results\": { \"type\": \"integer\" },\n" +
+            "                \"number_of_results\": { \"type\": \"keyword\" },\n" +
             "                \"evaluation_id\": { \"type\": \"keyword\" }\n" +
             "              }\n" +
             "          }";

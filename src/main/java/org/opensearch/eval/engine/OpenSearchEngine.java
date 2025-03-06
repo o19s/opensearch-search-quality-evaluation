@@ -38,6 +38,7 @@ import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -65,6 +66,7 @@ import org.opensearch.eval.model.dao.judgments.RankAggregatedClickThrough;
 import org.opensearch.eval.model.dao.querysets.QueryRunMetric;
 import org.opensearch.eval.model.dao.querysets.QueryRunResults;
 import org.opensearch.eval.model.dao.querysets.QuerySet;
+import org.opensearch.eval.model.dao.searchconfigurations.SearchConfiguration;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.QueryResult;
@@ -1056,6 +1058,21 @@ public class OpenSearchEngine extends SearchEngine {
         }
 
         return indexedCount;
+
+    }
+
+    @Override
+    public String indexSearchConfiguration(final SearchConfiguration searchConfiguration) throws Exception {
+
+        createIndexIfNotExists(Constants.SEARCH_CONFIGURATION_INDEX_NAME, Constants.SEARCH_CONFIGURATION_INDEX_MAPPING);
+
+        final IndexRequest<SearchConfiguration> indexRequest = new IndexRequest.Builder<SearchConfiguration>()
+                .index(Constants.SEARCH_CONFIGURATION_INDEX_NAME)
+                .id(searchConfiguration.getId())
+                .document(searchConfiguration).build();
+
+        final IndexResponse indexResponse = client.index(indexRequest);
+        return indexResponse.id();
 
     }
 
