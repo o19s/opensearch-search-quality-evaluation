@@ -15,7 +15,9 @@ import org.opensearch.eval.metrics.DcgSearchMetric;
 import org.opensearch.eval.metrics.NdcgSearchMetric;
 import org.opensearch.eval.metrics.PrecisionSearchMetric;
 import org.opensearch.eval.metrics.SearchMetric;
-import org.opensearch.eval.model.data.QuerySet;
+import org.opensearch.eval.model.QueryRun;
+import org.opensearch.eval.model.dao.querysets.QuerySet;
+import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +37,6 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
 
     /**
      * Creates a new query set runner
-     *
      * @param searchEngine An OpenSearch engine {@link SearchEngine}.
      */
     public OpenSearchQuerySetRunner(final SearchEngine searchEngine) {
@@ -43,9 +44,9 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
     }
 
     @Override
-    public QuerySetRunResult run(final RunQuerySetParameters querySetParameters) throws Exception {
+    public QuerySetRunResult run(final QuerySetRunParameters querySetParameters) throws Exception {
 
-        // Verify the given query set and judgment set exists prior to trying to run.
+        // Verify the given query set and judgment set exists before trying to run.
         if(!searchEngine.doesQuerySetExist(querySetParameters.getQuerySetId())) {
             LOGGER.error("The given query set {} does not exist", querySetParameters.getQuerySetId());
             throw new IllegalArgumentException("The given query set " + querySetParameters.getQuerySetId() + " does not exist");
@@ -65,16 +66,17 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             // The results of each query.
             final List<QueryResult> queryResults = new ArrayList<>();
 
+            // Loop over each query in the map and run each one.
             for (Map<String, Long> queryMap : querySet.getQuerySetQueries()) {
 
-                // Loop over each query in the map and run each one.
                 for (final String userQuery : queryMap.keySet()) {
 
                     // This is to keep OpenSearch from rejecting queries.
-                    // TODO: Look at using the Workload Management in 2.18.0.
+                    // TODO: Look at using the Workload Management new in 2.18.0.
                     Thread.sleep(50);
 
-                    final List<String> orderedDocumentIds = searchEngine.runQuery(
+                    // These are the documents returned for the query.
+                    final QueryRun queryRun = searchEngine.runQuery(
                             querySetParameters.getIndex(),
                             querySetParameters.getQuery(),
                             querySetParameters.getK(),
@@ -82,23 +84,12 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
                             querySetParameters.getIdField(),
                             querySetParameters.getSearchPipeline());
 
-                    try {
+                    // Calculate the metrics given the documents returned for the user_query.
+                    final int k = querySetParameters.getK();
+                    final RelevanceScores relevanceScores = getRelevanceScores(querySetParameters.getJudgmentsId(), userQuery, queryRun.getDocumentIds(), k);
+                    final Collection<SearchMetric> searchMetrics = calculateSearchMetrics(querySetParameters, k, relevanceScores);
 
-                        final int k = querySetParameters.getK();
-                        final RelevanceScores relevanceScores = getRelevanceScores(querySetParameters.getJudgmentsId(), userQuery, orderedDocumentIds, k);
-
-                        // Calculate the metrics for this query.
-                        final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores.getRelevanceScores());
-                        final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores.getRelevanceScores());
-                        final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, querySetParameters.getThreshold(), relevanceScores.getRelevanceScores());
-
-                        final Collection<SearchMetric> searchMetrics = List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
-
-                        queryResults.add(new QueryResult(userQuery, orderedDocumentIds, k, searchMetrics, relevanceScores.getFrogs()));
-
-                    } catch (Exception ex) {
-                        LOGGER.error("Unable to get relevance scores for judgments {} and user query {}.", querySetParameters.getJudgmentsId(), userQuery, ex);
-                    }
+                    queryResults.add(new QueryResult(userQuery, queryRun.getDocumentIds(), k, searchMetrics, relevanceScores.getFrogs(), queryRun.getNumberOfResults()));
 
                 }
 
@@ -126,8 +117,6 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
             final QuerySetRunResult querySetRunResult = new QuerySetRunResult(querySetRunId, querySetParameters.getQuerySetId(),
                     queryResults, querySetMetrics, querySetParameters.getApplication(), querySetParameters.getSearchConfig());
 
-            searchEngine.indexQueryRunResult(querySetRunResult);
-
             LOGGER.info("Query set run complete: {}", querySetRunId);
 
             return querySetRunResult;
@@ -135,6 +124,16 @@ public class OpenSearchQuerySetRunner extends AbstractQuerySetRunner {
         } catch (Exception ex) {
             throw new RuntimeException("Unable to run query set. If using a search_pipeline make sure the pipeline exists.", ex);
         }
+
+    }
+
+    private Collection<SearchMetric> calculateSearchMetrics(QuerySetRunParameters querySetParameters, int k, RelevanceScores relevanceScores) {
+
+        final SearchMetric dcgSearchMetric = new DcgSearchMetric(k, relevanceScores.getRelevanceScores());
+        final SearchMetric ndcgSearchmetric = new NdcgSearchMetric(k, relevanceScores.getRelevanceScores());
+        final SearchMetric precisionSearchMetric = new PrecisionSearchMetric(k, querySetParameters.getThreshold(), relevanceScores.getRelevanceScores());
+
+        return List.of(dcgSearchMetric, ndcgSearchmetric, precisionSearchMetric);
 
     }
 

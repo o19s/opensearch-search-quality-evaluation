@@ -10,10 +10,13 @@ package org.opensearch.eval.runners;
 
 import java.util.List;
 
+/**
+ * Captures the relevance scores for a query.
+ */
 public class RelevanceScores {
 
-    private List<Double> relevanceScores;
-    private double frogs;
+    private final List<Double> relevanceScores;
+    private final double frogs;
 
     public RelevanceScores(final List<Double> relevanceScores, final double frogs) {
         this.relevanceScores = relevanceScores;

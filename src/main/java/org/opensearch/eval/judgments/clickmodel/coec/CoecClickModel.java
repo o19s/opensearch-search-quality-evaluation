@@ -14,7 +14,7 @@ import org.opensearch.eval.engine.SearchEngine;
 import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.queryhash.IncrementalUserQueryHash;
 import org.opensearch.eval.model.ClickthroughRate;
-import org.opensearch.eval.model.data.Judgment;
+import org.opensearch.eval.model.dao.judgments.Judgment;
 import org.opensearch.eval.utils.MathUtils;
 
 import java.util.Collection;
@@ -25,10 +25,6 @@ import java.util.Set;
 public class CoecClickModel extends ClickModel {
 
     public static final String CLICK_MODEL_NAME = "coec";
-
-    // OpenSearch indexes for COEC data.
-    public static final String INDEX_RANK_AGGREGATED_CTR = "rank_aggregated_ctr";
-    public static final String INDEX_QUERY_DOC_CTR = "click_through_rates";
 
     // UBI event names.
     public static final String EVENT_CLICK = "click";
@@ -126,7 +122,7 @@ public class CoecClickModel extends ClickModel {
                 // TODO: What to do for query ID when the values are per user_query instead?
                 final Judgment judgment = new Judgment();
                 judgment.setQueryId(String.valueOf(queryId));
-                judgment.setQuery(userQuery);
+                judgment.setUserQuery(userQuery);
                 judgment.setDocument(ctr.getObjectId());
                 judgment.setJudgment(judgmentValue);
                 judgment.setJudgmentSetType(parameters.getJudgmentParameters().getJudgmentSetType());
