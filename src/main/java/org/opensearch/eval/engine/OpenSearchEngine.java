@@ -250,24 +250,28 @@ public class OpenSearchEngine extends SearchEngine {
 
         if(StringUtils.isNotEmpty(application)) {
             // Just a certain application.
+            LOGGER.info("Filtering UBI queries by application: {}", application);
             final TermQuery applicationQuery = TermQuery.of(tq -> tq.field("application").value(FieldValue.of(application)));
             mustQueries.add(applicationQuery.toQuery());
         }
 
         if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
             // Just a start timestamp.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
             final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())));
             mustQueries.add(timestampQuery.toQuery());
         }
 
         if(StringUtils.isEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
             // Just an end timestamp.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
             final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").lte(JsonData.of(timeFilter.getEndTimestamp())));
             mustQueries.add(timestampQuery.toQuery());
         }
 
         if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
             // Both start and end timestamps.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
             final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
             mustQueries.add(timestampQuery.toQuery());
         }
@@ -308,17 +312,34 @@ public class OpenSearchEngine extends SearchEngine {
         final List<Query> mustQueries = new ArrayList<>();
         mustQueries.add(new MatchAllQuery.Builder().build().toQuery());
 
-        // Add query for application.
         if(StringUtils.isNotEmpty(application)) {
-            mustQueries.add(new TermQuery.Builder().field("application").value(FieldValue.of(application)).build().toQuery());
+            // Just a certain application.
+            LOGGER.info("Filtering UBI queries by application: {}", application);
+            final TermQuery applicationQuery = TermQuery.of(tq -> tq.field("application").value(FieldValue.of(application)));
+            mustQueries.add(applicationQuery.toQuery());
         }
 
-        // Add query for timeFilter.
-        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) || StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
-            final RangeQuery rangeQuery = RangeQuery.of(r -> r.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
-            mustQueries.add(rangeQuery.toQuery());
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
+            // Just a start timestamp.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
         }
-        
+
+        if(StringUtils.isEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Just an end timestamp.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").lte(JsonData.of(timeFilter.getEndTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Both start and end timestamps.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
+
         final BoolQuery boolQuery = new BoolQuery.Builder()
                 .must(mustQueries)
                 .mustNot(q -> q.term(m -> m.field(USER_QUERY_FIELD).value(FieldValue.of(""))))
@@ -380,11 +401,33 @@ public class OpenSearchEngine extends SearchEngine {
         final List<Query> mustQueries = new ArrayList<>();
         mustQueries.add(new ExistsQuery.Builder().field(USER_QUERY_FIELD).build().toQuery());
 
-        if (StringUtils.isNotEmpty(application)) {
-            mustQueries.add(new TermQuery.Builder().field(APPLICATION_FIELD).value(FieldValue.of(application)).build().toQuery());
+        if(StringUtils.isNotEmpty(application)) {
+            // Just a certain application.
+            LOGGER.info("Filtering UBI queries by application: {}", application);
+            final TermQuery applicationQuery = TermQuery.of(tq -> tq.field("application").value(FieldValue.of(application)));
+            mustQueries.add(applicationQuery.toQuery());
         }
 
-        // TODO: Add query for timeFilter.
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
+            // Just a start timestamp.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Just an end timestamp.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").lte(JsonData.of(timeFilter.getEndTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
+
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) && StringUtils.isNotEmpty(timeFilter.getEndTimestamp())) {
+            // Both start and end timestamps.
+            LOGGER.info("Filtering queries with time filter: {}", timeFilter);
+            final RangeQuery timestampQuery = RangeQuery.of(q -> q.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
+            mustQueries.add(timestampQuery.toQuery());
+        }
 
         final BoolQuery boolQuery = new BoolQuery.Builder()
                 .must(mustQueries)

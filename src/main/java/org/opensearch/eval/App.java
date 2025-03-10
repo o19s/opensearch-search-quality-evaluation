@@ -155,7 +155,6 @@ public class App {
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
-                    LOGGER.info("Filtering queries with time filter: {}", timeFilter);
                     final Map<String, Long> querySet = sampler.sample(timeFilter);
 
                     if(!querySet.isEmpty()) {
@@ -170,7 +169,6 @@ public class App {
                     final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
-                    LOGGER.info("Filtering queries with time filter: {}", timeFilter);
                     final Map<String, Long> querySet = sampler.sample(timeFilter);
 
                     if(!querySet.isEmpty()) {
@@ -185,7 +183,6 @@ public class App {
                     final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
-                    LOGGER.info("Filtering queries with time filter: {}", timeFilter);
                     final Map<String, Long> querySet = sampler.sample(timeFilter);
 
                     if(!querySet.isEmpty()) {

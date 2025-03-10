@@ -23,6 +23,7 @@ public class TimeFilter {
 
     private final String startTimestamp;
     private final String endTimestamp;
+    private final boolean active;
 
     public static final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
 
@@ -90,16 +91,19 @@ public class TimeFilter {
     public TimeFilter() {
         this.startTimestamp = "";
         this.endTimestamp = "";
+        this.active = false;
     }
 
     public TimeFilter(final String startTimestamp) {
         this.startTimestamp = startTimestamp;
         this.endTimestamp = "";
+        this.active = true;
     }
 
     public TimeFilter(final String startTimestamp, final String endTimestamp) {
         this.startTimestamp = startTimestamp;
         this.endTimestamp = endTimestamp;
+        this.active = true;
     }
 
     public String getStartTimestamp() {
@@ -108,6 +112,10 @@ public class TimeFilter {
 
     public String getEndTimestamp() {
         return endTimestamp;
+    }
+
+    public boolean isActive() {
+        return active;
     }
 
 }
