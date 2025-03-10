@@ -28,20 +28,39 @@ public class TimeFilter {
 
     public static TimeFilter fromQuerySamplerParameters(final AbstractQuerySamplerParameters parameters) {
 
+        // If the start timestamp is not empty, validate it and return a TimeFilter with the start timestamp.
         if(StringUtils.isNotEmpty(parameters.getStartTimestamp())) {
 
             validateTimetampFormat(parameters.getStartTimestamp());
 
+            // If the end timestamp is not empty, validate it and return a TimeFilter with both start and end timestamps.
             if(StringUtils.isNotEmpty(parameters.getEndTimestamp())) {
+
                 validateTimetampFormat(parameters.getEndTimestamp());
                 return new TimeFilter(parameters.getStartTimestamp(), parameters.getEndTimestamp());
+
             } else {
+
+                // No end timestamp - just start timestamp.
                 return new TimeFilter(parameters.getStartTimestamp(), "");
+
             }
 
         } else {
 
-            return new TimeFilter();
+            // If the end timestamp is not empty, validate it and return a TimeFilter with both start and end timestamps.
+            if(StringUtils.isNotEmpty(parameters.getEndTimestamp())) {
+
+                // No start timestamp - just end timestamp.
+                validateTimetampFormat(parameters.getEndTimestamp());
+                return new TimeFilter("", parameters.getEndTimestamp());
+
+            } else {
+
+                // No start or end timestamp.
+                return new TimeFilter();
+
+            }
 
         }
 
@@ -61,6 +80,11 @@ public class TimeFilter {
 
         return true;
 
+    }
+
+    @Override
+    public String toString() {
+        return "TimeFilter{startTimestamp='" + startTimestamp + "', endTimestamp='" + endTimestamp + "'}";
     }
 
     public TimeFilter() {

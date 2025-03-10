@@ -308,12 +308,17 @@ public class OpenSearchEngine extends SearchEngine {
         final List<Query> mustQueries = new ArrayList<>();
         mustQueries.add(new MatchAllQuery.Builder().build().toQuery());
 
+        // Add query for application.
         if(StringUtils.isNotEmpty(application)) {
             mustQueries.add(new TermQuery.Builder().field("application").value(FieldValue.of(application)).build().toQuery());
         }
 
-        // TODO: Add query for timeFilter.
-
+        // Add query for timeFilter.
+        if(StringUtils.isNotEmpty(timeFilter.getStartTimestamp()) || StringUtils.isEmpty(timeFilter.getEndTimestamp())) {
+            final RangeQuery rangeQuery = RangeQuery.of(r -> r.field("timestamp").gte(JsonData.of(timeFilter.getStartTimestamp())).lte(JsonData.of(timeFilter.getEndTimestamp())));
+            mustQueries.add(rangeQuery.toQuery());
+        }
+        
         final BoolQuery boolQuery = new BoolQuery.Builder()
                 .must(mustQueries)
                 .mustNot(q -> q.term(m -> m.field(USER_QUERY_FIELD).value(FieldValue.of(""))))

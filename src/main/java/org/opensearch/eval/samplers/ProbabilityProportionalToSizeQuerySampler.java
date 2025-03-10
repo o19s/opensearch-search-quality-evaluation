@@ -17,6 +17,7 @@ import org.opensearch.eval.model.ubi.query.UbiQuery;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,7 +126,7 @@ public class ProbabilityProportionalToSizeQuerySampler extends AbstractQuerySamp
             return querySet;
 
         } else {
-            return null;
+            return Collections.emptyMap();
         }
 
     }

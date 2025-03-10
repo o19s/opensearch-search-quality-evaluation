@@ -76,7 +76,7 @@ public class App {
         if(cmd.hasOption("o")) {
             uri = URI.create(cmd.getOptionValue("o"));
         } else {
-            System.out.println("No OpenSearch host given so defaulting to http://localhost:9200");
+            LOGGER.info("No OpenSearch host given so defaulting to http://localhost:9200");
             uri = URI.create("http://localhost:9200");
         }
 
@@ -155,12 +155,13 @@ public class App {
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    LOGGER.info("Filtering queries with time filter: {}", timeFilter);
                     final Map<String, Long> querySet = sampler.sample(timeFilter);
 
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("The query set was empty.");
+                        LOGGER.error("The query set was empty.");
                     }
 
                 } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
@@ -169,12 +170,13 @@ public class App {
                     final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    LOGGER.info("Filtering queries with time filter: {}", timeFilter);
                     final Map<String, Long> querySet = sampler.sample(timeFilter);
 
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("The query set was empty.");
+                        LOGGER.error("The query set was empty.");
                     }
 
                 } else if(TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
@@ -183,12 +185,13 @@ public class App {
                     final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
 
                     final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    LOGGER.info("Filtering queries with time filter: {}", timeFilter);
                     final Map<String, Long> querySet = sampler.sample(timeFilter);
 
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("The query set was empty.");
+                        LOGGER.error("The query set was empty.");
                     }
 
                 } else {
@@ -199,19 +202,19 @@ public class App {
                 }
 
                 if (querySetId != null) {
-                    System.out.println("Query set created: " + querySetId);
+                    LOGGER.info("Query set created: {}", querySetId);
                 } else {
-                    System.err.println("No queries found for query set.");
+                    LOGGER.warn("No queries found for query set.");
                 }
 
             } else {
-                System.err.println("The query set run parameters file does not exist.");
+                LOGGER.error("The query set run parameters file does not exist.");
             }
 
 
         } else {
 
-            System.err.println("Invalid options.");
+            LOGGER.error("Invalid options.");
 
         }
 
