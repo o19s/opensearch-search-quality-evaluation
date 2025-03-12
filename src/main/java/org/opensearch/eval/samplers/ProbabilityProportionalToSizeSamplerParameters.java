@@ -13,8 +13,14 @@ public class ProbabilityProportionalToSizeSamplerParameters extends AbstractQuer
     public static final String NAME = "pptss";
 
     public ProbabilityProportionalToSizeSamplerParameters(final String name, final String description, final String sampling,
-                                                          final int querySetSize) {
-        super(NAME, name, description, sampling, querySetSize);
+                                                          final int querySetSize, final String application) {
+        super(NAME, name, description, sampling, querySetSize, application);
     }
+
+    public ProbabilityProportionalToSizeSamplerParameters(final String name, final String description, final String sampling,
+                                                          final int querySetSize) {
+        super(NAME, name, description, sampling, querySetSize, "");
+    }
+
 
 }
