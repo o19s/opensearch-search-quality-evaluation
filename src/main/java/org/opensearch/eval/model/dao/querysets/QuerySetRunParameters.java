@@ -1,11 +1,14 @@
 package org.opensearch.eval.model.dao.querysets;
 
 import com.google.gson.annotations.SerializedName;
+import org.opensearch.eval.model.dao.AbstractData;
+
+import java.util.UUID;
 
 /**
  * The parameters used to run a query set.
  */
-public class QuerySetRunParameters {
+public class QuerySetRunParameters extends AbstractData {
 
     @SerializedName("query_set_id")
     private String querySetId;
@@ -36,6 +39,14 @@ public class QuerySetRunParameters {
 
     @SerializedName("search_config")
     private String searchConfig;
+
+    public QuerySetRunParameters() {
+        super(UUID.randomUUID().toString());
+    }
+
+    public QuerySetRunParameters(String id) {
+        super(id);
+    }
 
     public String getQuerySetId() {
         return querySetId;

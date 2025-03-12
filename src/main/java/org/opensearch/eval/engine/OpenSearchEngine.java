@@ -38,6 +38,7 @@ import org.opensearch.client.opensearch._types.query_dsl.WrapperQuery;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -65,6 +66,7 @@ import org.opensearch.eval.model.dao.judgments.RankAggregatedClickThrough;
 import org.opensearch.eval.model.dao.querysets.QueryRunMetric;
 import org.opensearch.eval.model.dao.querysets.QueryRunResults;
 import org.opensearch.eval.model.dao.querysets.QuerySet;
+import org.opensearch.eval.model.dao.searchconfigurations.SearchConfiguration;
 import org.opensearch.eval.model.ubi.event.UbiEvent;
 import org.opensearch.eval.model.ubi.query.UbiQuery;
 import org.opensearch.eval.runners.QueryResult;
@@ -1056,6 +1058,41 @@ public class OpenSearchEngine extends SearchEngine {
         }
 
         return indexedCount;
+
+    }
+
+    @Override
+    public String indexSearchConfiguration(final SearchConfiguration searchConfiguration) throws Exception {
+
+        createIndexIfNotExists(Constants.SEARCH_CONFIGURATION_INDEX_NAME, Constants.SEARCH_CONFIGURATION_INDEX_MAPPING);
+
+        final IndexRequest<SearchConfiguration> indexRequest = new IndexRequest.Builder<SearchConfiguration>()
+                .index(Constants.SEARCH_CONFIGURATION_INDEX_NAME)
+                .id(searchConfiguration.getId())
+                .document(searchConfiguration).build();
+
+        final IndexResponse indexResponse = client.index(indexRequest);
+        return indexResponse.id();
+
+    }
+
+    @Override
+    public String evaluateSearchConfiguration(final String searchConfigurationId) throws Exception {
+
+        // Get the search configuration by ID.
+        final Query query = Query.of(q -> q.term(m -> m.field("id").value(FieldValue.of(searchConfigurationId))));
+        final SearchResponse<SearchConfiguration> searchResponse = client.search(s -> s.index(Constants.SEARCH_CONFIGURATION_INDEX_NAME).query(query).size(1), SearchConfiguration.class);
+
+        if(searchResponse != null) {
+
+            // TODO: Calculate the metrics specified by the search configuration.
+            // TODO: Store the eval results.
+
+            return "the-eval-id";
+
+        } else {
+            return null;
+        }
 
     }
 
