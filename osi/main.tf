@@ -11,7 +11,7 @@ terraform {
 
 provider "aws" {
   region  = "us-east-1"
-  profile = "mtnfog"
+  profile = "o19s"
 }
 
 data "aws_region" "current" {}
