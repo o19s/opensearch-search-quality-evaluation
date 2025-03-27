@@ -9,6 +9,7 @@
 package org.opensearch.eval.samplers;
 
 import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.TimeFilter;
 
 import java.io.IOException;
 import java.util.Map;
@@ -34,8 +35,8 @@ public class TopNQuerySampler extends AbstractQuerySampler {
     }
 
     @Override
-    public Map<String, Long> sample() throws IOException {
-        return searchEngine.getUbiQueries(parameters.getQuerySetSize());
+    public Map<String, Long> sample(final TimeFilter timeFilter) throws IOException {
+        return searchEngine.getUbiQueries(parameters.getQuerySetSize(), parameters.getApplication(), timeFilter);
     }
 
 }

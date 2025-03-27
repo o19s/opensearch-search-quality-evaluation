@@ -11,6 +11,7 @@ package org.opensearch.eval.samplers;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.opensearch.eval.engine.SearchEngine;
+import org.opensearch.eval.model.TimeFilter;
 import org.opensearch.eval.model.dao.querysets.QuerySet;
 import org.opensearch.eval.utils.TimeUtils;
 
@@ -37,7 +38,7 @@ public abstract class AbstractQuerySampler {
      * Samples the queries.
      * @return A query set with frequencies.
      */
-    public abstract Map<String, Long> sample() throws IOException;
+    public abstract Map<String, Long> sample(final TimeFilter timeFilter) throws IOException;
 
     /**
      * Index the query set.

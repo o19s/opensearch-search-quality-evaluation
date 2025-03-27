@@ -24,11 +24,10 @@ import org.opensearch.eval.judgments.clickmodel.ClickModel;
 import org.opensearch.eval.judgments.clickmodel.JudgmentParameters;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModel;
 import org.opensearch.eval.judgments.clickmodel.coec.CoecClickModelParameters;
+import org.opensearch.eval.model.TimeFilter;
+import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
 import org.opensearch.eval.runners.OpenSearchQuerySetRunner;
 import org.opensearch.eval.runners.QuerySetRunResult;
-import org.opensearch.eval.model.dao.querysets.QuerySetRunParameters;
-import org.opensearch.eval.samplers.AllQueriesQuerySampler;
-import org.opensearch.eval.samplers.AllQueriesQuerySamplerParameters;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeQuerySampler;
 import org.opensearch.eval.samplers.ProbabilityProportionalToSizeSamplerParameters;
 import org.opensearch.eval.samplers.RandomQuerySampler;
@@ -77,7 +76,7 @@ public class App {
         if(cmd.hasOption("o")) {
             uri = URI.create(cmd.getOptionValue("o"));
         } else {
-            System.out.println("No OpenSearch host given so defaulting to http://localhost:9200");
+            LOGGER.info("No OpenSearch host given so defaulting to http://localhost:9200");
             uri = URI.create("http://localhost:9200");
         }
 
@@ -150,30 +149,18 @@ public class App {
                 final String samplerType = jsonObject.get("sampler").getAsString();
                 String querySetId = null;
 
-                if(AllQueriesQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
-
-                    final AllQueriesQuerySamplerParameters parameters = gson.fromJson(jsonString, AllQueriesQuerySamplerParameters.class);
-                    final AllQueriesQuerySampler sampler = new AllQueriesQuerySampler(searchEngine, parameters);
-
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
-                    if(!querySet.isEmpty()) {
-                        querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
-                    } else {
-                        System.err.println("The query set was empty.");
-                    }
-
-                } else if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
+                if(ProbabilityProportionalToSizeQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
 
                     final ProbabilityProportionalToSizeSamplerParameters parameters = gson.fromJson(jsonString, ProbabilityProportionalToSizeSamplerParameters.class);
                     final ProbabilityProportionalToSizeQuerySampler sampler = new ProbabilityProportionalToSizeQuerySampler(searchEngine, parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("The query set was empty.");
+                        LOGGER.error("The query set was empty.");
                     }
 
                 } else if(RandomQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
@@ -181,12 +168,13 @@ public class App {
                     final RandomQuerySamplerParameters parameters = gson.fromJson(jsonString, RandomQuerySamplerParameters.class);
                     final RandomQuerySampler sampler = new RandomQuerySampler(searchEngine, parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("The query set was empty.");
+                        LOGGER.error("The query set was empty.");
                     }
 
                 } else if(TopNQuerySampler.NAME.equalsIgnoreCase(samplerType)) {
@@ -194,12 +182,13 @@ public class App {
                     final TopNQuerySamplerParameters parameters = gson.fromJson(jsonString, TopNQuerySamplerParameters.class);
                     final TopNQuerySampler sampler = new TopNQuerySampler(searchEngine, parameters);
 
-                    // TODO: Allow for selecting the queries by date.
-                    final Map<String, Long> querySet = sampler.sample();
+                    final TimeFilter timeFilter = TimeFilter.fromQuerySamplerParameters(parameters);
+                    final Map<String, Long> querySet = sampler.sample(timeFilter);
+
                     if(!querySet.isEmpty()) {
                         querySetId = sampler.indexQuerySet(searchEngine, parameters.getName(), parameters.getDescription(), parameters.getSampling(), querySet);
                     } else {
-                        System.err.println("The query set was empty.");
+                        LOGGER.error("The query set was empty.");
                     }
 
                 } else {
@@ -210,19 +199,19 @@ public class App {
                 }
 
                 if (querySetId != null) {
-                    System.out.println("Query set created: " + querySetId);
+                    LOGGER.info("Query set created: {}", querySetId);
                 } else {
-                    System.err.println("No queries found for query set.");
+                    LOGGER.warn("No queries found for query set.");
                 }
 
             } else {
-                System.err.println("The query set run parameters file does not exist.");
+                LOGGER.error("The query set run parameters file does not exist.");
             }
 
 
         } else {
 
-            System.err.println("Invalid options.");
+            LOGGER.error("Invalid options.");
 
         }
 

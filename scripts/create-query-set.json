@@ -1,6 +1,9 @@
 {
-  "sampler": "pptss",
+  "sampler": "random",
   "name": "",
   "description": "",
-  "querySetSize": 15
+  "querySetSize": 250,
+  "application": "app1",
+  "startTimestamp": "2023-12-10T06:33:30.100Z",
+  "endTimestamp": ""
 }
